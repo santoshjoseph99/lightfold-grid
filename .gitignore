@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-electron/
+logs/
+
+.DS_Store
+*.log
+*.pid
+
+.env
+.env.*
+!.env.example
+
+starlight-workspace.json

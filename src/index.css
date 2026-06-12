@@ -1,0 +1,278 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap');
+
+:root {
+  /* HSL Tailored Palette */
+  --bg-dark: hsla(222, 47%, 4%, 0.4);
+  --panel-bg: hsla(222, 35%, 8%, 0.25);
+  --panel-border: rgba(255, 255, 255, 0.06);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-highlight: rgba(255, 255, 255, 0.1);
+  
+  /* Neon Accents */
+  --accent-cyan: hsla(180, 100%, 50%, 1);
+  --accent-cyan-glow: hsla(180, 100%, 50%, 0.15);
+  --accent-purple: hsla(270, 95%, 65%, 1);
+  --accent-purple-glow: hsla(270, 95%, 65%, 0.15);
+  --accent-blue: hsla(220, 90%, 60%, 1);
+  --accent-green: hsla(145, 80%, 50%, 1);
+  --accent-orange: hsla(25, 95%, 55%, 1);
+  --accent-red: hsla(350, 90%, 55%, 1);
+  
+  /* Text colors */
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --text-dark: #4b5563;
+
+  /* Font Families */
+  --font-sans: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: transparent;
+  color: var(--text-main);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  user-select: none;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+/* Glassmorphism containers */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.glass-panel.active {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 16px var(--accent-cyan-glow);
+}
+
+/* Header bar spacing for macOS titleBarStyle: hidden */
+.titlebar-spacer {
+  height: 38px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  padding-left: 80px; /* offset native mac dots */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* Layout Split Panes */
+.layout-container {
+  display: flex;
+  height: calc(100vh - 38px);
+  width: 100vw;
+  position: relative;
+  background: var(--bg-dark);
+}
+
+/* Sidebar styling */
+.sidebar {
+  width: 260px;
+  border-right: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  backdrop-filter: blur(16px);
+}
+
+.workspace-center {
+  flex: 1;
+  height: 100%;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Drag Handles from react-resizable-panels */
+.resize-handle {
+  position: relative;
+  background: rgba(255, 255, 255, 0.04);
+  transition: background 0.2s ease;
+}
+
+.resize-handle[data-panel-group-direction="horizontal"] {
+  width: 6px;
+  cursor: col-resize;
+  margin: 0 3px;
+}
+
+.resize-handle[data-panel-group-direction="vertical"] {
+  height: 6px;
+  cursor: row-resize;
+  margin: 3px 0;
+}
+
+.resize-handle:hover,
+.resize-handle[data-active] {
+  background: var(--accent-cyan);
+}
+
+/* Resizing dimming overlays */
+.resize-dimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.resizing .resize-dimmer {
+  opacity: 1;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Animations */
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.1); }
+  50% { box-shadow: 0 0 16px rgba(168, 85, 247, 0.2); }
+  100% { box-shadow: 0 0 8px rgba(168, 85, 247, 0.1); }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideup {
+  animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Hidden Overlay for raw xterm DOM storage */
+#offscreen-terminal-cache {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  top: -10000px;
+  left: -10000px;
+}
+
+/* Styles for xterm terminals */
+.terminal-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 12, 18, 0.6);
+  position: relative;
+}
+
+.terminal-header {
+  height: 36px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.terminal-tabs {
+  display: flex;
+  gap: 8px;
+  height: 100%;
+  align-items: flex-end;
+}
+
+.terminal-tab {
+  padding: 6px 12px;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
+  border-bottom: none;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.terminal-tab.active {
+  background: rgba(10, 12, 18, 0.6);
+  color: var(--accent-cyan);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.terminal-container {
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+  padding: 8px;
+}
+
+/* Custom xterm.js styling overrides */
+.xterm {
+  padding: 4px;
+}
+
+.xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+}
