@@ -2,14 +2,13 @@ import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { execSync } from 'child_process';
-import * as pty from 'node-pty';
 import { BrokerStore } from './brokerStore';
+import { PtyService } from './ptyService';
 import { WorktreeManager } from './worktreeManager';
 
 let mainWindow: BrowserWindow | null = null;
 let brokerStore: BrokerStore | null = null;
 let worktreeManager: WorktreeManager | null = null;
-const ptyProcesses: Map<string, pty.IPty> = new Map();
 
 // Generate a clean YYYYMMDD_HHMMSS timestamp for this run session
 const sessionTimestamp = new Date().toISOString()
@@ -17,10 +16,6 @@ const sessionTimestamp = new Date().toISOString()
   .replace(/\..+/, '')
   .replace(/[:]/g, '')
   .replace(/[-]/g, '');
-
-function stripAnsi(text: string): string {
-  return text.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
-}
 
 // Helper to source user login shell environment paths on macOS
 function getLoginShellEnv(): Record<string, string> {
@@ -57,6 +52,10 @@ function getLoginShellEnv(): Record<string, string> {
 }
 
 const mergedEnv = getLoginShellEnv();
+const ptyService = new PtyService({
+  onData: (id, data) => mainWindow?.webContents.send(`pty:data:${id}`, data),
+  onExit: (id, exit) => mainWindow?.webContents.send(`pty:exit:${id}`, exit),
+});
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -88,8 +87,7 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
     // Clean up all PTYs
-    ptyProcesses.forEach((p) => p.kill());
-    ptyProcesses.clear();
+    ptyService.close();
   });
 }
 
@@ -195,15 +193,12 @@ ipcMain.handle('pty:spawn', (event, { id, cols, rows, shellPath, cwd }) => {
 
     // Create log folder structure for this run
     const logsDir = path.join(targetCwd, 'logs', `run_${sessionTimestamp}`);
-    if (!fs.existsSync(logsDir)) {
-      fs.mkdirSync(logsDir, { recursive: true });
-    }
     const logFilePath = path.join(logsDir, `${id}.log`);
-    fs.writeFileSync(logFilePath, `--- Terminal Log Started for ${id} ---\n`, 'utf-8');
 
-    // Spawn node-pty process
-    const ptyProcess = pty.spawn(selectedShell, ['-l'], {
-      name: 'xterm-256color',
+    return ptyService.spawn({
+      id,
+      executable: selectedShell,
+      args: ['-l'],
       cols: cols || 80,
       rows: rows || 24,
       cwd: targetCwd,
@@ -212,30 +207,8 @@ ipcMain.handle('pty:spawn', (event, { id, cols, rows, shellPath, cwd }) => {
         STARLIGHT_WORKSPACE: 'true',
         TERM: 'xterm-256color'
       },
+      logFilePath,
     });
-
-    ptyProcesses.set(id, ptyProcess);
-
-    // Forward stream data to renderer and log to file
-    ptyProcess.onData((data) => {
-      if (mainWindow) {
-        mainWindow.webContents.send(`pty:data:${id}`, data);
-      }
-      // Append text asynchronously to ensure high performance
-      fs.appendFile(logFilePath, stripAnsi(data), 'utf-8', (err) => {
-        if (err) console.error(`[main] Failed to write to log for ${id}:`, err);
-      });
-    });
-
-    ptyProcess.onExit(({ exitCode, signal }) => {
-      if (mainWindow) {
-        mainWindow.webContents.send(`pty:exit:${id}`, { exitCode, signal });
-      }
-      fs.appendFile(logFilePath, `\n--- Terminal Process Exited (Code: ${exitCode}) ---\n`, 'utf-8', () => {});
-      ptyProcesses.delete(id);
-    });
-
-    return { success: true, pid: ptyProcess.pid };
   } catch (error: any) {
     console.error('Failed to spawn PTY:', error);
     return { success: false, error: error.message };
@@ -243,35 +216,20 @@ ipcMain.handle('pty:spawn', (event, { id, cols, rows, shellPath, cwd }) => {
 });
 
 ipcMain.handle('pty:write', (event, { id, data }) => {
-  const ptyProcess = ptyProcesses.get(id);
-  if (ptyProcess) {
-    ptyProcess.write(data);
-    return true;
-  }
-  return false;
+  return ptyService.write(id, data);
 });
 
 ipcMain.handle('pty:resize', (event, { id, cols, rows }) => {
-  const ptyProcess = ptyProcesses.get(id);
-  if (ptyProcess) {
-    try {
-      ptyProcess.resize(cols, rows);
-      return true;
-    } catch (e) {
-      console.error('Failed to resize PTY:', e);
-    }
+  try {
+    return ptyService.resize(id, cols, rows);
+  } catch (e) {
+    console.error('Failed to resize PTY:', e);
+    return false;
   }
-  return false;
 });
 
 ipcMain.handle('pty:kill', (event, id) => {
-  const ptyProcess = ptyProcesses.get(id);
-  if (ptyProcess) {
-    ptyProcess.kill();
-    ptyProcesses.delete(id);
-    return true;
-  }
-  return false;
+  return ptyService.kill(id);
 });
 
 // Get available shells on the host machine
@@ -309,11 +267,10 @@ ipcMain.handle('shells:get-available', () => {
 
 // Fetch active process name under a PTY for busy checking
 ipcMain.handle('pty:get-active-process', (event, id) => {
-  const ptyProcess = ptyProcesses.get(id);
-  if (!ptyProcess) return 'none';
+  const pid = ptyService.pid(id);
+  if (!pid) return 'none';
   
   try {
-    const pid = ptyProcess.pid;
     if (process.platform === 'darwin' || process.platform === 'linux') {
       // Run ps to find child processes of the PTY session group
       const output = execSync(`pgrep -P ${pid} | xargs ps -o state,comm -p`, { encoding: 'utf-8' });

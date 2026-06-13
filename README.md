@@ -28,6 +28,7 @@ workflows.
 - Gate coding-task merges on file ownership, tests, and explicit review.
 - Generate versioned agent contracts with real identities, routes, capabilities, and tools.
 - Emit valid protocol messages through the bundled `starlight-message` helper.
+- Exercise the complete broker-to-real-PTY-to-agent loop with deterministic fake agents.
 - Inspect message flow, status, and broker logs.
 - Test wheel/spoke communication using deterministic agents or local Ollama models.
 
@@ -52,7 +53,9 @@ through the terminal registry, and executes live PTY delivery. Agent envelopes a
 parsed, checked against the routing graph, persisted, and delivered to target PTYs in
 per-target order.
 
-Workflow scheduling will move into the Electron main process in later milestones.
+The production PTY lifecycle is isolated in a reusable main-process service. The
+integration harness composes that service with the durable store and orchestration
+core to verify the same operating-system PTY boundary used by Electron.
 See [plan.md](./plan.md) for the milestone roadmap.
 
 ## Requirements
@@ -270,6 +273,17 @@ Run deterministic broker and wheel/spoke integration tests:
 npm test
 ```
 
+Run only the full broker-to-PTY integration harness:
+
+```bash
+npm run test:integration
+```
+
+The integration harness launches a hub and three spokes through real `node-pty`
+sessions. It verifies delayed readiness, malformed output recovery, acknowledgement
+retries, crash/restart recovery, durable broker updates, and a coding workflow that
+edits an isolated worktree, runs tests, passes review, and merges.
+
 Run the optional live Ollama wheel test:
 
 ```bash
@@ -292,7 +306,8 @@ npm run build
 
 - Reliable acknowledgements require agents to follow the versioned protocol.
 - Live delivery timers are reconstructed from persisted request state after restart.
-- Full Electron-to-PTY-to-agent integration testing is still planned.
+- Live-model behavior remains dependent on the selected CLI and model; Ollama coverage
+  is intentionally opt-in.
 
 ## Roadmap
 
@@ -319,7 +334,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 5: Workflow dependency engine
 - [x] Milestone 6: Git worktree isolation
 - [x] Milestone 7: Prompt contract hardening
-- [ ] Milestone 8: Full end-to-end integration testing
+- [x] Milestone 8: Full end-to-end integration testing
 - [ ] Milestone 9: Observability and operational controls
 
 ## Open Source Status

@@ -243,14 +243,14 @@ temporary migration period.
 
 ### Tasks
 
-- [ ] Build a deterministic fake-agent CLI that communicates through stdin/stdout.
-- [ ] Launch Starlight's Electron main-process broker and real node-pty sessions in tests.
-- [ ] Create a wheel topology with one hub and at least three spokes.
-- [ ] Verify startup handshakes, task routing, acknowledgements, results, retries, and
+- [x] Build a deterministic fake-agent CLI that communicates through stdin/stdout.
+- [x] Launch Starlight's Electron main-process broker and real node-pty sessions in tests.
+- [x] Create a wheel topology with one hub and at least three spokes.
+- [x] Verify startup handshakes, task routing, acknowledgements, results, retries, and
       failure recovery through actual PTYs.
-- [ ] Add an optional live-Ollama wheel test using `gemma4-32k:latest`.
-- [ ] Add a complex coding fixture repository for worktree and workflow testing.
-- [ ] Run deterministic integration tests in CI; keep live model tests opt-in.
+- [x] Add an optional live-Ollama wheel test using `gemma4-32k:latest`.
+- [x] Add a complex coding fixture repository for worktree and workflow testing.
+- [x] Run deterministic integration tests in CI; keep live model tests opt-in.
 
 ### Acceptance Criteria
 
@@ -307,6 +307,6 @@ Starlight is ready for complex coding tasks when all of the following are true:
 - [x] Restarting Starlight restores unfinished workflows.
 - [x] Concurrent coding agents use isolated Git worktrees.
 - [x] Integration requires passing tests and review.
-- [ ] The full Electron-to-PTY-to-agent loop is covered by deterministic CI tests.
-- [ ] A complex fixture workflow completes successfully despite a delayed agent, a
+- [x] The full Electron-to-PTY-to-agent loop is covered by deterministic CI tests.
+- [x] A complex fixture workflow completes successfully despite a delayed agent, a
       malformed message, a retry, and an agent restart.

@@ -305,7 +305,7 @@ export interface ReliabilityOptions {
 }
 
 export interface DeliveryGate {
-  canDeliver(targetId: string): boolean;
+  canDeliver(targetId: string, taskId?: string): boolean;
   onTaskStarted?(targetId: string, taskId: string): void;
 }
 
@@ -569,7 +569,7 @@ export class ReliableRequestManager {
           this.queues.set(targetId, queue.slice(1));
           continue;
         }
-        if (this.deliveryGate && !this.deliveryGate.canDeliver(targetId)) break;
+        if (this.deliveryGate && !this.deliveryGate.canDeliver(targetId, record.message.taskId)) break;
         this.queues.set(targetId, queue.slice(1));
 
         record.attempt += 1;
@@ -826,8 +826,13 @@ export class AgentLifecycleManager {
     return changed;
   }
 
-  canAcceptTask(agentId: string): boolean {
-    return this.agents.get(agentId)?.state === 'ready';
+  canAcceptTask(agentId: string, taskId?: string): boolean {
+    const agent = this.agents.get(agentId);
+    return agent?.state === 'ready' || (
+      agent?.state === 'busy' &&
+      taskId !== undefined &&
+      agent.currentTaskId === taskId
+    );
   }
 
   get(agentId: string): AgentLifecycleRecord | undefined {

@@ -206,7 +206,7 @@ const reliableRequests = new ReliableRequestManager(
   {},
   Date.now,
   {
-    canDeliver: (targetId) => agentLifecycle.canAcceptTask(targetId),
+    canDeliver: (targetId, taskId) => agentLifecycle.canAcceptTask(targetId, taskId),
     onTaskStarted: (targetId, taskId) => agentLifecycle.taskStarted(targetId, taskId),
   }
 );

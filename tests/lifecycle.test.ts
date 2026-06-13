@@ -33,6 +33,8 @@ test('tracks startup, readiness, busy work, completion, and shutdown', () => {
   lifecycle.taskStarted('Spoke-A', 'task-1');
   assert.equal(lifecycle.get('Spoke-A')?.currentTaskId, 'task-1');
   assert.equal(lifecycle.canAcceptTask('Spoke-A'), false);
+  assert.equal(lifecycle.canAcceptTask('Spoke-A', 'task-1'), true);
+  assert.equal(lifecycle.canAcceptTask('Spoke-A', 'task-2'), false);
   lifecycle.taskFinished('Spoke-A');
   lifecycle.stopping('Spoke-A');
   lifecycle.stopped('Spoke-A');

@@ -1,0 +1,7 @@
+{
+  "name": "starlight-coding-fixture",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}
