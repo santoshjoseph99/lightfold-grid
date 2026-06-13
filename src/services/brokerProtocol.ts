@@ -43,6 +43,8 @@ const lifecycleListeners = new Set<(record: AgentLifecycleRecord) => void>();
 const workflowListeners = new Set<(workflow: WorkflowRecord) => void>();
 let brokerStateInitialized = false;
 let brokerRetentionLimit = 5_000;
+let brokerWorkspaceRoot = '';
+const preparingWorkflowTasks = new Set<string>();
 
 const persist = (operation: Promise<unknown> | undefined) => {
   operation?.catch((error) => console.error('Failed to persist broker state:', error));
@@ -73,6 +75,9 @@ export const setTrustedCommands = (list: string[]) => { trustedCommands = list; 
 export const getRoutingConnections = () => routingConnections;
 export const setRoutingConnections = (conns: Record<string, string[]>) => {
   routingConnections = conns;
+};
+export const setBrokerWorkspaceRoot = (workspaceRoot: string) => {
+  brokerWorkspaceRoot = workspaceRoot;
 };
 
 export const subscribeToMessages = (callback: (msg: StarlightMessage) => void) => {
@@ -216,7 +221,7 @@ const workflowEngine = new WorkflowEngine({
     const workflow = workflowEngine.get(task.workflowId);
     if (workflow) notifyWorkflowListeners(workflow);
   },
-  onDispatch: (task) => dispatchWorkflowTask(task),
+  onDispatch: (task) => void dispatchWorkflowTask(task),
 });
 
 const findWorkflowTaskByMessageId = (messageId: string): WorkflowTaskRecord | undefined => {
@@ -225,7 +230,49 @@ const findWorkflowTaskByMessageId = (messageId: string): WorkflowTaskRecord | un
     .find((task) => task.messageId === messageId);
 };
 
-const dispatchWorkflowTask = (task: WorkflowTaskRecord) => {
+const worktreeSummary = (record: any) => ({
+  worktreePath: record.worktreePath,
+  branch: record.branch,
+  baseCommit: record.baseCommit,
+  changedFiles: record.changedFiles || [],
+  status: record.status,
+  testOutput: record.testOutput,
+  error: record.error,
+});
+
+const dispatchWorkflowTask = async (task: WorkflowTaskRecord) => {
+  const taskKey = `${task.workflowId}:${task.id}`;
+  if (preparingWorkflowTasks.has(taskKey)) return;
+  preparingWorkflowTasks.add(taskKey);
+  let instruction = task.goal;
+  let worktree: any;
+  try {
+    if (task.coding) {
+      if (!brokerWorkspaceRoot) throw new Error('Coding workflows require a selected Git repository workspace.');
+      const result = await (window as any).electronAPI.prepareWorktree({
+        workspaceRoot: brokerWorkspaceRoot,
+        workflowId: task.workflowId,
+        taskId: task.id,
+        owner: task.owner,
+        config: task.coding,
+      });
+      if (!result?.success) throw new Error(result?.error || 'Failed to prepare coding worktree.');
+      worktree = result.record;
+      workflowEngine.updateWorktree(task.workflowId, task.id, worktreeSummary(worktree));
+      instruction = [
+        task.goal,
+        '',
+        `Work exclusively in this Git worktree: ${worktree.worktreePath}`,
+        `Task branch: ${worktree.branch}`,
+        `Base commit: ${worktree.baseCommit}`,
+        'Do not edit the original workspace. Commit your completed changes to the task branch.',
+      ].join('\n');
+    }
+  } catch (error) {
+    workflowEngine.failTask(task.workflowId, task.id, error instanceof Error ? error.message : String(error));
+    preparingWorkflowTasks.delete(taskKey);
+    return;
+  }
   const messageId = createProtocolId();
   const message: StarlightMessage = {
     protocolVersion: 1,
@@ -236,22 +283,25 @@ const dispatchWorkflowTask = (task: WorkflowTaskRecord) => {
     to: task.owner,
     kind: 'request',
     payload: {
-      instruction: task.goal,
+      instruction,
       data: {
         workflowId: task.workflowId,
         workflowTaskId: task.id,
         completionCriteria: task.completionCriteria,
+        coding: task.coding,
+        worktree,
       },
     },
     attempt: 1,
     timestamp: Date.now(),
-    command: task.goal,
+    command: instruction,
     type: 'request',
     status: 'queued',
   };
   workflowEngine.assignTask(task.workflowId, task.id, messageId);
   appendMessage(message);
   reliableRequests.submit(message);
+  preparingWorkflowTasks.delete(taskKey);
 };
 
 export const getDeadLetters = () => reliableRequests.getDeadLetters();
@@ -271,6 +321,9 @@ export const createWorkflow = (definition: WorkflowDefinition) => {
     ? definition.tasks.find((task) => !knownAgents.has(task.owner))
     : undefined;
   if (unknownOwner) throw new WorkflowValidationError(`Workflow task ${unknownOwner.id} targets unknown agent ${unknownOwner.owner}.`);
+  if (definition.tasks.some((task) => task.coding) && !brokerWorkspaceRoot) {
+    throw new WorkflowValidationError('Coding workflows require a selected Git repository workspace.');
+  }
   return workflowEngine.create(definition);
 };
 export const approveWorkflowTask = (workflowId: string, taskId: string) => workflowEngine.approveTask(workflowId, taskId);
@@ -286,6 +339,38 @@ export const cancelWorkflow = (workflowId: string) => {
     if (task.messageId) reliableRequests.cancel(task.messageId, 'Workflow cancelled by operator.');
   });
   return cancelled;
+};
+export const approveAndMergeWorkflowTask = async (workflowId: string, taskId: string) => {
+  const electronAPI = (window as any).electronAPI;
+  const tested = await electronAPI.runWorktreeTests(workflowId, taskId);
+  if (!tested?.success) throw new Error(tested?.error || 'Failed to run worktree tests.');
+  workflowEngine.updateWorktree(workflowId, taskId, worktreeSummary(tested.record));
+  if (tested.record.status !== 'review') return false;
+  const approved = await electronAPI.approveWorktreeReview(workflowId, taskId);
+  if (!approved?.success) throw new Error(approved?.error || 'Failed to approve worktree.');
+  const merged = await electronAPI.mergeWorktree(workflowId, taskId);
+  if (!merged?.success) throw new Error(merged?.error || 'Failed to merge worktree.');
+  workflowEngine.updateWorktree(workflowId, taskId, worktreeSummary(merged.record));
+  if (merged.record.status !== 'merged') return false;
+  return workflowEngine.completeReview(workflowId, taskId);
+};
+export const approveWorkflowSharedFiles = async (workflowId: string, taskId: string) => {
+  const result = await (window as any).electronAPI.approveWorktreeSharedFiles(workflowId, taskId);
+  if (!result?.success) throw new Error(result?.error || 'Failed to approve shared files.');
+  workflowEngine.updateWorktree(workflowId, taskId, worktreeSummary(result.record));
+  return result.record;
+};
+export const testWorkflowWorktree = async (workflowId: string, taskId: string) => {
+  const result = await (window as any).electronAPI.runWorktreeTests(workflowId, taskId);
+  if (!result?.success) throw new Error(result?.error || 'Failed to run worktree tests.');
+  workflowEngine.updateWorktree(workflowId, taskId, worktreeSummary(result.record));
+  return result.record;
+};
+export const cleanupWorkflowWorktree = async (workflowId: string, taskId: string, force = false) => {
+  const result = await (window as any).electronAPI.cleanupWorktree(workflowId, taskId, force);
+  if (!result?.success) throw new Error(result?.error || 'Failed to clean up worktree.');
+  workflowEngine.updateWorktree(workflowId, taskId, worktreeSummary(result.record));
+  return result.record;
 };
 export const subscribeToAgentLifecycle = (listener: (record: AgentLifecycleRecord) => void) => {
   lifecycleListeners.add(listener);
@@ -430,10 +515,31 @@ const processMessage = (msg: StarlightMessage) => {
     const workflowTask = msg.correlationId ? findWorkflowTaskByMessageId(msg.correlationId) : undefined;
     if (workflowTask && disposition === 'accepted') {
       if (msg.kind === 'result') {
-        workflowEngine.submitResult(workflowTask.workflowId, workflowTask.id, {
+        const result = {
           summary: msg.payload.summary,
           artifacts: msg.payload.artifacts,
-        });
+        };
+        if (workflowTask.coding) {
+          if (workflowEngine.submitForReview(workflowTask.workflowId, workflowTask.id, result)) {
+            void (async () => {
+              const inspected = await (window as any).electronAPI.inspectWorktree(workflowTask.workflowId, workflowTask.id);
+              if (!inspected?.success) {
+                workflowEngine.failTask(workflowTask.workflowId, workflowTask.id, inspected?.error || 'Failed to inspect coding worktree.');
+                return;
+              }
+              workflowEngine.updateWorktree(workflowTask.workflowId, workflowTask.id, worktreeSummary(inspected.record));
+              if (inspected.record.status === 'conflicted') return;
+              const tested = await (window as any).electronAPI.runWorktreeTests(workflowTask.workflowId, workflowTask.id);
+              if (!tested?.success) {
+                workflowEngine.failTask(workflowTask.workflowId, workflowTask.id, tested?.error || 'Failed to test coding worktree.');
+                return;
+              }
+              workflowEngine.updateWorktree(workflowTask.workflowId, workflowTask.id, worktreeSummary(tested.record));
+            })();
+          }
+        } else {
+          workflowEngine.submitResult(workflowTask.workflowId, workflowTask.id, result);
+        }
       } else if (msg.kind === 'error' || msg.kind === 'cancel') {
         workflowEngine.failTask(
           workflowTask.workflowId,

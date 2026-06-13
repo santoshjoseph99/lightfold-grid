@@ -4,9 +4,11 @@ import * as fs from 'fs';
 import { execSync } from 'child_process';
 import * as pty from 'node-pty';
 import { BrokerStore } from './brokerStore';
+import { WorktreeManager } from './worktreeManager';
 
 let mainWindow: BrowserWindow | null = null;
 let brokerStore: BrokerStore | null = null;
+let worktreeManager: WorktreeManager | null = null;
 const ptyProcesses: Map<string, pty.IPty> = new Map();
 
 // Generate a clean YYYYMMDD_HHMMSS timestamp for this run session
@@ -94,6 +96,13 @@ function createWindow() {
 app.whenReady().then(() => {
   brokerStore = new BrokerStore(path.join(app.getPath('userData'), 'starlight-broker.sqlite'));
   brokerStore.recoverInterruptedWork();
+  worktreeManager = new WorktreeManager({
+    onUpdate: (record) => {
+      brokerStore?.upsertWorktree(record);
+      notifyBrokerChanged();
+    },
+  });
+  worktreeManager.restore(brokerStore.snapshot().worktrees as any[]);
   createWindow();
 
   app.on('activate', () => {
@@ -112,6 +121,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   brokerStore?.close();
   brokerStore = null;
+  worktreeManager = null;
 });
 
 const notifyBrokerChanged = () => {
@@ -139,6 +149,39 @@ ipcMain.handle('broker:set-setting', (_event, { key, value }) => {
   notifyBrokerChanged();
   return true;
 });
+
+const worktreeOperation = (operation: () => unknown) => {
+  try {
+    return { success: true, record: operation() };
+  } catch (error: any) {
+    return { success: false, error: error.message || String(error) };
+  }
+};
+
+ipcMain.handle('worktree:is-git-repository', (_event, workspaceRoot) =>
+  worktreeManager?.isGitRepository(workspaceRoot) || false
+);
+ipcMain.handle('worktree:prepare', (_event, { workspaceRoot, workflowId, taskId, owner, config }) =>
+  worktreeOperation(() => worktreeManager?.prepare(workspaceRoot, workflowId, taskId, owner, config))
+);
+ipcMain.handle('worktree:inspect', (_event, { workflowId, taskId }) =>
+  worktreeOperation(() => worktreeManager?.inspect(workflowId, taskId))
+);
+ipcMain.handle('worktree:run-tests', (_event, { workflowId, taskId }) =>
+  worktreeOperation(() => worktreeManager?.runTests(workflowId, taskId))
+);
+ipcMain.handle('worktree:approve-review', (_event, { workflowId, taskId }) =>
+  worktreeOperation(() => worktreeManager?.approveReview(workflowId, taskId))
+);
+ipcMain.handle('worktree:approve-shared-files', (_event, { workflowId, taskId }) =>
+  worktreeOperation(() => worktreeManager?.approveSharedFiles(workflowId, taskId))
+);
+ipcMain.handle('worktree:merge', (_event, { workflowId, taskId }) =>
+  worktreeOperation(() => worktreeManager?.merge(workflowId, taskId))
+);
+ipcMain.handle('worktree:cleanup', (_event, { workflowId, taskId, force }) =>
+  worktreeOperation(() => worktreeManager?.cleanup(workflowId, taskId, force))
+);
 
 // IPC Handlers for PTY lifecycle
 ipcMain.handle('pty:spawn', (event, { id, cols, rows, shellPath, cwd }) => {

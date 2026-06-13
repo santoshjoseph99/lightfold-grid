@@ -24,6 +24,8 @@ workflows.
 - Recover interrupted requests after an application restart.
 - Execute durable dependency-graph workflows with validated completion criteria.
 - Gate destructive or release-related workflow tasks for human approval.
+- Isolate coding tasks in per-task Git worktrees and branches.
+- Gate coding-task merges on file ownership, tests, and explicit review.
 - Inspect message flow, status, and broker logs.
 - Test wheel/spoke communication using deterministic agents or local Ollama models.
 
@@ -216,6 +218,36 @@ agents, and cyclic or malformed decompositions are rejected. Tasks can use `bloc
 deployment, production, deletion, destruction, or migrations automatically require
 human approval in the broker's **Workflows** tab.
 
+### Safe Concurrent Coding
+
+Add a `coding` configuration to a workflow task to run it in an isolated Git worktree:
+
+```json
+{
+  "id": "build-api",
+  "owner": "Pane-B",
+  "goal": "Implement the API endpoint and commit the changes",
+  "coding": {
+    "files": ["src/api.ts", "tests/api.test.ts"],
+    "testCommand": "npm test"
+  }
+}
+```
+
+Coding workflows require the selected workspace to be a Git repository, project-relative
+declared files, and a test command. Every coding task requires human approval before
+dispatch because its test command will execute locally. Starlight then creates a branch named
+`starlight/<workflow>/<task>` and a worktree under the repository's Git directory. The
+agent receives the exact worktree path and must work and commit there.
+
+Declared files are reserved while a task is active. Starlight also inspects the actual
+files changed from the task's base commit, blocks overlapping ownership unless a human
+approves it, and surfaces merge conflicts in the workflow view. An agent result moves
+the task to review; it does not complete the task. Starlight runs the configured tests,
+then requires **Approve & Merge** before serially merging the branch into the clean
+integration workspace. Failed and conflicted worktrees are preserved until explicit
+forced cleanup.
+
 ## Testing
 
 Run deterministic broker and wheel/spoke integration tests:
@@ -246,7 +278,6 @@ npm run build
 
 - Reliable acknowledgements require agents to follow the versioned protocol.
 - Live delivery timers are reconstructed from persisted request state after restart.
-- Concurrent coding agents do not yet use isolated Git worktrees.
 - Full Electron-to-PTY-to-agent integration testing is still planned.
 
 ## Roadmap
@@ -272,7 +303,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 3: Agent lifecycle and readiness
 - [x] Milestone 4: Durable broker state
 - [x] Milestone 5: Workflow dependency engine
-- [ ] Milestone 6: Git worktree isolation
+- [x] Milestone 6: Git worktree isolation
 - [ ] Milestone 7: Prompt contract hardening
 - [ ] Milestone 8: Full end-to-end integration testing
 - [ ] Milestone 9: Observability and operational controls

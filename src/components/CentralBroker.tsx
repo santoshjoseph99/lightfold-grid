@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Network, ChevronRight, ChevronDown, RefreshCw, XOctagon, Shuffle, CheckCircle, GitBranch } from 'lucide-react';
 import {
   approveWorkflowTask,
+  approveAndMergeWorkflowTask,
+  approveWorkflowSharedFiles,
   cancelWorkflow,
+  cleanupWorkflowWorktree,
   cancelMessage,
   getDeadLetters,
   getMessagesLog,
@@ -14,6 +17,7 @@ import {
   StarlightMessage,
   subscribeToMessages,
   subscribeToWorkflows,
+  testWorkflowWorktree,
 } from '../services/brokerProtocol';
 import type { WorkflowRecord, WorkflowTaskRecord } from '../services/workflowCore';
 
@@ -70,6 +74,14 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
   const handleWorkflowReassign = (workflow: WorkflowRecord, task: WorkflowTaskRecord) => {
     const target = window.prompt(`Reassign ${task.id} to pane:`, task.owner);
     if (target) reassignWorkflowTask(workflow.id, task.id, target);
+  };
+
+  const handleCodingAction = async (action: () => Promise<unknown>) => {
+    try {
+      await action();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : String(error));
+    }
   };
 
   const workflowStatusColor = (status: string) => {
@@ -200,6 +212,12 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
                           <span style={{ fontSize: '8px', color: workflowStatusColor(task.status), textTransform: 'uppercase' }}>{task.status}</span>
                         </div>
                         <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>{task.goal}</div>
+                        {task.worktree && (
+                          <div style={{ fontSize: '8px', color: 'var(--accent-cyan)', marginTop: '3px', wordBreak: 'break-all' }}>
+                            {task.worktree.branch} · {task.worktree.status}
+                            {task.worktree.changedFiles.length > 0 && ` · ${task.worktree.changedFiles.join(', ')}`}
+                          </div>
+                        )}
                         {task.error && <div style={{ fontSize: '8px', color: 'var(--accent-red)', marginTop: '3px' }}>{task.error}</div>}
                         <div style={{ display: 'flex', gap: '5px', marginTop: '4px' }}>
                           {task.requiresApproval && !task.approved && task.status === 'ready' && (
@@ -212,6 +230,32 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
                               <button onClick={() => retryWorkflowTask(workflow.id, task.id)}><RefreshCw size={10} /> Retry</button>
                               <button onClick={() => handleWorkflowReassign(workflow, task)}><Shuffle size={10} /> Reassign</button>
                             </>
+                          )}
+                          {task.coding && task.status === 'reviewing' && task.worktree?.status === 'review' && (
+                            <button onClick={() => void handleCodingAction(() => approveAndMergeWorkflowTask(workflow.id, task.id))}>
+                              <CheckCircle size={10} /> Approve & Merge
+                            </button>
+                          )}
+                          {task.coding && task.status === 'reviewing' && task.worktree?.status === 'conflicted' && (
+                            <button onClick={() => void handleCodingAction(() => approveWorkflowSharedFiles(workflow.id, task.id))}>
+                              <CheckCircle size={10} /> Approve Shared Files
+                            </button>
+                          )}
+                          {task.coding && task.status === 'reviewing' && task.worktree?.status === 'tests-failed' && (
+                            <button onClick={() => void handleCodingAction(() => testWorkflowWorktree(workflow.id, task.id))}>
+                              <RefreshCw size={10} /> Run Tests
+                            </button>
+                          )}
+                          {task.worktree && task.worktree.status !== 'cleaned' && (
+                            <button
+                              onClick={() => void handleCodingAction(() => cleanupWorkflowWorktree(
+                                workflow.id,
+                                task.id,
+                                ['conflicted', 'tests-failed', 'preserved'].includes(task.worktree?.status || '')
+                              ))}
+                            >
+                              <XOctagon size={10} /> Cleanup
+                            </button>
                           )}
                         </div>
                       </div>

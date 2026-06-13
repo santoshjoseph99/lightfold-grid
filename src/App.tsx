@@ -22,6 +22,7 @@ import {
   markAgentStopped,
   markAgentStopping,
   registerAgent,
+  setBrokerWorkspaceRoot,
   setRoutingConnections,
   subscribeToMessages,
 } from './services/brokerProtocol';
@@ -128,6 +129,10 @@ export default function App() {
     });
 
     return unsubscribe;
+  }, [workspaceCwd]);
+
+  useEffect(() => {
+    setBrokerWorkspaceRoot(workspaceCwd);
   }, [workspaceCwd]);
 
   const handleSplit = (): string | null => {

@@ -18,6 +18,22 @@ export interface CompletionCriteria {
   summaryIncludes?: string[];
 }
 
+export interface CodingTaskConfig {
+  files?: string[];
+  testCommand?: string;
+  allowSharedFiles?: boolean;
+}
+
+export interface CodingWorktreeSummary {
+  worktreePath: string;
+  branch: string;
+  baseCommit: string;
+  changedFiles: string[];
+  status: string;
+  testOutput?: string;
+  error?: string;
+}
+
 export interface WorkflowTaskDefinition {
   id: string;
   owner: string;
@@ -27,6 +43,7 @@ export interface WorkflowTaskDefinition {
   failurePolicy?: WorkflowFailurePolicy;
   maxAttempts?: number;
   requiresApproval?: boolean;
+  coding?: CodingTaskConfig;
 }
 
 export interface WorkflowDefinition {
@@ -47,6 +64,7 @@ export interface WorkflowTaskRecord extends WorkflowTaskDefinition {
   messageId?: string;
   summary?: string;
   error?: string;
+  worktree?: CodingWorktreeSummary;
 }
 
 export interface WorkflowRecord extends Omit<WorkflowDefinition, 'tasks'> {
@@ -80,6 +98,8 @@ const copyTask = (task: WorkflowTaskRecord): WorkflowTaskRecord => ({
       }
     : undefined,
   artifacts: [...task.artifacts],
+  coding: task.coding ? { ...task.coding, files: [...(task.coding.files || [])] } : undefined,
+  worktree: task.worktree ? { ...task.worktree, changedFiles: [...task.worktree.changedFiles] } : undefined,
 });
 
 const copyWorkflow = (workflow: WorkflowRecord): WorkflowRecord => ({
@@ -125,8 +145,8 @@ export class WorkflowEngine {
         status: 'planned',
         attempts: 0,
         artifacts: [],
-        requiresApproval: task.requiresApproval || approvalRiskPattern.test(task.goal),
-        approved: !(task.requiresApproval || approvalRiskPattern.test(task.goal)),
+        requiresApproval: task.requiresApproval || Boolean(task.coding) || approvalRiskPattern.test(task.goal),
+        approved: !(task.requiresApproval || task.coding || approvalRiskPattern.test(task.goal)),
         failurePolicy: task.failurePolicy || 'block',
         maxAttempts: task.maxAttempts || 1,
       })),
@@ -140,7 +160,7 @@ export class WorkflowEngine {
     this.validate(workflow);
     const restored = copyWorkflow(workflow);
     restored.tasks = restored.tasks.map((task) => {
-      if (['assigned', 'running', 'reviewing'].includes(task.status)) {
+      if (['assigned', 'running'].includes(task.status)) {
         return { ...task, status: 'ready', error: 'Recovered after application restart.' };
       }
       return task;
@@ -182,6 +202,11 @@ export class WorkflowEngine {
   }
 
   submitResult(workflowId: string, taskId: string, result: WorkflowTaskResult): boolean {
+    if (!this.submitForReview(workflowId, taskId, result)) return false;
+    return this.completeReview(workflowId, taskId);
+  }
+
+  submitForReview(workflowId: string, taskId: string, result: WorkflowTaskResult): boolean {
     const task = this.requireTask(workflowId, taskId);
     if (!['assigned', 'running', 'reviewing'].includes(task.status)) return false;
     task.status = 'reviewing';
@@ -193,10 +218,25 @@ export class WorkflowEngine {
       this.failTask(workflowId, taskId, validationError);
       return false;
     }
+    return true;
+  }
+
+  completeReview(workflowId: string, taskId: string): boolean {
+    const task = this.requireTask(workflowId, taskId);
+    if (task.status !== 'reviewing') return false;
     task.status = 'completed';
     task.error = undefined;
     this.emitTask(task);
     this.schedule(this.requireWorkflow(workflowId));
+    return true;
+  }
+
+  updateWorktree(workflowId: string, taskId: string, worktree: CodingWorktreeSummary): boolean {
+    const task = this.requireTask(workflowId, taskId);
+    task.worktree = { ...worktree, changedFiles: [...worktree.changedFiles] };
+    task.error = worktree.error;
+    this.emitTask(task);
+    this.updateWorkflow(this.requireWorkflow(workflowId));
     return true;
   }
 
@@ -338,6 +378,23 @@ export class WorkflowEngine {
       }
       if (task.failurePolicy && !['block', 'retry', 'cancel-workflow'].includes(task.failurePolicy)) {
         throw new WorkflowValidationError(`Task ${task.id} has an unsupported failure policy.`);
+      }
+      if (
+        task.coding?.files !== undefined &&
+        (
+          !Array.isArray(task.coding.files) ||
+          task.coding.files.some((file) =>
+            typeof file !== 'string' ||
+            !file.trim() ||
+            file.startsWith('/') ||
+            file.replace(/\\/g, '/').split('/').includes('..')
+          )
+        )
+      ) {
+        throw new WorkflowValidationError(`Task ${task.id} coding files must be project-relative paths.`);
+      }
+      if (task.coding && (typeof task.coding.testCommand !== 'string' || !task.coding.testCommand.trim())) {
+        throw new WorkflowValidationError(`Task ${task.id} coding tasks require a non-empty testCommand.`);
       }
       if (
         task.completionCriteria?.requiredArtifacts !== undefined &&

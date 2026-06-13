@@ -155,7 +155,7 @@ test('persists workflow graphs and task execution state', () => {
   });
 });
 
-test('migrates a milestone-four database to workflow schema version two', () => {
+test('migrates a milestone-four database through the current schema', () => {
   const directory = mkdtempSync(join(tmpdir(), 'starlight-schema-migration-'));
   const filename = join(directory, 'broker.sqlite');
   const legacy = new DatabaseSync(filename);
@@ -175,4 +175,29 @@ test('migrates a milestone-four database to workflow schema version two', () => 
   assert.deepEqual(migrated.snapshot().workflows, []);
   migrated.close();
   rmSync(directory, { recursive: true, force: true });
+});
+
+test('persists coding worktree integration state', () => {
+  withStore((store) => {
+    store.upsertWorktree({
+      workflowId: 'workflow-1',
+      taskId: 'code',
+      owner: 'Builder',
+      workspaceRoot: '/repo',
+      worktreePath: '/repo/.git/starlight-worktrees/workflow-1-code',
+      branch: 'starlight/workflow-1/code',
+      baseCommit: 'abc123',
+      declaredFiles: ['src/code.ts'],
+      changedFiles: ['src/code.ts'],
+      status: 'review',
+      reviewApproved: false,
+      sharedFilesApproved: false,
+      createdAt: 100,
+      updatedAt: 200,
+    });
+    const worktree = store.snapshot().worktrees[0] as any;
+    assert.equal(worktree.branch, 'starlight/workflow-1/code');
+    assert.deepEqual(worktree.changedFiles, ['src/code.ts']);
+    assert.equal(store.snapshot().events.some((event) => event.eventType === 'worktree.updated'), true);
+  });
 });

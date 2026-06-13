@@ -138,3 +138,24 @@ test('restores running tasks as ready without dispatching duplicate messages', (
   assert.equal(engine.get('workflow-1')?.tasks[0].messageId, 'existing-message');
   assert.deepEqual(dispatched, []);
 });
+
+test('holds coding task results in review until integration completes', () => {
+  const engine = new WorkflowEngine();
+  engine.create(definition({
+    tasks: [{ id: 'code', owner: 'Builder', goal: 'Implement', coding: { files: ['src/code.ts'], testCommand: 'npm test' } }],
+  }));
+  assert.equal(engine.get('workflow-1')?.tasks[0].requiresApproval, true);
+  engine.approveTask('workflow-1', 'code');
+  engine.assignTask('workflow-1', 'code', 'message-code');
+  assert.equal(engine.submitForReview('workflow-1', 'code', { summary: 'implemented' }), true);
+  assert.equal(engine.get('workflow-1')?.tasks[0].status, 'reviewing');
+  engine.updateWorktree('workflow-1', 'code', {
+    worktreePath: '/tmp/worktree',
+    branch: 'starlight/workflow-1/code',
+    baseCommit: 'abc',
+    changedFiles: ['src/code.ts'],
+    status: 'review',
+  });
+  assert.equal(engine.completeReview('workflow-1', 'code'), true);
+  assert.equal(engine.get('workflow-1')?.status, 'completed');
+});

@@ -1,6 +1,6 @@
 import { createRequire } from 'module';
 
-export const BROKER_SCHEMA_VERSION = 2;
+export const BROKER_SCHEMA_VERSION = 3;
 export const BROKER_PROTOCOL_VERSION = 1;
 export const DEFAULT_BROKER_RETENTION_LIMIT = 5_000;
 
@@ -50,6 +50,7 @@ export interface DurableBrokerSnapshot {
   tasks: Array<Record<string, unknown>>;
   attempts: Array<Record<string, unknown>>;
   workflows: Array<Record<string, unknown>>;
+  worktrees: Array<Record<string, unknown>>;
   events: DurableBrokerEvent[];
   settings: Record<string, unknown>;
 }
@@ -236,8 +237,8 @@ export class BrokerStore {
           INSERT INTO workflow_tasks (
             workflow_id, task_id, owner, goal, dependencies_json, status, attempts,
             artifacts_json, completion_criteria_json, failure_policy, max_attempts,
-            requires_approval, approved, message_id, summary, error, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            requires_approval, approved, message_id, summary, error, coding_json, worktree_json, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(workflow_id, task_id) DO UPDATE SET
             owner = excluded.owner,
             goal = excluded.goal,
@@ -253,6 +254,8 @@ export class BrokerStore {
             message_id = excluded.message_id,
             summary = excluded.summary,
             error = excluded.error,
+            coding_json = excluded.coding_json,
+            worktree_json = excluded.worktree_json,
             updated_at = excluded.updated_at
         `).run(
           workflow.id,
@@ -271,10 +274,62 @@ export class BrokerStore {
           task.messageId || null,
           task.summary || null,
           task.error || null,
+          JSON.stringify(task.coding || null),
+          JSON.stringify(task.worktree || null),
           timestamp
         );
       }
       this.insertEvent('workflow.updated', 'workflow', workflow.id, workflow, timestamp);
+      this.cleanup();
+    });
+  }
+
+  upsertWorktree(worktree: any) {
+    const timestamp = this.now();
+    this.transaction(() => {
+      this.db.prepare(`
+        INSERT INTO coding_worktrees (
+          workflow_id, task_id, owner, workspace_root, worktree_path, branch, base_commit,
+          declared_files_json, changed_files_json, status, test_command, test_output, error,
+          tested_commit, review_approved, shared_files_approved, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(workflow_id, task_id) DO UPDATE SET
+          owner = excluded.owner,
+          workspace_root = excluded.workspace_root,
+          worktree_path = excluded.worktree_path,
+          branch = excluded.branch,
+          base_commit = excluded.base_commit,
+          declared_files_json = excluded.declared_files_json,
+          changed_files_json = excluded.changed_files_json,
+          status = excluded.status,
+          test_command = excluded.test_command,
+          test_output = excluded.test_output,
+          error = excluded.error,
+          tested_commit = excluded.tested_commit,
+          review_approved = excluded.review_approved,
+          shared_files_approved = excluded.shared_files_approved,
+          updated_at = excluded.updated_at
+      `).run(
+        worktree.workflowId,
+        worktree.taskId,
+        worktree.owner,
+        worktree.workspaceRoot,
+        worktree.worktreePath,
+        worktree.branch,
+        worktree.baseCommit,
+        JSON.stringify(worktree.declaredFiles || []),
+        JSON.stringify(worktree.changedFiles || []),
+        worktree.status,
+        worktree.testCommand || null,
+        worktree.testOutput || null,
+        worktree.error || null,
+        worktree.testedCommit || null,
+        worktree.reviewApproved ? 1 : 0,
+        worktree.sharedFilesApproved ? 1 : 0,
+        worktree.createdAt || timestamp,
+        worktree.updatedAt || timestamp
+      );
+      this.insertEvent('worktree.updated', 'worktree', `${worktree.workflowId}:${worktree.taskId}`, worktree, timestamp);
       this.cleanup();
     });
   }
@@ -320,7 +375,7 @@ export class BrokerStore {
       `).run(timestamp);
       this.db.prepare(`
         UPDATE workflow_tasks SET status = 'ready', error = 'Recovered after application restart.', updated_at = ?
-        WHERE status IN ('assigned', 'running', 'reviewing')
+        WHERE status IN ('assigned', 'running') OR (status = 'reviewing' AND coding_json IS NULL)
       `).run(timestamp);
       interrupted.forEach(({ message_id }) => {
         this.insertEvent(
@@ -344,6 +399,7 @@ export class BrokerStore {
       currentTaskId: row.current_task_id || undefined,
       lastHeartbeatAt: row.last_heartbeat_at || undefined,
       error: row.error || undefined,
+      testedCommit: row.tested_commit || undefined,
     }));
     const messages = this.db.prepare(`
       SELECT * FROM (
@@ -412,9 +468,30 @@ export class BrokerStore {
         messageId: task.message_id || undefined,
         summary: task.summary || undefined,
         error: task.error || undefined,
+        coding: parseJson(task.coding_json, undefined),
+        worktree: parseJson(task.worktree_json, undefined),
       })),
     }));
-    return { schemaVersion: this.getSchemaVersion(), agents, messages, tasks, attempts, workflows, events, settings };
+    const worktrees = this.db.prepare('SELECT * FROM coding_worktrees ORDER BY created_at ASC').all().map((row: any) => ({
+      workflowId: row.workflow_id,
+      taskId: row.task_id,
+      owner: row.owner,
+      workspaceRoot: row.workspace_root,
+      worktreePath: row.worktree_path,
+      branch: row.branch,
+      baseCommit: row.base_commit,
+      declaredFiles: parseJson(row.declared_files_json, []),
+      changedFiles: parseJson(row.changed_files_json, []),
+      status: row.status,
+      testCommand: row.test_command || undefined,
+      testOutput: row.test_output || undefined,
+      error: row.error || undefined,
+      reviewApproved: Boolean(row.review_approved),
+      sharedFilesApproved: Boolean(row.shared_files_approved),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+    return { schemaVersion: this.getSchemaVersion(), agents, messages, tasks, attempts, workflows, worktrees, events, settings };
   }
 
   private migrate() {
@@ -524,6 +601,34 @@ export class BrokerStore {
           FOREIGN KEY (workflow_id) REFERENCES workflows(workflow_id) ON DELETE CASCADE
         );
         CREATE INDEX workflow_tasks_status_idx ON workflow_tasks(status);
+      `);
+    }
+    if (version < 3) {
+      this.db.exec(`
+        ALTER TABLE workflow_tasks ADD COLUMN coding_json TEXT;
+        ALTER TABLE workflow_tasks ADD COLUMN worktree_json TEXT;
+        CREATE TABLE coding_worktrees (
+          workflow_id TEXT NOT NULL,
+          task_id TEXT NOT NULL,
+          owner TEXT NOT NULL,
+          workspace_root TEXT NOT NULL,
+          worktree_path TEXT NOT NULL,
+          branch TEXT NOT NULL,
+          base_commit TEXT NOT NULL,
+          declared_files_json TEXT NOT NULL,
+          changed_files_json TEXT NOT NULL,
+          status TEXT NOT NULL,
+          test_command TEXT,
+          test_output TEXT,
+          error TEXT,
+          tested_commit TEXT,
+          review_approved INTEGER NOT NULL,
+          shared_files_approved INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          PRIMARY KEY (workflow_id, task_id)
+        );
+        CREATE INDEX coding_worktrees_status_idx ON coding_worktrees(status);
       `);
     }
     this.db.exec(`PRAGMA user_version = ${BROKER_SCHEMA_VERSION};`);

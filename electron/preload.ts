@@ -73,6 +73,30 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setBrokerSetting: (key: string, value: any) =>
     ipcRenderer.invoke('broker:set-setting', { key, value }),
 
+  isGitRepository: (workspaceRoot: string) =>
+    ipcRenderer.invoke('worktree:is-git-repository', workspaceRoot),
+
+  prepareWorktree: (input: any) =>
+    ipcRenderer.invoke('worktree:prepare', input),
+
+  inspectWorktree: (workflowId: string, taskId: string) =>
+    ipcRenderer.invoke('worktree:inspect', { workflowId, taskId }),
+
+  runWorktreeTests: (workflowId: string, taskId: string) =>
+    ipcRenderer.invoke('worktree:run-tests', { workflowId, taskId }),
+
+  approveWorktreeReview: (workflowId: string, taskId: string) =>
+    ipcRenderer.invoke('worktree:approve-review', { workflowId, taskId }),
+
+  approveWorktreeSharedFiles: (workflowId: string, taskId: string) =>
+    ipcRenderer.invoke('worktree:approve-shared-files', { workflowId, taskId }),
+
+  mergeWorktree: (workflowId: string, taskId: string) =>
+    ipcRenderer.invoke('worktree:merge', { workflowId, taskId }),
+
+  cleanupWorktree: (workflowId: string, taskId: string, force = false) =>
+    ipcRenderer.invoke('worktree:cleanup', { workflowId, taskId, force }),
+
   onBrokerChanged: (callback: () => void) => {
     const listener = () => callback();
     ipcRenderer.on('broker:changed', listener);

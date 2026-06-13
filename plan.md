@@ -192,14 +192,14 @@ temporary migration period.
 
 ### Tasks
 
-- [ ] Require the workspace to be a Git repository for coding workflows.
-- [ ] Create one Git worktree and branch per coding agent or task.
-- [ ] Record each task's worktree, branch, base commit, and changed files.
-- [ ] Prevent multiple agents from owning the same file unless explicitly approved.
-- [ ] Add merge sequencing and conflict detection.
-- [ ] Run tests before accepting a task branch for integration.
-- [ ] Add review and approval before merging agent changes.
-- [ ] Preserve failed worktrees for inspection and provide explicit cleanup controls.
+- [x] Require the workspace to be a Git repository for coding workflows.
+- [x] Create one Git worktree and branch per coding agent or task.
+- [x] Record each task's worktree, branch, base commit, and changed files.
+- [x] Prevent multiple agents from owning the same file unless explicitly approved.
+- [x] Add merge sequencing and conflict detection.
+- [x] Run tests before accepting a task branch for integration.
+- [x] Add review and approval before merging agent changes.
+- [x] Preserve failed worktrees for inspection and provide explicit cleanup controls.
 
 ### Acceptance Criteria
 
@@ -305,8 +305,8 @@ Starlight is ready for complex coding tasks when all of the following are true:
 - [x] Task completion is based on structured results and validation criteria.
 - [x] Workflow dependencies and failures are managed by a durable scheduler.
 - [x] Restarting Starlight restores unfinished workflows.
-- [ ] Concurrent coding agents use isolated Git worktrees.
-- [ ] Integration requires passing tests and review.
+- [x] Concurrent coding agents use isolated Git worktrees.
+- [x] Integration requires passing tests and review.
 - [ ] The full Electron-to-PTY-to-agent loop is covered by deterministic CI tests.
 - [ ] A complex fixture workflow completes successfully despite a delayed agent, a
       malformed message, a retry, and an agent restart.
