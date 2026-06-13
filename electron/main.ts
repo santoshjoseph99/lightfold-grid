@@ -129,6 +129,11 @@ ipcMain.handle('broker:upsert-agent', (_event, agent) => {
   notifyBrokerChanged();
   return true;
 });
+ipcMain.handle('broker:upsert-workflow', (_event, workflow) => {
+  brokerStore?.upsertWorkflow(workflow);
+  notifyBrokerChanged();
+  return true;
+});
 ipcMain.handle('broker:set-setting', (_event, { key, value }) => {
   brokerStore?.setSetting(key, value);
   notifyBrokerChanged();

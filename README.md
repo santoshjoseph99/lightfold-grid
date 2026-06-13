@@ -22,6 +22,8 @@ workflows.
 - Track agent lifecycle, active tasks, heartbeats, crashes, and restarts.
 - Persist broker messages, tasks, attempts, agents, settings, and audit events in SQLite.
 - Recover interrupted requests after an application restart.
+- Execute durable dependency-graph workflows with validated completion criteria.
+- Gate destructive or release-related workflow tasks for human approval.
 - Inspect message flow, status, and broker logs.
 - Test wheel/spoke communication using deterministic agents or local Ollama models.
 
@@ -166,6 +168,54 @@ message protocol migrations run when the database opens.
 Completed-message and audit-event retention is configurable under
 **Configure Grid -> General -> Durable Broker Retention**.
 
+### Workflows
+
+Complex work is represented as a durable directed acyclic graph. Each task records its
+owner, goal, dependencies, status, attempts, artifacts, completion criteria, failure
+policy, and approval state. Tasks move through:
+
+```text
+planned -> blocked -> ready -> assigned -> running -> reviewing -> completed
+                                                        \-> failed | cancelled
+```
+
+Starlight dispatches a task only after every prerequisite completed successfully.
+Failed prerequisites keep dependents blocked. Result messages are validated against
+required artifacts and summary text before the task can complete.
+
+An orchestrator agent can submit a validated workflow definition to the broker:
+
+```text
+[[STARLIGHT-MSG]]{
+  "protocolVersion": 1,
+  "to": "broker",
+  "kind": "request",
+  "payload": {
+    "instruction": "Create workflow",
+    "data": {
+      "workflowDefinition": {
+        "id": "feature-1",
+        "name": "Feature delivery",
+        "goal": "Implement and verify the feature",
+        "createdBy": "ignored-agent-value",
+        "tasks": [
+          {"id":"spec","owner":"Pane-A","goal":"Write the specification"},
+          {"id":"build","owner":"Pane-B","goal":"Implement it","dependencies":["spec"]},
+          {"id":"test","owner":"Pane-C","goal":"Run tests","dependencies":["build"],
+           "completionCriteria":{"requiredArtifacts":["test.log"]}}
+        ]
+      }
+    }
+  }
+}[[END]]
+```
+
+The physical submitting pane becomes `createdBy`, task owners must be configured
+agents, and cyclic or malformed decompositions are rejected. Tasks can use `block`,
+`retry`, or `cancel-workflow` failure policies. Goals involving releases, publishing,
+deployment, production, deletion, destruction, or migrations automatically require
+human approval in the broker's **Workflows** tab.
+
 ## Testing
 
 Run deterministic broker and wheel/spoke integration tests:
@@ -196,7 +246,6 @@ npm run build
 
 - Reliable acknowledgements require agents to follow the versioned protocol.
 - Live delivery timers are reconstructed from persisted request state after restart.
-- Complex tasks are not yet represented as durable dependency graphs.
 - Concurrent coding agents do not yet use isolated Git worktrees.
 - Full Electron-to-PTY-to-agent integration testing is still planned.
 
@@ -222,7 +271,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 2: Acknowledgements, retries, and timeouts
 - [x] Milestone 3: Agent lifecycle and readiness
 - [x] Milestone 4: Durable broker state
-- [ ] Milestone 5: Workflow dependency engine
+- [x] Milestone 5: Workflow dependency engine
 - [ ] Milestone 6: Git worktree isolation
 - [ ] Milestone 7: Prompt contract hardening
 - [ ] Milestone 8: Full end-to-end integration testing

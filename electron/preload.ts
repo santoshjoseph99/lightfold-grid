@@ -67,6 +67,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   persistBrokerAgent: (agent: any) =>
     ipcRenderer.invoke('broker:upsert-agent', agent),
 
+  persistBrokerWorkflow: (workflow: any) =>
+    ipcRenderer.invoke('broker:upsert-workflow', workflow),
+
   setBrokerSetting: (key: string, value: any) =>
     ipcRenderer.invoke('broker:set-setting', { key, value }),
 

@@ -1,22 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Network, ChevronRight, ChevronDown, RefreshCw, XOctagon, Shuffle } from 'lucide-react';
+import { Network, ChevronRight, ChevronDown, RefreshCw, XOctagon, Shuffle, CheckCircle, GitBranch } from 'lucide-react';
 import {
+  approveWorkflowTask,
+  cancelWorkflow,
   cancelMessage,
   getDeadLetters,
   getMessagesLog,
+  getWorkflows,
   reassignMessage,
+  reassignWorkflowTask,
+  retryWorkflowTask,
   retryMessage,
   StarlightMessage,
   subscribeToMessages,
+  subscribeToWorkflows,
 } from '../services/brokerProtocol';
+import type { WorkflowRecord, WorkflowTaskRecord } from '../services/workflowCore';
 
 interface CentralBrokerProps {
   paneIds: string[];
 }
 
 export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
-  const [activeTab, setActiveTab] = useState<'flow' | 'json'>('flow');
+  const [activeTab, setActiveTab] = useState<'workflows' | 'flow' | 'json'>('workflows');
   const [messages, setMessages] = useState<StarlightMessage[]>([]);
+  const [workflows, setWorkflows] = useState<WorkflowRecord[]>([]);
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,7 +36,12 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
       setMessages([...getMessagesLog()]);
     });
 
-    return unsubscribe;
+    setWorkflows(getWorkflows());
+    const unsubscribeWorkflows = subscribeToWorkflows(() => setWorkflows(getWorkflows()));
+    return () => {
+      unsubscribe();
+      unsubscribeWorkflows();
+    };
   }, []);
 
   const toggleExpand = (id: string) => {
@@ -52,6 +65,18 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
     const candidates = paneIds.filter((paneId) => paneId !== msg.to);
     const target = window.prompt(`Reassign to pane (${candidates.join(', ')}):`, candidates[0] || '');
     if (target) reassignMessage(msg.messageId, target);
+  };
+
+  const handleWorkflowReassign = (workflow: WorkflowRecord, task: WorkflowTaskRecord) => {
+    const target = window.prompt(`Reassign ${task.id} to pane:`, task.owner);
+    if (target) reassignWorkflowTask(workflow.id, task.id, target);
+  };
+
+  const workflowStatusColor = (status: string) => {
+    if (status === 'completed' || status === 'ready') return 'var(--accent-green)';
+    if (status === 'failed' || status === 'cancelled') return 'var(--accent-red)';
+    if (status === 'blocked' || status === 'planned') return 'var(--text-muted)';
+    return 'var(--accent-orange)';
   };
 
   return (
@@ -89,6 +114,21 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
         {/* Toggle Tab buttons */}
         <div style={{ display: 'flex', gap: '4px', background: 'rgba(255, 255, 255, 0.04)', padding: '2px', borderRadius: '6px' }}>
           <button
+            onClick={() => setActiveTab('workflows')}
+            style={{
+              padding: '4px 8px',
+              borderRadius: '4px',
+              border: 'none',
+              background: activeTab === 'workflows' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+              color: activeTab === 'workflows' ? 'var(--text-main)' : 'var(--text-muted)',
+              fontSize: '10px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            WORKFLOWS
+          </button>
+          <button
             onClick={() => setActiveTab('flow')}
             style={{
               padding: '4px 10px',
@@ -123,7 +163,65 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
 
       {/* Pane Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-        {activeTab === 'flow' ? (
+        {activeTab === 'workflows' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {workflows.length === 0 ? (
+              <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '12px' }}>
+                No workflows submitted.
+              </div>
+            ) : workflows.map((workflow) => {
+              const completed = workflow.tasks.filter((task) => task.status === 'completed').length;
+              return (
+                <div key={workflow.id} className="glass-panel" style={{ padding: '10px', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <GitBranch size={12} style={{ color: 'var(--accent-purple)' }} />
+                        <strong style={{ fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{workflow.name}</strong>
+                      </div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '9px', marginTop: '3px' }}>
+                        {completed}/{workflow.tasks.length} complete · {workflow.status}
+                      </div>
+                    </div>
+                    {!['completed', 'cancelled'].includes(workflow.status) && (
+                      <button onClick={() => cancelWorkflow(workflow.id)} title="Cancel workflow">
+                        <XOctagon size={11} />
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', margin: '8px 0', borderRadius: '4px' }}>
+                    <div style={{ width: `${(completed / workflow.tasks.length) * 100}%`, height: '100%', background: 'var(--accent-green)', borderRadius: '4px' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    {workflow.tasks.map((task) => (
+                      <div key={task.id} style={{ padding: '6px', background: 'rgba(255,255,255,0.02)', borderLeft: `2px solid ${workflowStatusColor(task.status)}`, borderRadius: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 600 }}>{task.id} · {task.owner}</span>
+                          <span style={{ fontSize: '8px', color: workflowStatusColor(task.status), textTransform: 'uppercase' }}>{task.status}</span>
+                        </div>
+                        <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>{task.goal}</div>
+                        {task.error && <div style={{ fontSize: '8px', color: 'var(--accent-red)', marginTop: '3px' }}>{task.error}</div>}
+                        <div style={{ display: 'flex', gap: '5px', marginTop: '4px' }}>
+                          {task.requiresApproval && !task.approved && task.status === 'ready' && (
+                            <button onClick={() => approveWorkflowTask(workflow.id, task.id)} title="Approve task">
+                              <CheckCircle size={10} /> Approve
+                            </button>
+                          )}
+                          {task.status === 'failed' && (
+                            <>
+                              <button onClick={() => retryWorkflowTask(workflow.id, task.id)}><RefreshCw size={10} /> Retry</button>
+                              <button onClick={() => handleWorkflowReassign(workflow, task)}><Shuffle size={10} /> Reassign</button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : activeTab === 'flow' ? (
           /* Real-time SVG Flow diagram */
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '350px' }}>
             {messages.length === 0 ? (

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import { BROKER_PROTOCOL_VERSION, BROKER_SCHEMA_VERSION, BrokerStore } from '../electron/brokerStore.ts';
 import type { DurableMessageRecord } from '../electron/brokerStore.ts';
@@ -101,6 +102,77 @@ test('migrates older persisted protocol messages on reopen', () => {
   const snapshot = migrated.snapshot();
   assert.equal(snapshot.messages[0].protocolVersion, BROKER_PROTOCOL_VERSION);
   assert.equal(snapshot.events.some((event) => event.eventType === 'message.protocol_migrated'), true);
+  migrated.close();
+  rmSync(directory, { recursive: true, force: true });
+});
+
+test('persists workflow graphs and task execution state', () => {
+  withStore((store) => {
+    store.upsertWorkflow({
+      id: 'workflow-1',
+      name: 'Feature',
+      goal: 'Ship feature',
+      createdBy: 'Hub',
+      status: 'running',
+      createdAt: 100,
+      updatedAt: 200,
+      tasks: [
+        {
+          workflowId: 'workflow-1',
+          id: 'spec',
+          owner: 'Spec',
+          goal: 'Write spec',
+          dependencies: [],
+          status: 'completed',
+          attempts: 1,
+          artifacts: ['spec.md'],
+          failurePolicy: 'block',
+          maxAttempts: 1,
+          approved: true,
+        },
+        {
+          workflowId: 'workflow-1',
+          id: 'release',
+          owner: 'Release',
+          goal: 'Publish release',
+          dependencies: ['spec'],
+          status: 'ready',
+          attempts: 0,
+          artifacts: [],
+          failurePolicy: 'cancel-workflow',
+          maxAttempts: 1,
+          requiresApproval: true,
+          approved: false,
+        },
+      ],
+    });
+    const snapshot = store.snapshot();
+    assert.equal(snapshot.workflows.length, 1);
+    const release = (snapshot.workflows[0] as any).tasks.find((task: any) => task.id === 'release');
+    assert.equal(release.dependencies[0], 'spec');
+    assert.equal(release.requiresApproval, true);
+    assert.equal(snapshot.events.some((event) => event.eventType === 'workflow.updated'), true);
+  });
+});
+
+test('migrates a milestone-four database to workflow schema version two', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'starlight-schema-migration-'));
+  const filename = join(directory, 'broker.sqlite');
+  const legacy = new DatabaseSync(filename);
+  legacy.exec(`
+    CREATE TABLE agents (agent_id TEXT PRIMARY KEY, state TEXT NOT NULL, current_task_id TEXT, last_heartbeat_at INTEGER, error TEXT, updated_at INTEGER NOT NULL);
+    CREATE TABLE messages (message_id TEXT PRIMARY KEY, task_id TEXT NOT NULL, parent_task_id TEXT, correlation_id TEXT, source_id TEXT NOT NULL, target_id TEXT NOT NULL, kind TEXT NOT NULL, status TEXT NOT NULL, attempt INTEGER NOT NULL, protocol_version INTEGER NOT NULL, payload_json TEXT NOT NULL, command TEXT, error TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, delivered_at INTEGER, acknowledged_at INTEGER, completed_at INTEGER);
+    CREATE TABLE tasks (task_id TEXT PRIMARY KEY, request_message_id TEXT NOT NULL, source_id TEXT NOT NULL, target_id TEXT NOT NULL, status TEXT NOT NULL, instruction TEXT, attempt INTEGER NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+    CREATE TABLE attempts (message_id TEXT NOT NULL, attempt INTEGER NOT NULL, target_id TEXT NOT NULL, status TEXT NOT NULL, error TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (message_id, attempt));
+    CREATE TABLE events (sequence INTEGER PRIMARY KEY AUTOINCREMENT, event_type TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT NOT NULL, payload_json TEXT NOT NULL, created_at INTEGER NOT NULL);
+    CREATE TABLE settings (key TEXT PRIMARY KEY, value_json TEXT NOT NULL, updated_at INTEGER NOT NULL);
+    PRAGMA user_version = 1;
+  `);
+  legacy.close();
+
+  const migrated = new BrokerStore(filename);
+  assert.equal(migrated.getSchemaVersion(), BROKER_SCHEMA_VERSION);
+  assert.deepEqual(migrated.snapshot().workflows, []);
   migrated.close();
   rmSync(directory, { recursive: true, force: true });
 });

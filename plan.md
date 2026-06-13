@@ -161,18 +161,18 @@ temporary migration period.
 
 ### Tasks
 
-- [ ] Define a durable `Task` model with owner, goal, dependencies, status, attempts,
+- [x] Define a durable `Task` model with owner, goal, dependencies, status, attempts,
       artifacts, and completion criteria.
-- [ ] Add task states:
+- [x] Add task states:
       `planned`, `blocked`, `ready`, `assigned`, `running`, `reviewing`, `completed`,
       `failed`, `cancelled`.
-- [ ] Represent complex work as a directed acyclic graph of tasks.
-- [ ] Schedule tasks only after dependencies complete successfully.
-- [ ] Add explicit task completion criteria and result validation.
-- [ ] Support task decomposition by an orchestrator agent, subject to broker validation.
-- [ ] Support failure policies: retry, reassign, block dependents, or cancel workflow.
-- [ ] Add workflow-level progress, failure, and completion views.
-- [ ] Add human approval gates for destructive or release-related tasks.
+- [x] Represent complex work as a directed acyclic graph of tasks.
+- [x] Schedule tasks only after dependencies complete successfully.
+- [x] Add explicit task completion criteria and result validation.
+- [x] Support task decomposition by an orchestrator agent, subject to broker validation.
+- [x] Support failure policies: retry, reassign, block dependents, or cancel workflow.
+- [x] Add workflow-level progress, failure, and completion views.
+- [x] Add human approval gates for destructive or release-related tasks.
 
 ### Acceptance Criteria
 
@@ -300,11 +300,11 @@ temporary migration period.
 
 Starlight is ready for complex coding tasks when all of the following are true:
 
-- [ ] Every configured agent automatically starts and reports readiness.
-- [ ] Requests are acknowledged, correlated, retried, and deduplicated.
-- [ ] Task completion is based on structured results and validation criteria.
-- [ ] Workflow dependencies and failures are managed by a durable scheduler.
-- [ ] Restarting Starlight restores unfinished workflows.
+- [x] Every configured agent automatically starts and reports readiness.
+- [x] Requests are acknowledged, correlated, retried, and deduplicated.
+- [x] Task completion is based on structured results and validation criteria.
+- [x] Workflow dependencies and failures are managed by a durable scheduler.
+- [x] Restarting Starlight restores unfinished workflows.
 - [ ] Concurrent coding agents use isolated Git worktrees.
 - [ ] Integration requires passing tests and review.
 - [ ] The full Electron-to-PTY-to-agent loop is covered by deterministic CI tests.

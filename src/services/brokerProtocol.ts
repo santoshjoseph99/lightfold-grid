@@ -16,6 +16,13 @@ import {
   ReliabilityOptions,
   StarlightEnvelopeParser,
 } from './brokerCore';
+import {
+  WorkflowDefinition,
+  WorkflowEngine,
+  WorkflowRecord,
+  WorkflowTaskRecord,
+  WorkflowValidationError,
+} from './workflowCore';
 
 export type BrokerMessageStatus = 'pending' | ReliableRequestStatus;
 
@@ -33,6 +40,7 @@ export interface StarlightMessage extends AgentMessage {
 const messageListeners = new Set<(msg: StarlightMessage) => void>();
 const queueListeners = new Set<(paneId: string, queue: string[]) => void>();
 const lifecycleListeners = new Set<(record: AgentLifecycleRecord) => void>();
+const workflowListeners = new Set<(workflow: WorkflowRecord) => void>();
 let brokerStateInitialized = false;
 let brokerRetentionLimit = 5_000;
 
@@ -172,6 +180,16 @@ const reliableRequests = new ReliableRequestManager(
         agentLifecycle.unresponsive(record.message.to, record.error || 'Task delivery failed.');
       }
     }
+    const workflowTask = findWorkflowTaskByMessageId(record.message.messageId);
+    if (workflowTask) {
+      if (record.status === 'acknowledged') {
+        workflowEngine.taskRunning(workflowTask.workflowId, workflowTask.id);
+      } else if (record.status === 'failed') {
+        workflowEngine.failTask(workflowTask.workflowId, workflowTask.id, record.error || 'Task delivery failed.');
+      } else if (record.status === 'cancelled') {
+        workflowEngine.failTask(workflowTask.workflowId, workflowTask.id, record.error || 'Task cancelled.');
+      }
+    }
   },
   undefined,
   {},
@@ -182,10 +200,93 @@ const reliableRequests = new ReliableRequestManager(
   }
 );
 
+const notifyWorkflowListeners = (workflow: WorkflowRecord) => {
+  workflowListeners.forEach((listener) => listener(workflow));
+  persist((window as any).electronAPI?.persistBrokerWorkflow(workflow));
+  if (workflow.status === 'cancelled') {
+    workflow.tasks.forEach((task) => {
+      if (task.messageId) reliableRequests.cancel(task.messageId, 'Workflow cancelled.');
+    });
+  }
+};
+
+const workflowEngine = new WorkflowEngine({
+  onWorkflowUpdate: notifyWorkflowListeners,
+  onTaskUpdate: (task) => {
+    const workflow = workflowEngine.get(task.workflowId);
+    if (workflow) notifyWorkflowListeners(workflow);
+  },
+  onDispatch: (task) => dispatchWorkflowTask(task),
+});
+
+const findWorkflowTaskByMessageId = (messageId: string): WorkflowTaskRecord | undefined => {
+  return workflowEngine.values()
+    .flatMap((workflow) => workflow.tasks)
+    .find((task) => task.messageId === messageId);
+};
+
+const dispatchWorkflowTask = (task: WorkflowTaskRecord) => {
+  const messageId = createProtocolId();
+  const message: StarlightMessage = {
+    protocolVersion: 1,
+    messageId,
+    id: messageId,
+    taskId: `workflow:${task.workflowId}:${task.id}`,
+    from: 'broker',
+    to: task.owner,
+    kind: 'request',
+    payload: {
+      instruction: task.goal,
+      data: {
+        workflowId: task.workflowId,
+        workflowTaskId: task.id,
+        completionCriteria: task.completionCriteria,
+      },
+    },
+    attempt: 1,
+    timestamp: Date.now(),
+    command: task.goal,
+    type: 'request',
+    status: 'queued',
+  };
+  workflowEngine.assignTask(task.workflowId, task.id, messageId);
+  appendMessage(message);
+  reliableRequests.submit(message);
+};
+
 export const getDeadLetters = () => reliableRequests.getDeadLetters();
 export const getReliabilitySettings = () => reliableRequests.getOptions();
 export const setReliabilitySettings = (settings: ReliabilityOptions) => reliableRequests.configure(settings);
 export const getAgentLifecycles = () => agentLifecycle.values();
+export const getWorkflows = () => workflowEngine.values();
+export const subscribeToWorkflows = (listener: (workflow: WorkflowRecord) => void) => {
+  workflowListeners.add(listener);
+  return () => {
+    workflowListeners.delete(listener);
+  };
+};
+export const createWorkflow = (definition: WorkflowDefinition) => {
+  const knownAgents = new Set(agentLifecycle.values().map((agent) => agent.agentId));
+  const unknownOwner = knownAgents.size > 0
+    ? definition.tasks.find((task) => !knownAgents.has(task.owner))
+    : undefined;
+  if (unknownOwner) throw new WorkflowValidationError(`Workflow task ${unknownOwner.id} targets unknown agent ${unknownOwner.owner}.`);
+  return workflowEngine.create(definition);
+};
+export const approveWorkflowTask = (workflowId: string, taskId: string) => workflowEngine.approveTask(workflowId, taskId);
+export const retryWorkflowTask = (workflowId: string, taskId: string) => workflowEngine.retryTask(workflowId, taskId);
+export const reassignWorkflowTask = (workflowId: string, taskId: string, owner: string) => {
+  if (!agentLifecycle.get(owner)) return false;
+  return workflowEngine.reassignTask(workflowId, taskId, owner);
+};
+export const cancelWorkflow = (workflowId: string) => {
+  const workflow = workflowEngine.get(workflowId);
+  const cancelled = workflowEngine.cancel(workflowId);
+  workflow?.tasks.forEach((task) => {
+    if (task.messageId) reliableRequests.cancel(task.messageId, 'Workflow cancelled by operator.');
+  });
+  return cancelled;
+};
 export const subscribeToAgentLifecycle = (listener: (record: AgentLifecycleRecord) => void) => {
   lifecycleListeners.add(listener);
   return () => {
@@ -223,12 +324,16 @@ export const initializeBrokerState = async () => {
     const messages = (snapshot.messages || []) as StarlightMessage[];
     messagesLog.replaceAll(messages);
     (snapshot.agents || []).forEach((record: AgentLifecycleRecord) => agentLifecycle.restore(record));
+    (snapshot.workflows || []).forEach((workflow: WorkflowRecord) => {
+      if (!workflowEngine.get(workflow.id)) workflowEngine.restore(workflow);
+    });
     const retention = snapshot.settings?.retentionLimit;
     if (Number.isInteger(retention) && retention >= 100) brokerRetentionLimit = retention;
     messages.forEach((message) => notifyMessageListeners(message));
     (snapshot.agents || []).forEach((record: AgentLifecycleRecord) => {
       lifecycleListeners.forEach((listener) => listener(record));
     });
+    workflowEngine.values().forEach((workflow) => workflowListeners.forEach((listener) => listener(workflow)));
     messages
       .filter((message) => message.kind === 'request' && message.status === 'queued')
       .forEach((message) => reliableRequests.restore(message));
@@ -292,6 +397,24 @@ const processMessage = (msg: StarlightMessage) => {
     return;
   }
 
+  if (msg.kind === 'request' && targetPane === 'broker') {
+    const data = msg.payload.data as { workflowDefinition?: WorkflowDefinition } | undefined;
+    if (!data?.workflowDefinition) {
+      updateMessage(msg.messageId, { status: 'failed', error: 'Broker requests must contain workflowDefinition.' });
+      return;
+    }
+    try {
+      createWorkflow({ ...data.workflowDefinition, createdBy: sourcePane });
+      updateMessage(msg.messageId, { status: 'completed' });
+    } catch (error) {
+      const description = error instanceof WorkflowValidationError || error instanceof Error
+        ? error.message
+        : String(error);
+      updateMessage(msg.messageId, { status: 'failed', error: description });
+    }
+    return;
+  }
+
   const isConnected = isRouteAllowed(routingConnections, sourcePane, targetPane);
   
   if (!isConnected) {
@@ -304,6 +427,21 @@ const processMessage = (msg: StarlightMessage) => {
 
   if (msg.kind !== 'request') {
     const disposition = reliableRequests.handleResponse(msg);
+    const workflowTask = msg.correlationId ? findWorkflowTaskByMessageId(msg.correlationId) : undefined;
+    if (workflowTask && disposition === 'accepted') {
+      if (msg.kind === 'result') {
+        workflowEngine.submitResult(workflowTask.workflowId, workflowTask.id, {
+          summary: msg.payload.summary,
+          artifacts: msg.payload.artifacts,
+        });
+      } else if (msg.kind === 'error' || msg.kind === 'cancel') {
+        workflowEngine.failTask(
+          workflowTask.workflowId,
+          workflowTask.id,
+          getMessageInstruction(msg) || `Agent reported ${msg.kind}.`
+        );
+      }
+    }
     if (msg.kind === 'ack') {
       updateMessage(msg.messageId, {
         status: disposition === 'unmatched' ? 'failed' : 'completed',

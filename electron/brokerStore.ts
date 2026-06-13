@@ -1,6 +1,6 @@
 import { createRequire } from 'module';
 
-export const BROKER_SCHEMA_VERSION = 1;
+export const BROKER_SCHEMA_VERSION = 2;
 export const BROKER_PROTOCOL_VERSION = 1;
 export const DEFAULT_BROKER_RETENTION_LIMIT = 5_000;
 
@@ -49,6 +49,7 @@ export interface DurableBrokerSnapshot {
   messages: DurableMessageRecord[];
   tasks: Array<Record<string, unknown>>;
   attempts: Array<Record<string, unknown>>;
+  workflows: Array<Record<string, unknown>>;
   events: DurableBrokerEvent[];
   settings: Record<string, unknown>;
 }
@@ -210,6 +211,74 @@ export class BrokerStore {
     });
   }
 
+  upsertWorkflow(workflow: any) {
+    const timestamp = this.now();
+    this.transaction(() => {
+      this.db.prepare(`
+        INSERT INTO workflows (workflow_id, name, goal, created_by, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(workflow_id) DO UPDATE SET
+          name = excluded.name,
+          goal = excluded.goal,
+          status = excluded.status,
+          updated_at = excluded.updated_at
+      `).run(
+        workflow.id,
+        workflow.name,
+        workflow.goal,
+        workflow.createdBy,
+        workflow.status,
+        workflow.createdAt || timestamp,
+        workflow.updatedAt || timestamp
+      );
+      for (const task of workflow.tasks || []) {
+        this.db.prepare(`
+          INSERT INTO workflow_tasks (
+            workflow_id, task_id, owner, goal, dependencies_json, status, attempts,
+            artifacts_json, completion_criteria_json, failure_policy, max_attempts,
+            requires_approval, approved, message_id, summary, error, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(workflow_id, task_id) DO UPDATE SET
+            owner = excluded.owner,
+            goal = excluded.goal,
+            dependencies_json = excluded.dependencies_json,
+            status = excluded.status,
+            attempts = excluded.attempts,
+            artifacts_json = excluded.artifacts_json,
+            completion_criteria_json = excluded.completion_criteria_json,
+            failure_policy = excluded.failure_policy,
+            max_attempts = excluded.max_attempts,
+            requires_approval = excluded.requires_approval,
+            approved = excluded.approved,
+            message_id = excluded.message_id,
+            summary = excluded.summary,
+            error = excluded.error,
+            updated_at = excluded.updated_at
+        `).run(
+          workflow.id,
+          task.id,
+          task.owner,
+          task.goal,
+          JSON.stringify(task.dependencies || []),
+          task.status,
+          task.attempts || 0,
+          JSON.stringify(task.artifacts || []),
+          JSON.stringify(task.completionCriteria || null),
+          task.failurePolicy || 'block',
+          task.maxAttempts || 1,
+          task.requiresApproval ? 1 : 0,
+          task.approved ? 1 : 0,
+          task.messageId || null,
+          task.summary || null,
+          task.error || null,
+          timestamp
+        );
+      }
+      this.insertEvent('workflow.updated', 'workflow', workflow.id, workflow, timestamp);
+      this.cleanup();
+    });
+  }
+
   setSetting(key: string, value: unknown) {
     this.db.prepare(`
       INSERT INTO settings (key, value_json, updated_at) VALUES (?, ?, ?)
@@ -248,6 +317,10 @@ export class BrokerStore {
       this.db.prepare(`
         UPDATE tasks SET status = 'queued', updated_at = ?
         WHERE status IN ('delivering', 'delivered', 'acknowledged')
+      `).run(timestamp);
+      this.db.prepare(`
+        UPDATE workflow_tasks SET status = 'ready', error = 'Recovered after application restart.', updated_at = ?
+        WHERE status IN ('assigned', 'running', 'reviewing')
       `).run(timestamp);
       interrupted.forEach(({ message_id }) => {
         this.insertEvent(
@@ -312,7 +385,36 @@ export class BrokerStore {
       .map((row) => [row.key, parseJson(row.value_json, null)]));
     const tasks = this.db.prepare('SELECT * FROM tasks ORDER BY created_at ASC').all() as Array<Record<string, unknown>>;
     const attempts = this.db.prepare('SELECT * FROM attempts ORDER BY created_at ASC').all() as Array<Record<string, unknown>>;
-    return { schemaVersion: this.getSchemaVersion(), agents, messages, tasks, attempts, events, settings };
+    const workflowRows = this.db.prepare('SELECT * FROM workflows ORDER BY created_at ASC').all() as any[];
+    const workflowTasks = this.db.prepare('SELECT * FROM workflow_tasks ORDER BY workflow_id, task_id').all() as any[];
+    const workflows = workflowRows.map((workflow) => ({
+      id: workflow.workflow_id,
+      name: workflow.name,
+      goal: workflow.goal,
+      createdBy: workflow.created_by,
+      status: workflow.status,
+      createdAt: workflow.created_at,
+      updatedAt: workflow.updated_at,
+      tasks: workflowTasks.filter((task) => task.workflow_id === workflow.workflow_id).map((task) => ({
+        workflowId: task.workflow_id,
+        id: task.task_id,
+        owner: task.owner,
+        goal: task.goal,
+        dependencies: parseJson(task.dependencies_json, []),
+        status: task.status,
+        attempts: task.attempts,
+        artifacts: parseJson(task.artifacts_json, []),
+        completionCriteria: parseJson(task.completion_criteria_json, undefined),
+        failurePolicy: task.failure_policy,
+        maxAttempts: task.max_attempts,
+        requiresApproval: Boolean(task.requires_approval),
+        approved: Boolean(task.approved),
+        messageId: task.message_id || undefined,
+        summary: task.summary || undefined,
+        error: task.error || undefined,
+      })),
+    }));
+    return { schemaVersion: this.getSchemaVersion(), agents, messages, tasks, attempts, workflows, events, settings };
   }
 
   private migrate() {
@@ -387,9 +489,44 @@ export class BrokerStore {
         CREATE INDEX messages_task_id_idx ON messages(task_id);
         CREATE INDEX messages_status_idx ON messages(status);
         CREATE INDEX events_entity_idx ON events(entity_type, entity_id);
-        PRAGMA user_version = 1;
       `);
     }
+    if (version < 2) {
+      this.db.exec(`
+        CREATE TABLE workflows (
+          workflow_id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          goal TEXT NOT NULL,
+          created_by TEXT NOT NULL,
+          status TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        );
+        CREATE TABLE workflow_tasks (
+          workflow_id TEXT NOT NULL,
+          task_id TEXT NOT NULL,
+          owner TEXT NOT NULL,
+          goal TEXT NOT NULL,
+          dependencies_json TEXT NOT NULL,
+          status TEXT NOT NULL,
+          attempts INTEGER NOT NULL,
+          artifacts_json TEXT NOT NULL,
+          completion_criteria_json TEXT,
+          failure_policy TEXT NOT NULL,
+          max_attempts INTEGER NOT NULL,
+          requires_approval INTEGER NOT NULL,
+          approved INTEGER NOT NULL,
+          message_id TEXT,
+          summary TEXT,
+          error TEXT,
+          updated_at INTEGER NOT NULL,
+          PRIMARY KEY (workflow_id, task_id),
+          FOREIGN KEY (workflow_id) REFERENCES workflows(workflow_id) ON DELETE CASCADE
+        );
+        CREATE INDEX workflow_tasks_status_idx ON workflow_tasks(status);
+      `);
+    }
+    this.db.exec(`PRAGMA user_version = ${BROKER_SCHEMA_VERSION};`);
   }
 
   private upsertTask(message: DurableMessageRecord, timestamp: number) {
