@@ -169,7 +169,8 @@ test('persists workflow graphs and task execution state', () => {
     assert.deepEqual(spec.requiredCapabilities, ['specification']);
     assert.deepEqual(spec.requiredTools, ['markdown']);
     assert.equal(spec.promptVersion, 1);
-    assert.equal(snapshot.events.some((event) => event.eventType === 'workflow.updated'), true);
+    assert.equal(snapshot.events.some((event) => event.eventType === 'workflow.running'), true);
+    assert.equal(snapshot.events.some((event) => event.eventType === 'task.completed' && event.entityId === 'workflow-1:spec'), true);
   });
 });
 
@@ -218,6 +219,6 @@ test('persists coding worktree integration state', () => {
     assert.equal(worktree.branch, 'starlight/workflow-1/code');
     assert.deepEqual(worktree.changedFiles, ['src/code.ts']);
     assert.equal(worktree.testedCommit, 'def456');
-    assert.equal(store.snapshot().events.some((event) => event.eventType === 'worktree.updated'), true);
+    assert.equal(store.snapshot().events.some((event) => event.eventType === 'worktree.review'), true);
   });
 });

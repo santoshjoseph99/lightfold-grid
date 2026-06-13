@@ -29,6 +29,7 @@ import {
   hasCapabilities,
   normalizeCapabilities,
 } from './promptContract';
+import type { BrokerEvent, BrokerObservabilitySnapshot } from './observability';
 
 export type BrokerMessageStatus = 'pending' | ReliableRequestStatus;
 
@@ -47,10 +48,13 @@ const messageListeners = new Set<(msg: StarlightMessage) => void>();
 const queueListeners = new Set<(paneId: string, queue: string[]) => void>();
 const lifecycleListeners = new Set<(record: AgentLifecycleRecord) => void>();
 const workflowListeners = new Set<(workflow: WorkflowRecord) => void>();
+const observabilityListeners = new Set<(snapshot: BrokerObservabilitySnapshot) => void>();
 let brokerStateInitialized = false;
+let brokerStateHydrating = false;
 let brokerRetentionLimit = 5_000;
 let brokerWorkspaceRoot = '';
 const preparingWorkflowTasks = new Set<string>();
+let durableEvents: BrokerEvent[] = [];
 
 const persist = (operation: Promise<unknown> | undefined) => {
   operation?.catch((error) => console.error('Failed to persist broker state:', error));
@@ -66,6 +70,23 @@ let isAutopilot = false;
 let routingConnections: Record<string, string[]> = {};
 
 export const getMessagesLog = () => messagesLog.values();
+export const getBrokerObservabilitySnapshot = (): BrokerObservabilitySnapshot => ({
+  agents: agentLifecycle.values(),
+  messages: messagesLog.values(),
+  workflows: workflowEngine.values(),
+  events: [...durableEvents],
+});
+export const subscribeToBrokerObservability = (listener: (snapshot: BrokerObservabilitySnapshot) => void) => {
+  observabilityListeners.add(listener);
+  return () => {
+    observabilityListeners.delete(listener);
+  };
+};
+const notifyObservabilityListeners = () => {
+  if (brokerStateHydrating) return;
+  const snapshot = getBrokerObservabilitySnapshot();
+  observabilityListeners.forEach((listener) => listener(snapshot));
+};
 export const getBrokerRetentionLimit = () => brokerRetentionLimit;
 export const setBrokerRetentionLimit = (limit: number) => {
   if (!Number.isInteger(limit) || limit < 100) throw new Error('Broker retention limit must be at least 100.');
@@ -102,6 +123,7 @@ export const subscribeToQueues = (callback: (paneId: string, queue: string[]) =>
 
 const notifyMessageListeners = (msg: StarlightMessage) => {
   messageListeners.forEach((l) => l(msg));
+  notifyObservabilityListeners();
 };
 
 const appendMessage = (msg: StarlightMessage) => {
@@ -158,6 +180,7 @@ const parser = new StarlightEnvelopeParser();
 const agentLifecycle = new AgentLifecycleManager((record) => {
   lifecycleListeners.forEach((listener) => listener(record));
   persist((window as any).electronAPI?.persistBrokerAgent(record));
+  notifyObservabilityListeners();
 });
 const deliveryQueue = new PtyDeliveryQueue(
   (paneId, data) => (window as any).electronAPI.writePty(paneId, data),
@@ -214,6 +237,7 @@ const reliableRequests = new ReliableRequestManager(
 const notifyWorkflowListeners = (workflow: WorkflowRecord) => {
   workflowListeners.forEach((listener) => listener(workflow));
   persist((window as any).electronAPI?.persistBrokerWorkflow(workflow));
+  notifyObservabilityListeners();
   if (workflow.status === 'cancelled') {
     workflow.tasks.forEach((task) => {
       if (task.messageId) reliableRequests.cancel(task.messageId, 'Workflow cancelled.');
@@ -454,19 +478,26 @@ export const initializeBrokerState = async () => {
   const hydrate = async () => {
     const snapshot = await electronAPI.getBrokerSnapshot();
     if (!snapshot) return;
+    brokerStateHydrating = true;
     const messages = (snapshot.messages || []) as StarlightMessage[];
-    messagesLog.replaceAll(messages);
-    (snapshot.agents || []).forEach((record: AgentLifecycleRecord) => agentLifecycle.restore(record));
-    (snapshot.workflows || []).forEach((workflow: WorkflowRecord) => {
-      if (!workflowEngine.get(workflow.id)) workflowEngine.restore(workflow);
-    });
-    const retention = snapshot.settings?.retentionLimit;
-    if (Number.isInteger(retention) && retention >= 100) brokerRetentionLimit = retention;
-    messages.forEach((message) => notifyMessageListeners(message));
-    (snapshot.agents || []).forEach((record: AgentLifecycleRecord) => {
-      lifecycleListeners.forEach((listener) => listener(record));
-    });
-    workflowEngine.values().forEach((workflow) => workflowListeners.forEach((listener) => listener(workflow)));
+    try {
+      durableEvents = (snapshot.events || []) as BrokerEvent[];
+      messagesLog.replaceAll(messages);
+      (snapshot.agents || []).forEach((record: AgentLifecycleRecord) => agentLifecycle.restore(record));
+      (snapshot.workflows || []).forEach((workflow: WorkflowRecord) => {
+        if (!workflowEngine.get(workflow.id)) workflowEngine.restore(workflow);
+      });
+      const retention = snapshot.settings?.retentionLimit;
+      if (Number.isInteger(retention) && retention >= 100) brokerRetentionLimit = retention;
+      messages.forEach((message) => notifyMessageListeners(message));
+      (snapshot.agents || []).forEach((record: AgentLifecycleRecord) => {
+        lifecycleListeners.forEach((listener) => listener(record));
+      });
+      workflowEngine.values().forEach((workflow) => workflowListeners.forEach((listener) => listener(workflow)));
+    } finally {
+      brokerStateHydrating = false;
+    }
+    notifyObservabilityListeners();
     messages
       .filter((message) => message.kind === 'request' && message.status === 'queued')
       .forEach((message) => reliableRequests.restore(message));

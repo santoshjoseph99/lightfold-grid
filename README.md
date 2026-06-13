@@ -29,6 +29,9 @@ workflows.
 - Generate versioned agent contracts with real identities, routes, capabilities, and tools.
 - Emit valid protocol messages through the bundled `starlight-message` helper.
 - Exercise the complete broker-to-real-PTY-to-agent loop with deterministic fake agents.
+- Monitor queues, latency, task duration, retries, failures, agent uptime, and workspace health.
+- Inspect workflow dependency graphs, durable timelines, and correlated message chains.
+- Export redacted diagnostic bundles for failed workflow investigation.
 - Inspect message flow, status, and broker logs.
 - Test wheel/spoke communication using deterministic agents or local Ollama models.
 
@@ -265,6 +268,22 @@ then requires **Approve & Merge** before serially merging the branch into the cl
 integration workspace. Failed and conflicted worktrees are preserved until explicit
 forced cleanup.
 
+### Operations And Diagnostics
+
+The Central Broker **Ops** tab derives live operational metrics from the durable broker
+snapshot. It shows queue depth, average delivery latency, task duration, retry and
+failure counts, and the percentage of agents currently ready or busy.
+
+Workspace health checks verify the selected Git repository, configured agent CLI
+executables, prompt files, Ollama availability, and configured local models. Workflow
+dependency graphs and durable event timelines make blocked or failed work visible
+without reading raw terminal logs. Expanded JSON messages include the complete
+correlated request, acknowledgement, progress, and terminal-result chain.
+
+Use **Export** in the Ops tab to save a JSON diagnostic bundle containing the durable
+snapshot, health results, and workspace configuration. Keys and values that look like
+tokens, passwords, credentials, authorization headers, or API secrets are redacted.
+
 ## Testing
 
 Run deterministic broker and wheel/spoke integration tests:
@@ -335,10 +354,10 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 6: Git worktree isolation
 - [x] Milestone 7: Prompt contract hardening
 - [x] Milestone 8: Full end-to-end integration testing
-- [ ] Milestone 9: Observability and operational controls
+- [x] Milestone 9: Observability and operational controls
 
 ## Open Source Status
 
 Starlight is being prepared for open-source release. A public license, contribution
-guide, security policy, release packaging, and CI configuration still need to be
-selected and added before the first public release.
+guide, security policy, and release packaging still need to be selected and added
+before the first public release.

@@ -152,7 +152,7 @@ export class BrokerStore {
         promptVersion: agent.promptVersion || null,
         updatedAt: timestamp,
       });
-      this.insertEvent('agent.updated', 'agent', agent.agentId, agent, timestamp);
+      this.insertEvent(`agent.${agent.state}`, 'agent', agent.agentId, agent, timestamp);
       this.cleanup();
     });
   }
@@ -222,7 +222,7 @@ export class BrokerStore {
           timestamp
         );
       }
-      this.insertEvent('message.updated', 'message', message.messageId, message, timestamp);
+      this.insertEvent(`message.${message.status}`, 'message', message.messageId, message, timestamp);
       this.cleanup();
     });
   }
@@ -300,8 +300,15 @@ export class BrokerStore {
           task.promptVersion || null,
           timestamp
         );
+        this.insertEvent(
+          `task.${task.status}`,
+          'task',
+          `${workflow.id}:${task.id}`,
+          { ...task, workflowId: workflow.id, taskId: task.id },
+          timestamp
+        );
       }
-      this.insertEvent('workflow.updated', 'workflow', workflow.id, workflow, timestamp);
+      this.insertEvent(`workflow.${workflow.status}`, 'workflow', workflow.id, workflow, timestamp);
       this.cleanup();
     });
   }
@@ -351,7 +358,7 @@ export class BrokerStore {
         worktree.createdAt || timestamp,
         worktree.updatedAt || timestamp
       );
-      this.insertEvent('worktree.updated', 'worktree', `${worktree.workflowId}:${worktree.taskId}`, worktree, timestamp);
+      this.insertEvent(`worktree.${worktree.status}`, 'worktree', `${worktree.workflowId}:${worktree.taskId}`, worktree, timestamp);
       this.cleanup();
     });
   }

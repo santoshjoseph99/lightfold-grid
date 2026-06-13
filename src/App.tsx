@@ -766,7 +766,7 @@ export default function App() {
           {/* Drawer content */}
           {isRightPanelOpen && (
             <div style={{ width: '320px', height: '100%' }}>
-              <CentralBroker paneIds={paneIds} />
+              <CentralBroker paneIds={paneIds} workspaceRoot={workspaceCwd} agentConfigs={agentConfigs} />
             </div>
           )}
         </div>

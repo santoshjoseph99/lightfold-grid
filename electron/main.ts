@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { execSync } from 'child_process';
 import { BrokerStore } from './brokerStore';
+import { createDiagnosticBundle, runWorkspaceHealthChecks } from './diagnostics';
 import { PtyService } from './ptyService';
 import { WorktreeManager } from './worktreeManager';
 
@@ -146,6 +147,24 @@ ipcMain.handle('broker:set-setting', (_event, { key, value }) => {
   brokerStore?.setSetting(key, value);
   notifyBrokerChanged();
   return true;
+});
+ipcMain.handle('diagnostics:health-checks', (_event, input) => runWorkspaceHealthChecks(input || {}));
+ipcMain.handle('diagnostics:export', async (_event, input) => {
+  if (!mainWindow || !brokerStore) return { success: false, error: 'Broker is not ready.' };
+  const health = runWorkspaceHealthChecks(input || {});
+  const bundle = createDiagnosticBundle({
+    snapshot: brokerStore.snapshot(),
+    health,
+    workspace: input,
+  });
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    title: 'Export Starlight Diagnostic Bundle',
+    defaultPath: `starlight-diagnostics-${sessionTimestamp}.json`,
+    filters: [{ name: 'JSON Diagnostic Bundle', extensions: ['json'] }],
+  });
+  if (canceled || !filePath) return { success: false, error: 'Canceled' };
+  fs.writeFileSync(filePath, JSON.stringify(bundle, null, 2), 'utf8');
+  return { success: true, path: filePath };
 });
 ipcMain.handle('agent:get-helper-command', () => {
   const helperPath = path.join(app.getAppPath(), 'bin', 'starlight-message.mjs');

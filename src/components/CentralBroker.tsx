@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Network, ChevronRight, ChevronDown, RefreshCw, XOctagon, Shuffle, CheckCircle, GitBranch } from 'lucide-react';
+import type { AgentConfig } from './SettingsModal';
+import { ObservabilityPanel } from './ObservabilityPanel';
+import { getCorrelatedMessageChain } from '../services/observability';
 import {
   approveWorkflowTask,
   approveAndMergeWorkflowTask,
@@ -23,10 +26,12 @@ import type { WorkflowRecord, WorkflowTaskRecord } from '../services/workflowCor
 
 interface CentralBrokerProps {
   paneIds: string[];
+  workspaceRoot: string;
+  agentConfigs: Record<string, AgentConfig>;
 }
 
-export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
-  const [activeTab, setActiveTab] = useState<'workflows' | 'flow' | 'json'>('workflows');
+export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspaceRoot, agentConfigs }) => {
+  const [activeTab, setActiveTab] = useState<'workflows' | 'ops' | 'flow' | 'json'>('workflows');
   const [messages, setMessages] = useState<StarlightMessage[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowRecord[]>([]);
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
@@ -139,6 +144,21 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
             }}
           >
             WORKFLOWS
+          </button>
+          <button
+            onClick={() => setActiveTab('ops')}
+            style={{
+              padding: '4px 8px',
+              borderRadius: '4px',
+              border: 'none',
+              background: activeTab === 'ops' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+              color: activeTab === 'ops' ? 'var(--text-main)' : 'var(--text-muted)',
+              fontSize: '10px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            OPS
           </button>
           <button
             onClick={() => setActiveTab('flow')}
@@ -265,6 +285,8 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
               );
             })}
           </div>
+        ) : activeTab === 'ops' ? (
+          <ObservabilityPanel workspaceRoot={workspaceRoot} agentConfigs={agentConfigs} />
         ) : activeTab === 'flow' ? (
           /* Real-time SVG Flow diagram */
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '350px' }}>
@@ -443,6 +465,17 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
 
                     {isExpanded && (
                       <>
+                        <div style={{ marginTop: '10px', padding: '8px', background: 'rgba(0,0,0,0.2)', borderRadius: '6px' }}>
+                          <div style={{ fontSize: '8px', fontWeight: 700, color: 'var(--accent-purple)', marginBottom: '5px' }}>
+                            CORRELATED MESSAGE CHAIN
+                          </div>
+                          {getCorrelatedMessageChain(messages, msg).map((item) => (
+                            <div key={item.messageId} style={{ fontSize: '8px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                              <span style={{ color: getStatusColor(item.status), textTransform: 'uppercase' }}>{item.kind}</span>
+                              {' '}{item.from} → {item.to} · attempt {item.attempt} · {item.status}
+                            </div>
+                          ))}
+                        </div>
                         <pre
                           style={{
                             marginTop: '12px',

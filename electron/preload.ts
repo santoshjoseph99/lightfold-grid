@@ -73,6 +73,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setBrokerSetting: (key: string, value: any) =>
     ipcRenderer.invoke('broker:set-setting', { key, value }),
 
+  runHealthChecks: (input: any) =>
+    ipcRenderer.invoke('diagnostics:health-checks', input),
+
+  exportDiagnostics: (input: any) =>
+    ipcRenderer.invoke('diagnostics:export', input),
+
   getAgentHelperCommand: () =>
     ipcRenderer.invoke('agent:get-helper-command'),
 

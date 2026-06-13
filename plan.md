@@ -270,13 +270,13 @@ temporary migration period.
 
 ### Tasks
 
-- [ ] Add structured logs with workflow, task, message, agent, and attempt IDs.
-- [ ] Add broker metrics for queue depth, delivery latency, task duration, retries,
+- [x] Add structured logs with workflow, task, message, agent, and attempt IDs.
+- [x] Add broker metrics for queue depth, delivery latency, task duration, retries,
       failures, and agent uptime.
-- [ ] Add task timeline and dependency graph views.
-- [ ] Add message inspection with correlated request/result chains.
-- [ ] Add workspace health checks for Git, configured CLIs, models, prompts, and Ollama.
-- [ ] Add exportable diagnostic bundles with secrets redacted.
+- [x] Add task timeline and dependency graph views.
+- [x] Add message inspection with correlated request/result chains.
+- [x] Add workspace health checks for Git, configured CLIs, models, prompts, and Ollama.
+- [x] Add exportable diagnostic bundles with secrets redacted.
 
 ### Acceptance Criteria
 
