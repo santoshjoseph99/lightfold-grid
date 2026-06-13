@@ -1,6 +1,6 @@
 import { createRequire } from 'module';
 
-export const BROKER_SCHEMA_VERSION = 3;
+export const BROKER_SCHEMA_VERSION = 4;
 export const BROKER_PROTOCOL_VERSION = 1;
 export const DEFAULT_BROKER_RETENTION_LIMIT = 5_000;
 
@@ -10,6 +10,10 @@ export interface DurableAgentRecord {
   currentTaskId?: string;
   lastHeartbeatAt?: number;
   error?: string;
+  role?: string;
+  capabilities?: string[];
+  tools?: string[];
+  promptVersion?: number;
 }
 
 export interface DurableMessageRecord {
@@ -122,19 +126,30 @@ export class BrokerStore {
     const timestamp = this.now();
     this.transaction(() => {
       this.db.prepare(`
-        INSERT INTO agents (agent_id, state, current_task_id, last_heartbeat_at, error, updated_at)
-        VALUES (@agentId, @state, @currentTaskId, @lastHeartbeatAt, @error, @updatedAt)
+        INSERT INTO agents (
+          agent_id, state, current_task_id, last_heartbeat_at, error, role, capabilities_json, tools_json, prompt_version, updated_at
+        )
+        VALUES (@agentId, @state, @currentTaskId, @lastHeartbeatAt, @error, @role, @capabilitiesJson, @toolsJson, @promptVersion, @updatedAt)
         ON CONFLICT(agent_id) DO UPDATE SET
           state = excluded.state,
           current_task_id = excluded.current_task_id,
           last_heartbeat_at = excluded.last_heartbeat_at,
           error = excluded.error,
+          role = excluded.role,
+          capabilities_json = excluded.capabilities_json,
+          tools_json = excluded.tools_json,
+          prompt_version = excluded.prompt_version,
           updated_at = excluded.updated_at
       `).run({
-        ...agent,
+        agentId: agent.agentId,
+        state: agent.state,
         currentTaskId: agent.currentTaskId || null,
         lastHeartbeatAt: agent.lastHeartbeatAt || null,
         error: agent.error || null,
+        role: agent.role || null,
+        capabilitiesJson: JSON.stringify(agent.capabilities || []),
+        toolsJson: JSON.stringify(agent.tools || []),
+        promptVersion: agent.promptVersion || null,
         updatedAt: timestamp,
       });
       this.insertEvent('agent.updated', 'agent', agent.agentId, agent, timestamp);
@@ -237,8 +252,9 @@ export class BrokerStore {
           INSERT INTO workflow_tasks (
             workflow_id, task_id, owner, goal, dependencies_json, status, attempts,
             artifacts_json, completion_criteria_json, failure_policy, max_attempts,
-            requires_approval, approved, message_id, summary, error, coding_json, worktree_json, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            requires_approval, approved, message_id, summary, error, coding_json, worktree_json,
+            required_capabilities_json, required_tools_json, prompt_version, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(workflow_id, task_id) DO UPDATE SET
             owner = excluded.owner,
             goal = excluded.goal,
@@ -256,6 +272,9 @@ export class BrokerStore {
             error = excluded.error,
             coding_json = excluded.coding_json,
             worktree_json = excluded.worktree_json,
+            required_capabilities_json = excluded.required_capabilities_json,
+            required_tools_json = excluded.required_tools_json,
+            prompt_version = excluded.prompt_version,
             updated_at = excluded.updated_at
         `).run(
           workflow.id,
@@ -276,6 +295,9 @@ export class BrokerStore {
           task.error || null,
           JSON.stringify(task.coding || null),
           JSON.stringify(task.worktree || null),
+          JSON.stringify(task.requiredCapabilities || []),
+          JSON.stringify(task.requiredTools || []),
+          task.promptVersion || null,
           timestamp
         );
       }
@@ -392,14 +414,18 @@ export class BrokerStore {
 
   snapshot(): DurableBrokerSnapshot {
     const agents = this.db.prepare(`
-      SELECT agent_id, state, current_task_id, last_heartbeat_at, error FROM agents ORDER BY agent_id
+      SELECT agent_id, state, current_task_id, last_heartbeat_at, error, role, capabilities_json, tools_json, prompt_version
+      FROM agents ORDER BY agent_id
     `).all().map((row: any) => ({
       agentId: row.agent_id,
       state: row.state,
       currentTaskId: row.current_task_id || undefined,
       lastHeartbeatAt: row.last_heartbeat_at || undefined,
       error: row.error || undefined,
-      testedCommit: row.tested_commit || undefined,
+      role: row.role || undefined,
+      capabilities: parseJson(row.capabilities_json, []),
+      tools: parseJson(row.tools_json, []),
+      promptVersion: row.prompt_version || undefined,
     }));
     const messages = this.db.prepare(`
       SELECT * FROM (
@@ -470,6 +496,9 @@ export class BrokerStore {
         error: task.error || undefined,
         coding: parseJson(task.coding_json, undefined),
         worktree: parseJson(task.worktree_json, undefined),
+        requiredCapabilities: parseJson(task.required_capabilities_json, []),
+        requiredTools: parseJson(task.required_tools_json, []),
+        promptVersion: task.prompt_version || undefined,
       })),
     }));
     const worktrees = this.db.prepare('SELECT * FROM coding_worktrees ORDER BY created_at ASC').all().map((row: any) => ({
@@ -486,6 +515,7 @@ export class BrokerStore {
       testCommand: row.test_command || undefined,
       testOutput: row.test_output || undefined,
       error: row.error || undefined,
+      testedCommit: row.tested_commit || undefined,
       reviewApproved: Boolean(row.review_approved),
       sharedFilesApproved: Boolean(row.shared_files_approved),
       createdAt: row.created_at,
@@ -629,6 +659,17 @@ export class BrokerStore {
           PRIMARY KEY (workflow_id, task_id)
         );
         CREATE INDEX coding_worktrees_status_idx ON coding_worktrees(status);
+      `);
+    }
+    if (version < 4) {
+      this.db.exec(`
+        ALTER TABLE agents ADD COLUMN role TEXT;
+        ALTER TABLE agents ADD COLUMN capabilities_json TEXT;
+        ALTER TABLE agents ADD COLUMN tools_json TEXT;
+        ALTER TABLE agents ADD COLUMN prompt_version INTEGER;
+        ALTER TABLE workflow_tasks ADD COLUMN required_capabilities_json TEXT;
+        ALTER TABLE workflow_tasks ADD COLUMN required_tools_json TEXT;
+        ALTER TABLE workflow_tasks ADD COLUMN prompt_version INTEGER;
       `);
     }
     this.db.exec(`PRAGMA user_version = ${BROKER_SCHEMA_VERSION};`);

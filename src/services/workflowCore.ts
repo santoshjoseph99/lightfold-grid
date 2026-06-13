@@ -44,6 +44,9 @@ export interface WorkflowTaskDefinition {
   maxAttempts?: number;
   requiresApproval?: boolean;
   coding?: CodingTaskConfig;
+  requiredCapabilities?: string[];
+  requiredTools?: string[];
+  promptVersion?: number;
 }
 
 export interface WorkflowDefinition {
@@ -99,6 +102,8 @@ const copyTask = (task: WorkflowTaskRecord): WorkflowTaskRecord => ({
     : undefined,
   artifacts: [...task.artifacts],
   coding: task.coding ? { ...task.coding, files: [...(task.coding.files || [])] } : undefined,
+  requiredCapabilities: [...(task.requiredCapabilities || [])],
+  requiredTools: [...(task.requiredTools || [])],
   worktree: task.worktree ? { ...task.worktree, changedFiles: [...task.worktree.changedFiles] } : undefined,
 });
 
@@ -235,6 +240,14 @@ export class WorkflowEngine {
     const task = this.requireTask(workflowId, taskId);
     task.worktree = { ...worktree, changedFiles: [...worktree.changedFiles] };
     task.error = worktree.error;
+    this.emitTask(task);
+    this.updateWorkflow(this.requireWorkflow(workflowId));
+    return true;
+  }
+
+  setTaskPromptVersion(workflowId: string, taskId: string, promptVersion: number): boolean {
+    const task = this.requireTask(workflowId, taskId);
+    task.promptVersion = promptVersion;
     this.emitTask(task);
     this.updateWorkflow(this.requireWorkflow(workflowId));
     return true;
@@ -395,6 +408,20 @@ export class WorkflowEngine {
       }
       if (task.coding && (typeof task.coding.testCommand !== 'string' || !task.coding.testCommand.trim())) {
         throw new WorkflowValidationError(`Task ${task.id} coding tasks require a non-empty testCommand.`);
+      }
+      if (
+        task.requiredCapabilities !== undefined &&
+        (!Array.isArray(task.requiredCapabilities) ||
+          task.requiredCapabilities.some((capability) => typeof capability !== 'string' || !capability.trim()))
+      ) {
+        throw new WorkflowValidationError(`Task ${task.id} requiredCapabilities must be an array of non-empty strings.`);
+      }
+      if (
+        task.requiredTools !== undefined &&
+        (!Array.isArray(task.requiredTools) ||
+          task.requiredTools.some((tool) => typeof tool !== 'string' || !tool.trim()))
+      ) {
+        throw new WorkflowValidationError(`Task ${task.id} requiredTools must be an array of non-empty strings.`);
       }
       if (
         task.completionCriteria?.requiredArtifacts !== undefined &&

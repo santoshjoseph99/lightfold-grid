@@ -156,6 +156,8 @@ test('holds coding task results in review until integration completes', () => {
     changedFiles: ['src/code.ts'],
     status: 'review',
   });
+  engine.setTaskPromptVersion('workflow-1', 'code', 1);
+  assert.equal(engine.get('workflow-1')?.tasks[0].promptVersion, 1);
   assert.equal(engine.completeReview('workflow-1', 'code'), true);
   assert.equal(engine.get('workflow-1')?.status, 'completed');
 });

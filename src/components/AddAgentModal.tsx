@@ -19,6 +19,8 @@ export const AddAgentModal: React.FC<AddAgentModalProps> = ({
   const [selectedModel, setSelectedModel] = useState('gemini-1.5-pro');
   const [promptPath, setPromptPath] = useState('');
   const [promptContent, setPromptContent] = useState('');
+  const [capabilities, setCapabilities] = useState('general');
+  const [tools, setTools] = useState('');
   const [yoloMode, setYoloMode] = useState(false);
   
   // Target pane selection. If 'new', will spawn split pane
@@ -64,6 +66,8 @@ export const AddAgentModal: React.FC<AddAgentModalProps> = ({
       selectedModel,
       promptPath,
       promptContent,
+      capabilities: capabilities.split(',').map((value) => value.trim()).filter(Boolean),
+      tools: tools.split(',').map((value) => value.trim()).filter(Boolean),
       yoloMode,
     };
     onAddAgent(targetPane, config, targetPane === 'new');
@@ -195,6 +199,50 @@ export const AddAgentModal: React.FC<AddAgentModalProps> = ({
                 )}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>
+              CAPABILITIES (COMMA-SEPARATED)
+            </label>
+            <input
+              type="text"
+              value={capabilities}
+              onChange={(e) => setCapabilities(e.target.value)}
+              placeholder="general, coding, testing"
+              style={{
+                width: '100%',
+                background: 'rgba(0,0,0,0.3)',
+                border: '1px solid var(--glass-border)',
+                borderRadius: '6px',
+                padding: '8px',
+                color: '#fff',
+                fontSize: '12px',
+                outline: 'none',
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>
+              TOOLS (COMMA-SEPARATED)
+            </label>
+            <input
+              type="text"
+              value={tools}
+              onChange={(e) => setTools(e.target.value)}
+              placeholder="git, npm, docker"
+              style={{
+                width: '100%',
+                background: 'rgba(0,0,0,0.3)',
+                border: '1px solid var(--glass-border)',
+                borderRadius: '6px',
+                padding: '8px',
+                color: '#fff',
+                fontSize: '12px',
+                outline: 'none',
+              }}
+            />
           </div>
 
           <div style={{ display: 'flex', gap: '10px' }}>

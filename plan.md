@@ -218,14 +218,14 @@ temporary migration period.
 
 ### Tasks
 
-- [ ] Generate protocol instructions from one shared template.
-- [ ] Remove hard-coded and inconsistent pane IDs from prompt files.
-- [ ] Inject each agent's real pane ID, role, allowed routes, and capabilities.
-- [ ] Require agents to acknowledge, report progress, and return structured results.
-- [ ] Add a small agent-side helper executable for emitting valid protocol envelopes.
-- [ ] Prefer helper commands over asking models to manually reproduce JSON delimiters.
-- [ ] Validate requested tools and capabilities before task assignment.
-- [ ] Add prompt-version tracking to agent and task records.
+- [x] Generate protocol instructions from one shared template.
+- [x] Remove hard-coded and inconsistent pane IDs from prompt files.
+- [x] Inject each agent's real pane ID, role, allowed routes, and capabilities.
+- [x] Require agents to acknowledge, report progress, and return structured results.
+- [x] Add a small agent-side helper executable for emitting valid protocol envelopes.
+- [x] Prefer helper commands over asking models to manually reproduce JSON delimiters.
+- [x] Validate requested tools and capabilities before task assignment.
+- [x] Add prompt-version tracking to agent and task records.
 
 ### Acceptance Criteria
 

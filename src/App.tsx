@@ -26,22 +26,18 @@ import {
   setRoutingConnections,
   subscribeToMessages,
 } from './services/brokerProtocol';
+import {
+  AGENT_PROMPT_VERSION,
+  DEFAULT_AGENT_CAPABILITIES,
+  generateAgentPromptContract,
+  normalizeCapabilities,
+} from './services/promptContract';
 
 const STARTUP_TIMEOUT_MS = 20_000;
 const STARTUP_POLL_MS = 250;
 const HEALTH_CHECK_MS = 5_000;
 
 const sleep = (durationMs: number) => new Promise((resolve) => setTimeout(resolve, durationMs));
-
-const lifecyclePrompt = (paneId: string) => [
-  `You are agent ${paneId} running under the Starlight orchestrator.`,
-  'Immediately announce readiness by emitting one versioned Starlight protocol message to broker.',
-  `Use protocolVersion 1, kind ready, to broker, payload summary "ready", and attempt 1.`,
-  'Wrap JSON in the opening marker made from two left brackets, STARLIGHT-MSG, and two right brackets.',
-  'Close it with the marker made from two left brackets, END, and two right brackets.',
-  'While working, emit heartbeat messages to broker at least every 20 seconds using kind heartbeat.',
-  'For tasks, acknowledge before execution and return a structured result or error when finished.',
-].join('\n');
 
 export default function App() {
   const [paneIds, setPaneIds] = useState<string[]>(['Pane-A']);
@@ -373,10 +369,22 @@ export default function App() {
         (bootCommand.includes('-s') || bootCommand.includes('--system')) &&
         config.promptPath
       );
+      const helperCommand = await electronAPI.getAgentHelperCommand();
+      const routes = getRoutingConnections();
+      const allowedRoutes = Object.keys(routes).length > 0
+        ? routes[paneId] || []
+        : Object.keys(agentConfigs).filter((candidate) => candidate !== paneId);
       const prompt = [
-        lifecyclePrompt(paneId),
-        !hasCommandLinePrompt && config.promptContent ? config.promptContent : '',
-      ].filter(Boolean).join('\n\n');
+        generateAgentPromptContract({
+          paneId,
+          role: config.agentName,
+          allowedRoutes,
+          capabilities: normalizeCapabilities(config.capabilities?.length ? config.capabilities : DEFAULT_AGENT_CAPABILITIES),
+          tools: normalizeCapabilities(config.tools),
+          roleInstructions: !hasCommandLinePrompt ? config.promptContent : undefined,
+          helperCommand,
+        }),
+      ].join('\n\n');
       const payload = `\x1b[200~${prompt}\x1b[201~\r`;
       await electronAPI.writePty(paneId, payload);
     } catch (error) {
@@ -392,7 +400,14 @@ export default function App() {
   useEffect(() => {
     if (!defaultShell) return;
     Object.keys(agentConfigs).forEach((paneId) => {
-      registerAgent(paneId);
+      registerAgent(paneId, {
+        role: agentConfigs[paneId].agentName,
+        capabilities: agentConfigs[paneId].capabilities?.length
+          ? agentConfigs[paneId].capabilities
+          : DEFAULT_AGENT_CAPABILITIES,
+        tools: agentConfigs[paneId].tools || [],
+        promptVersion: AGENT_PROMPT_VERSION,
+      });
       void createTerminalInstance(paneId, defaultShell, workspaceCwd).then((instance) => {
         if (!instance.isBooted) {
           instance.isBooted = true;

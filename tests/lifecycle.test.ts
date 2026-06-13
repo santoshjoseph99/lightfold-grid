@@ -40,6 +40,28 @@ test('tracks startup, readiness, busy work, completion, and shutdown', () => {
   assert.deepEqual(states, ['stopped', 'starting', 'ready', 'busy', 'ready', 'stopping', 'stopped']);
 });
 
+test('tracks the configured agent contract with lifecycle state', () => {
+  const lifecycle = new AgentLifecycleManager();
+  lifecycle.register('Spoke-A', {
+    role: 'Builder',
+    capabilities: ['coding', 'testing'],
+    tools: ['git', 'npm'],
+    promptVersion: 1,
+  });
+  lifecycle.ready('Spoke-A');
+  assert.deepEqual(lifecycle.get('Spoke-A'), {
+    agentId: 'Spoke-A',
+    state: 'ready',
+    role: 'Builder',
+    capabilities: ['coding', 'testing'],
+    tools: ['git', 'npm'],
+    promptVersion: 1,
+    currentTaskId: undefined,
+    error: undefined,
+    lastHeartbeatAt: lifecycle.get('Spoke-A')?.lastHeartbeatAt,
+  });
+});
+
 test('detects heartbeat timeouts and recovers on heartbeat', () => {
   let now = 0;
   const lifecycle = new AgentLifecycleManager(() => {}, { heartbeatTimeoutMs: 10 }, () => now);

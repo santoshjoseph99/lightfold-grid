@@ -36,11 +36,22 @@ const withStore = (run: (store: BrokerStore, filename: string) => void) => {
 test('migrates an empty database and persists normalized broker state', () => {
   withStore((store) => {
     assert.equal(store.getSchemaVersion(), BROKER_SCHEMA_VERSION);
-    store.upsertAgent({ agentId: 'Spoke-A', state: 'ready', lastHeartbeatAt: 200 });
+    store.upsertAgent({
+      agentId: 'Spoke-A',
+      state: 'ready',
+      lastHeartbeatAt: 200,
+      role: 'Tester',
+      capabilities: ['testing'],
+      tools: ['npm'],
+      promptVersion: 1,
+    });
     store.upsertMessage(request('delivered'));
 
     const snapshot = store.snapshot();
     assert.equal(snapshot.agents[0].state, 'ready');
+    assert.deepEqual(snapshot.agents[0].capabilities, ['testing']);
+    assert.deepEqual(snapshot.agents[0].tools, ['npm']);
+    assert.equal(snapshot.agents[0].promptVersion, 1);
     assert.equal(snapshot.messages[0].status, 'delivered');
     assert.equal(snapshot.tasks.length, 1);
     assert.equal(snapshot.attempts.length, 1);
@@ -129,6 +140,9 @@ test('persists workflow graphs and task execution state', () => {
           failurePolicy: 'block',
           maxAttempts: 1,
           approved: true,
+          requiredCapabilities: ['specification'],
+          requiredTools: ['markdown'],
+          promptVersion: 1,
         },
         {
           workflowId: 'workflow-1',
@@ -151,6 +165,10 @@ test('persists workflow graphs and task execution state', () => {
     const release = (snapshot.workflows[0] as any).tasks.find((task: any) => task.id === 'release');
     assert.equal(release.dependencies[0], 'spec');
     assert.equal(release.requiresApproval, true);
+    const spec = (snapshot.workflows[0] as any).tasks.find((task: any) => task.id === 'spec');
+    assert.deepEqual(spec.requiredCapabilities, ['specification']);
+    assert.deepEqual(spec.requiredTools, ['markdown']);
+    assert.equal(spec.promptVersion, 1);
     assert.equal(snapshot.events.some((event) => event.eventType === 'workflow.updated'), true);
   });
 });
@@ -190,6 +208,7 @@ test('persists coding worktree integration state', () => {
       declaredFiles: ['src/code.ts'],
       changedFiles: ['src/code.ts'],
       status: 'review',
+      testedCommit: 'def456',
       reviewApproved: false,
       sharedFilesApproved: false,
       createdAt: 100,
@@ -198,6 +217,7 @@ test('persists coding worktree integration state', () => {
     const worktree = store.snapshot().worktrees[0] as any;
     assert.equal(worktree.branch, 'starlight/workflow-1/code');
     assert.deepEqual(worktree.changedFiles, ['src/code.ts']);
+    assert.equal(worktree.testedCommit, 'def456');
     assert.equal(store.snapshot().events.some((event) => event.eventType === 'worktree.updated'), true);
   });
 });

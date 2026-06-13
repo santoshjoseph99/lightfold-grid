@@ -233,10 +233,12 @@ export const formatRequestForAgent = (message: AgentMessage): string => {
     `Message ID: ${message.messageId}`,
     `Attempt: ${message.attempt}`,
     'If this Message ID was already accepted, do not execute it again; repeat the prior acknowledgement or result.',
-    'Acknowledge by emitting a Starlight protocol message with:',
-    `  kind=ack, taskId=${message.taskId}, correlationId=${message.messageId}, to=${message.from}`,
-    'When complete emit a Starlight protocol message with:',
-    `  kind=result, taskId=${message.taskId}, correlationId=${message.messageId}, to=${message.from}`,
+    'Acknowledge before work with:',
+    `  starlight-message ack --to ${message.from} --task-id ${message.taskId} --correlation-id ${message.messageId} --summary accepted`,
+    'Report progress during long-running work with:',
+    `  starlight-message progress --to ${message.from} --task-id ${message.taskId} --correlation-id ${message.messageId} --summary "status"`,
+    'When complete return a structured result with:',
+    `  starlight-message result --to ${message.from} --task-id ${message.taskId} --correlation-id ${message.messageId} --summary "outcome"`,
     '',
     'Instruction:',
     getMessageInstruction(message),
@@ -692,6 +694,10 @@ export type AgentLifecycleState =
 export interface AgentLifecycleRecord {
   agentId: string;
   state: AgentLifecycleState;
+  role?: string;
+  capabilities?: string[];
+  tools?: string[];
+  promptVersion?: number;
   currentTaskId?: string;
   lastHeartbeatAt?: number;
   error?: string;
@@ -720,16 +726,23 @@ export class AgentLifecycleManager {
     }
   }
 
-  register(agentId: string): AgentLifecycleRecord {
+  register(
+    agentId: string,
+    contract: Pick<AgentLifecycleRecord, 'role' | 'capabilities' | 'tools' | 'promptVersion'> = {}
+  ): AgentLifecycleRecord {
     const current = this.agents.get(agentId);
-    if (current) return { ...current };
-    return this.set(agentId, { state: 'stopped' });
+    if (current) return this.set(agentId, contract);
+    return this.set(agentId, { state: 'stopped', ...contract });
   }
 
   restore(record: AgentLifecycleRecord): AgentLifecycleRecord {
-    const restored = { ...record };
+    const restored = {
+      ...record,
+      capabilities: [...(record.capabilities || [])],
+      tools: [...(record.tools || [])],
+    };
     this.agents.set(record.agentId, restored);
-    return { ...restored };
+    return { ...restored, capabilities: [...restored.capabilities], tools: [...restored.tools] };
   }
 
   starting(agentId: string): AgentLifecycleRecord {
@@ -819,19 +832,32 @@ export class AgentLifecycleManager {
 
   get(agentId: string): AgentLifecycleRecord | undefined {
     const record = this.agents.get(agentId);
-    return record ? { ...record } : undefined;
+    return record ? {
+      ...record,
+      capabilities: [...(record.capabilities || [])],
+      tools: [...(record.tools || [])],
+    } : undefined;
   }
 
   values(): AgentLifecycleRecord[] {
-    return [...this.agents.values()].map((record) => ({ ...record }));
+    return [...this.agents.values()].map((record) => ({
+      ...record,
+      capabilities: [...(record.capabilities || [])],
+      tools: [...(record.tools || [])],
+    }));
   }
 
   private set(agentId: string, patch: Partial<AgentLifecycleRecord>): AgentLifecycleRecord {
     const current = this.agents.get(agentId) || { agentId, state: 'stopped' as const };
     const updated = { ...current, ...patch, agentId };
     this.agents.set(agentId, updated);
-    this.onUpdate({ ...updated });
-    return { ...updated };
+    const copy = {
+      ...updated,
+      capabilities: [...(updated.capabilities || [])],
+      tools: [...(updated.tools || [])],
+    };
+    this.onUpdate(copy);
+    return copy;
   }
 }
 

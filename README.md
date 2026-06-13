@@ -26,6 +26,8 @@ workflows.
 - Gate destructive or release-related workflow tasks for human approval.
 - Isolate coding tasks in per-task Git worktrees and branches.
 - Gate coding-task merges on file ownership, tests, and explicit review.
+- Generate versioned agent contracts with real identities, routes, capabilities, and tools.
+- Emit valid protocol messages through the bundled `starlight-message` helper.
 - Inspect message flow, status, and broker logs.
 - Test wheel/spoke communication using deterministic agents or local Ollama models.
 
@@ -140,10 +142,12 @@ configurable under **Configure Grid -> General -> Reliable Delivery**.
 
 Every configured agent gets a PTY when its workspace loads, including agents whose
 terminal tab is not visible. Starlight waits until the configured CLI is observable
-before injecting its startup instructions. The agent must then emit:
+before injecting a generated, versioned contract containing the agent's real pane ID,
+role, allowed routes, capabilities, tools, and role instructions. The agent announces
+readiness using the bundled helper:
 
-```text
-[[STARLIGHT-MSG]]{"protocolVersion":1,"to":"broker","kind":"ready","payload":{"summary":"ready"},"attempt":1}[[END]]
+```bash
+starlight-message ready --to broker --summary ready
 ```
 
 Ready agents receive at most one active task. Additional requests remain queued until
@@ -154,6 +158,12 @@ and their failed active request can be retried or reassigned from the broker log
 
 Terminal tabs display lifecycle state and the current task. Hovering a tab shows its
 last heartbeat and failure details.
+
+Role prompt files contain role scope only. They intentionally contain no fixed pane
+identities or hand-written protocol envelopes. The generated contract requires
+acknowledgements, progress updates, and one structured terminal result. Use
+`starlight-message <kind>` with the arguments shown in the injected contract rather
+than manually formatting JSON.
 
 ### Durable Broker State
 
@@ -202,7 +212,8 @@ An orchestrator agent can submit a validated workflow definition to the broker:
         "createdBy": "ignored-agent-value",
         "tasks": [
           {"id":"spec","owner":"Pane-A","goal":"Write the specification"},
-          {"id":"build","owner":"Pane-B","goal":"Implement it","dependencies":["spec"]},
+          {"id":"build","owner":"Pane-B","goal":"Implement it","dependencies":["spec"],
+           "requiredCapabilities":["coding"],"requiredTools":["git","npm"]},
           {"id":"test","owner":"Pane-C","goal":"Run tests","dependencies":["build"],
            "completionCriteria":{"requiredArtifacts":["test.log"]}}
         ]
@@ -216,7 +227,10 @@ The physical submitting pane becomes `createdBy`, task owners must be configured
 agents, and cyclic or malformed decompositions are rejected. Tasks can use `block`,
 `retry`, or `cancel-workflow` failure policies. Goals involving releases, publishing,
 deployment, production, deletion, destruction, or migrations automatically require
-human approval in the broker's **Workflows** tab.
+human approval in the broker's **Workflows** tab. A task's `requiredCapabilities` and
+`requiredTools` must be satisfied by its configured owner before the workflow is
+accepted or the task is reassigned. Agent and task records retain the prompt contract
+version used for execution.
 
 ### Safe Concurrent Coding
 
@@ -304,7 +318,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 4: Durable broker state
 - [x] Milestone 5: Workflow dependency engine
 - [x] Milestone 6: Git worktree isolation
-- [ ] Milestone 7: Prompt contract hardening
+- [x] Milestone 7: Prompt contract hardening
 - [ ] Milestone 8: Full end-to-end integration testing
 - [ ] Milestone 9: Observability and operational controls
 

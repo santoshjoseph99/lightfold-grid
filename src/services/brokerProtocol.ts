@@ -23,6 +23,12 @@ import {
   WorkflowTaskRecord,
   WorkflowValidationError,
 } from './workflowCore';
+import {
+  AGENT_PROMPT_VERSION,
+  findCapabilityMismatch,
+  hasCapabilities,
+  normalizeCapabilities,
+} from './promptContract';
 
 export type BrokerMessageStatus = 'pending' | ReliableRequestStatus;
 
@@ -244,6 +250,21 @@ const dispatchWorkflowTask = async (task: WorkflowTaskRecord) => {
   const taskKey = `${task.workflowId}:${task.id}`;
   if (preparingWorkflowTasks.has(taskKey)) return;
   preparingWorkflowTasks.add(taskKey);
+  const owner = agentLifecycle.get(task.owner);
+  if (
+    !owner ||
+    !hasCapabilities(owner.capabilities, task.requiredCapabilities) ||
+    !hasCapabilities(owner.tools, task.requiredTools)
+  ) {
+    workflowEngine.failTask(
+      task.workflowId,
+      task.id,
+      `Agent ${task.owner} lacks required capabilities or tools.`
+    );
+    preparingWorkflowTasks.delete(taskKey);
+    return;
+  }
+  workflowEngine.setTaskPromptVersion(task.workflowId, task.id, owner.promptVersion || AGENT_PROMPT_VERSION);
   let instruction = task.goal;
   let worktree: any;
   try {
@@ -288,6 +309,9 @@ const dispatchWorkflowTask = async (task: WorkflowTaskRecord) => {
         workflowId: task.workflowId,
         workflowTaskId: task.id,
         completionCriteria: task.completionCriteria,
+        requiredCapabilities: task.requiredCapabilities,
+        requiredTools: task.requiredTools,
+        promptVersion: owner.promptVersion || AGENT_PROMPT_VERSION,
         coding: task.coding,
         worktree,
       },
@@ -316,11 +340,20 @@ export const subscribeToWorkflows = (listener: (workflow: WorkflowRecord) => voi
   };
 };
 export const createWorkflow = (definition: WorkflowDefinition) => {
-  const knownAgents = new Set(agentLifecycle.values().map((agent) => agent.agentId));
+  const agents = agentLifecycle.values();
+  const knownAgents = new Map(agents.map((agent) => [agent.agentId, agent]));
   const unknownOwner = knownAgents.size > 0
     ? definition.tasks.find((task) => !knownAgents.has(task.owner))
     : undefined;
   if (unknownOwner) throw new WorkflowValidationError(`Workflow task ${unknownOwner.id} targets unknown agent ${unknownOwner.owner}.`);
+  const incapableOwner = findCapabilityMismatch(definition.tasks, agents);
+  if (incapableOwner) {
+    throw new WorkflowValidationError(
+      `Workflow task ${incapableOwner.id} requires capabilities or tools unavailable on ${incapableOwner.owner}. ` +
+      `Capabilities: ${normalizeCapabilities(incapableOwner.requiredCapabilities).join(', ') || '(none)'}. ` +
+      `Tools: ${normalizeCapabilities(incapableOwner.requiredTools).join(', ') || '(none)'}.`
+    );
+  }
   if (definition.tasks.some((task) => task.coding) && !brokerWorkspaceRoot) {
     throw new WorkflowValidationError('Coding workflows require a selected Git repository workspace.');
   }
@@ -329,7 +362,14 @@ export const createWorkflow = (definition: WorkflowDefinition) => {
 export const approveWorkflowTask = (workflowId: string, taskId: string) => workflowEngine.approveTask(workflowId, taskId);
 export const retryWorkflowTask = (workflowId: string, taskId: string) => workflowEngine.retryTask(workflowId, taskId);
 export const reassignWorkflowTask = (workflowId: string, taskId: string, owner: string) => {
-  if (!agentLifecycle.get(owner)) return false;
+  const agent = agentLifecycle.get(owner);
+  const task = workflowEngine.get(workflowId)?.tasks.find((candidate) => candidate.id === taskId);
+  if (
+    !agent ||
+    !task ||
+    !hasCapabilities(agent.capabilities, task.requiredCapabilities) ||
+    !hasCapabilities(agent.tools, task.requiredTools)
+  ) return false;
   return workflowEngine.reassignTask(workflowId, taskId, owner);
 };
 export const cancelWorkflow = (workflowId: string) => {
@@ -378,7 +418,15 @@ export const subscribeToAgentLifecycle = (listener: (record: AgentLifecycleRecor
     lifecycleListeners.delete(listener);
   };
 };
-export const registerAgent = (agentId: string) => agentLifecycle.register(agentId);
+export const registerAgent = (
+  agentId: string,
+  contract: { role?: string; capabilities?: string[]; tools?: string[]; promptVersion?: number } = {}
+) => agentLifecycle.register(agentId, {
+  ...contract,
+  capabilities: normalizeCapabilities(contract.capabilities),
+  tools: normalizeCapabilities(contract.tools),
+  promptVersion: contract.promptVersion || AGENT_PROMPT_VERSION,
+});
 export const markAgentStarting = (agentId: string) => agentLifecycle.starting(agentId);
 export const markAgentReady = (agentId: string) => {
   const record = agentLifecycle.ready(agentId);

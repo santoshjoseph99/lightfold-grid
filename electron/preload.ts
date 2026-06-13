@@ -73,6 +73,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setBrokerSetting: (key: string, value: any) =>
     ipcRenderer.invoke('broker:set-setting', { key, value }),
 
+  getAgentHelperCommand: () =>
+    ipcRenderer.invoke('agent:get-helper-command'),
+
   isGitRepository: (workspaceRoot: string) =>
     ipcRenderer.invoke('worktree:is-git-repository', workspaceRoot),
 

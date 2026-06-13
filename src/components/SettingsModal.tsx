@@ -9,6 +9,8 @@ export interface AgentConfig {
   selectedModel: string;
   promptPath: string;
   promptContent: string;
+  capabilities: string[];
+  tools: string[];
   yoloMode: boolean;
 }
 
@@ -59,6 +61,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           selectedModel: 'auto',
           promptPath: '',
           promptContent: '',
+          capabilities: ['general'],
+          tools: [],
           yoloMode: false,
         };
       }
@@ -143,6 +147,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     selectedModel: '',
     promptPath: '',
     promptContent: '',
+    capabilities: ['general'],
+    tools: [],
     yoloMode: false,
   };
 
@@ -306,6 +312,62 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onChange={(e) => setLocalAgentConfigs({
                       ...localAgentConfigs,
                       [selectedConfigPaneId]: { ...currentAgent, agentName: e.target.value }
+                    })}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(0,0,0,0.3)',
+                      border: '1px solid var(--glass-border)',
+                      borderRadius: '6px',
+                      padding: '8px',
+                      color: '#fff',
+                      fontSize: '12px',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                    TOOLS (COMMA-SEPARATED)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="git, npm, docker"
+                    value={(currentAgent.tools || []).join(', ')}
+                    onChange={(e) => setLocalAgentConfigs({
+                      ...localAgentConfigs,
+                      [selectedConfigPaneId]: {
+                        ...currentAgent,
+                        tools: e.target.value.split(',').map((value) => value.trim()).filter(Boolean),
+                      }
+                    })}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(0,0,0,0.3)',
+                      border: '1px solid var(--glass-border)',
+                      borderRadius: '6px',
+                      padding: '8px',
+                      color: '#fff',
+                      fontSize: '12px',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                    CAPABILITIES (COMMA-SEPARATED)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="general, coding, testing"
+                    value={(currentAgent.capabilities || []).join(', ')}
+                    onChange={(e) => setLocalAgentConfigs({
+                      ...localAgentConfigs,
+                      [selectedConfigPaneId]: {
+                        ...currentAgent,
+                        capabilities: e.target.value.split(',').map((value) => value.trim()).filter(Boolean),
+                      }
                     })}
                     style={{
                       width: '100%',

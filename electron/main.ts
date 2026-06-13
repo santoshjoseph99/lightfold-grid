@@ -149,6 +149,10 @@ ipcMain.handle('broker:set-setting', (_event, { key, value }) => {
   notifyBrokerChanged();
   return true;
 });
+ipcMain.handle('agent:get-helper-command', () => {
+  const helperPath = path.join(app.getAppPath(), 'bin', 'starlight-message.mjs');
+  return `"${helperPath}"`;
+});
 
 const worktreeOperation = (operation: () => unknown) => {
   try {

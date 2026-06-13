@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Pseudo-Terminal Multi-Agent Workspace",
   "main": "dist-electron/main.js",
+  "bin": {
+    "starlight-message": "bin/starlight-message.mjs"
+  },
   "scripts": {
     "dev": "concurrently -k -p \"[{name}]\" -n \"Vite,Elec-TS,Elec-Run\" -c \"cyan,magenta,green\" \"vite\" \"tsc -w -p tsconfig.electron.json\" \"wait-on http://localhost:5173 && nodemon --delay 500ms --watch dist-electron --exec electron .\"",
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.electron.json && vite build",
