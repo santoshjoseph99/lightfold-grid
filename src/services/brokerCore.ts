@@ -270,6 +270,10 @@ export class BoundedMessageHistory<T extends { messageId: string }> {
     this.items = this.items.map((item) => item.messageId === messageId ? updated : item);
     return updated;
   }
+
+  replaceAll(items: T[]) {
+    this.items = [...items].slice(-this.limit);
+  }
 }
 
 export type ReliableRequestStatus =
@@ -373,6 +377,20 @@ export class ReliableRequestManager {
       message: { ...message, attempt: 1 },
       status: 'queued',
       attempt: 0,
+    };
+    this.records.set(message.messageId, record);
+    this.emit(record);
+    this.enqueue(record);
+    return true;
+  }
+
+  restore(message: AgentMessage): boolean {
+    if (message.kind !== 'request' || this.records.has(message.messageId)) return false;
+    const record: ReliableRequestRecord = {
+      message: { ...message },
+      status: 'queued',
+      attempt: Math.max(0, message.attempt),
+      error: 'Recovered after application restart.',
     };
     this.records.set(message.messageId, record);
     this.emit(record);
@@ -706,6 +724,12 @@ export class AgentLifecycleManager {
     const current = this.agents.get(agentId);
     if (current) return { ...current };
     return this.set(agentId, { state: 'stopped' });
+  }
+
+  restore(record: AgentLifecycleRecord): AgentLifecycleRecord {
+    const restored = { ...record };
+    this.agents.set(record.agentId, restored);
+    return { ...restored };
   }
 
   starting(agentId: string): AgentLifecycleRecord {

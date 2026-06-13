@@ -33,8 +33,14 @@ export interface StarlightMessage extends AgentMessage {
 const messageListeners = new Set<(msg: StarlightMessage) => void>();
 const queueListeners = new Set<(paneId: string, queue: string[]) => void>();
 const lifecycleListeners = new Set<(record: AgentLifecycleRecord) => void>();
+let brokerStateInitialized = false;
+let brokerRetentionLimit = 5_000;
 
-// Bounded in-memory message history. Durable storage arrives in Milestone 4.
+const persist = (operation: Promise<unknown> | undefined) => {
+  operation?.catch((error) => console.error('Failed to persist broker state:', error));
+};
+
+// Bounded renderer projection of the authoritative durable broker history.
 const messagesLog = new BoundedMessageHistory<StarlightMessage>(DEFAULT_MESSAGE_HISTORY_LIMIT);
 
 // Configuration variables (can be modified in Settings)
@@ -44,6 +50,12 @@ let isAutopilot = false;
 let routingConnections: Record<string, string[]> = {};
 
 export const getMessagesLog = () => messagesLog.values();
+export const getBrokerRetentionLimit = () => brokerRetentionLimit;
+export const setBrokerRetentionLimit = (limit: number) => {
+  if (!Number.isInteger(limit) || limit < 100) throw new Error('Broker retention limit must be at least 100.');
+  brokerRetentionLimit = limit;
+  persist((window as any).electronAPI?.setBrokerSetting('retentionLimit', limit));
+};
 export const setAutopilot = (val: boolean) => { isAutopilot = val; };
 export const getAutopilot = () => isAutopilot;
 export const getBlocklist = () => commandBlocklist;
@@ -76,6 +88,7 @@ const notifyMessageListeners = (msg: StarlightMessage) => {
 const appendMessage = (msg: StarlightMessage) => {
   messagesLog.append(msg);
   notifyMessageListeners(msg);
+  persist((window as any).electronAPI?.persistBrokerMessage(msg));
 };
 
 const updateMessage = (
@@ -83,7 +96,10 @@ const updateMessage = (
   patch: Partial<Omit<StarlightMessage, 'id' | 'messageId'>>
 ) => {
   const updated = messagesLog.update(messageId, (msg) => ({ ...msg, ...patch }));
-  if (updated) notifyMessageListeners(updated);
+  if (updated) {
+    notifyMessageListeners(updated);
+    persist((window as any).electronAPI?.persistBrokerMessage(updated));
+  }
   return updated;
 };
 
@@ -122,6 +138,7 @@ const notifyQueueListeners = (paneId: string) => {
 const parser = new StarlightEnvelopeParser();
 const agentLifecycle = new AgentLifecycleManager((record) => {
   lifecycleListeners.forEach((listener) => listener(record));
+  persist((window as any).electronAPI?.persistBrokerAgent(record));
 });
 const deliveryQueue = new PtyDeliveryQueue(
   (paneId, data) => (window as any).electronAPI.writePty(paneId, data),
@@ -193,6 +210,34 @@ export const checkAgentHealth = () => {
   const unresponsive = agentLifecycle.checkHealth();
   unresponsive.forEach((record) => reliableRequests.failTarget(record.agentId, record.error || 'Heartbeat timeout.'));
   return unresponsive;
+};
+
+export const initializeBrokerState = async () => {
+  const electronAPI = (window as any).electronAPI;
+  if (!electronAPI || brokerStateInitialized) return;
+  brokerStateInitialized = true;
+
+  const hydrate = async () => {
+    const snapshot = await electronAPI.getBrokerSnapshot();
+    if (!snapshot) return;
+    const messages = (snapshot.messages || []) as StarlightMessage[];
+    messagesLog.replaceAll(messages);
+    (snapshot.agents || []).forEach((record: AgentLifecycleRecord) => agentLifecycle.restore(record));
+    const retention = snapshot.settings?.retentionLimit;
+    if (Number.isInteger(retention) && retention >= 100) brokerRetentionLimit = retention;
+    messages.forEach((message) => notifyMessageListeners(message));
+    (snapshot.agents || []).forEach((record: AgentLifecycleRecord) => {
+      lifecycleListeners.forEach((listener) => listener(record));
+    });
+    messages
+      .filter((message) => message.kind === 'request' && message.status === 'queued')
+      .forEach((message) => reliableRequests.restore(message));
+  };
+
+  await hydrate();
+  electronAPI.onBrokerChanged(() => {
+    void hydrate();
+  });
 };
 
 // Start listening to the raw terminal output stream

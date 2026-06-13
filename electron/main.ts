@@ -3,8 +3,10 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { execSync } from 'child_process';
 import * as pty from 'node-pty';
+import { BrokerStore } from './brokerStore';
 
 let mainWindow: BrowserWindow | null = null;
+let brokerStore: BrokerStore | null = null;
 const ptyProcesses: Map<string, pty.IPty> = new Map();
 
 // Generate a clean YYYYMMDD_HHMMSS timestamp for this run session
@@ -90,6 +92,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  brokerStore = new BrokerStore(path.join(app.getPath('userData'), 'starlight-broker.sqlite'));
+  brokerStore.recoverInterruptedWork();
   createWindow();
 
   app.on('activate', () => {
@@ -103,6 +107,32 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('before-quit', () => {
+  brokerStore?.close();
+  brokerStore = null;
+});
+
+const notifyBrokerChanged = () => {
+  mainWindow?.webContents.send('broker:changed');
+};
+
+ipcMain.handle('broker:get-snapshot', () => brokerStore?.snapshot());
+ipcMain.handle('broker:upsert-message', (_event, message) => {
+  brokerStore?.upsertMessage(message);
+  notifyBrokerChanged();
+  return true;
+});
+ipcMain.handle('broker:upsert-agent', (_event, agent) => {
+  brokerStore?.upsertAgent(agent);
+  notifyBrokerChanged();
+  return true;
+});
+ipcMain.handle('broker:set-setting', (_event, { key, value }) => {
+  brokerStore?.setSetting(key, value);
+  notifyBrokerChanged();
+  return true;
 });
 
 // IPC Handlers for PTY lifecycle

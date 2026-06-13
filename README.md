@@ -20,6 +20,8 @@ workflows.
 - Inspect and manually retry, cancel, or reassign failed requests.
 - Automatically start configured agents and queue work until they report readiness.
 - Track agent lifecycle, active tasks, heartbeats, crashes, and restarts.
+- Persist broker messages, tasks, attempts, agents, settings, and audit events in SQLite.
+- Recover interrupted requests after an application restart.
 - Inspect message flow, status, and broker logs.
 - Test wheel/spoke communication using deterministic agents or local Ollama models.
 
@@ -38,12 +40,14 @@ flowchart LR
     C --> Broker
 ```
 
-The renderer currently owns broker behavior and listens to agent output through the
-terminal registry. Agent envelopes are parsed, checked against the routing graph, and
-delivered to target PTYs in per-target order.
+The Electron main process owns the durable broker database and append-only event log.
+The renderer hydrates a subscribed projection of that state, listens to agent output
+through the terminal registry, and executes live PTY delivery. Agent envelopes are
+parsed, checked against the routing graph, persisted, and delivered to target PTYs in
+per-target order.
 
-The long-term architecture moves authoritative broker and workflow state into the
-Electron main process. See [plan.md](./plan.md) for the milestone roadmap.
+Workflow scheduling will move into the Electron main process in later milestones.
+See [plan.md](./plan.md) for the milestone roadmap.
 
 ## Requirements
 
@@ -103,7 +107,8 @@ The physical source pane is authoritative. Starlight does not trust an agent-gen
 
 All accepted messages are normalized into the versioned protocol. Malformed and
 unsupported messages are recorded as explicit broker errors. In-memory message history
-is bounded while durable history remains planned for Milestone 4.
+is bounded while the full history and audit trail are retained in the durable broker
+database according to the configured retention limit.
 
 ### Reliable Requests
 
@@ -146,6 +151,21 @@ and their failed active request can be retried or reassigned from the broker log
 Terminal tabs display lifecycle state and the current task. Hovering a tab shows its
 last heartbeat and failure details.
 
+### Durable Broker State
+
+The Electron main process stores normalized agents, messages, tasks, delivery attempts,
+settings, and append-only audit events in `starlight-broker.sqlite` under Electron's
+application data directory. Every message and lifecycle transition updates this
+authoritative store.
+
+When Starlight restarts, process-bound agent states reset to `stopped`. Requests that
+were `delivering`, `delivered`, or `acknowledged` recover as `queued` with their stable
+message and task IDs, then resume after the target agent reports readiness. Schema and
+message protocol migrations run when the database opens.
+
+Completed-message and audit-event retention is configurable under
+**Configure Grid -> General -> Durable Broker Retention**.
+
 ## Testing
 
 Run deterministic broker and wheel/spoke integration tests:
@@ -174,9 +194,8 @@ npm run build
 
 ## Current Limitations
 
-- Broker queues and workflow progress are not durable across restarts.
 - Reliable acknowledgements require agents to follow the versioned protocol.
-- Lifecycle state remains renderer-owned and is not durable across application restarts.
+- Live delivery timers are reconstructed from persisted request state after restart.
 - Complex tasks are not yet represented as durable dependency graphs.
 - Concurrent coding agents do not yet use isolated Git worktrees.
 - Full Electron-to-PTY-to-agent integration testing is still planned.
@@ -202,7 +221,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 1: Reliable versioned message protocol
 - [x] Milestone 2: Acknowledgements, retries, and timeouts
 - [x] Milestone 3: Agent lifecycle and readiness
-- [ ] Milestone 4: Durable broker state
+- [x] Milestone 4: Durable broker state
 - [ ] Milestone 5: Workflow dependency engine
 - [ ] Milestone 6: Git worktree isolation
 - [ ] Milestone 7: Prompt contract hardening

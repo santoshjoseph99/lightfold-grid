@@ -16,6 +16,7 @@ import {
   checkAgentHealth,
   getAgentLifecycles,
   getRoutingConnections,
+  initializeBrokerState,
   markAgentFailed,
   markAgentStarting,
   markAgentStopped,
@@ -90,7 +91,7 @@ export default function App() {
       });
       
       // 2. Load workspace config from disk
-      electronAPI.loadWorkspaceConfig().then((res: any) => {
+      void initializeBrokerState().then(() => electronAPI.loadWorkspaceConfig()).then((res: any) => {
         if (res.success && res.config) {
           const cfg = res.config;
           if (cfg.paneIds && cfg.paneIds.length > 0) {

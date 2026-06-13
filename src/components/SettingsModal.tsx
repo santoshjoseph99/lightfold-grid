@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Check, X, ShieldAlert, Cpu, Network, FileText, UploadCloud, Terminal } from 'lucide-react';
-import { getAutopilot, setAutopilot, getBlocklist, setBlocklist, getTrustedCommands, setTrustedCommands, getRoutingConnections, setRoutingConnections, getReliabilitySettings, setReliabilitySettings } from '../services/brokerProtocol';
+import { getAutopilot, setAutopilot, getBlocklist, setBlocklist, getTrustedCommands, setTrustedCommands, getRoutingConnections, setRoutingConnections, getReliabilitySettings, setReliabilitySettings, getBrokerRetentionLimit, setBrokerRetentionLimit } from '../services/brokerProtocol';
 
 export interface AgentConfig {
   paneId: string;
@@ -44,6 +44,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [blocklistInput, setBlocklistInput] = useState(getBlocklist().join(', '));
   const [trustedInput, setTrustedInput] = useState(getTrustedCommands().join(', '));
   const [reliabilitySettings, setLocalReliabilitySettings] = useState(() => getReliabilitySettings());
+  const [retentionLimit, setRetentionLimit] = useState(() => getBrokerRetentionLimit());
   
   // Agent profile configurations states
   const [localAgentConfigs, setLocalAgentConfigs] = useState<Record<string, AgentConfig>>(() => {
@@ -124,6 +125,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setBlocklist(blocklistInput.split(',').map((x) => x.trim()).filter((x) => x.length > 0));
     setTrustedCommands(trustedInput.split(',').map((x) => x.trim()).filter((x) => x.length > 0));
     setReliabilitySettings(reliabilitySettings);
+    setBrokerRetentionLimit(retentionLimit);
 
     // Save Matrix
     setRoutingConnections(localConnections);
@@ -589,6 +591,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     accentColor: 'var(--accent-cyan)',
                   }}
                 />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                  DURABLE BROKER RETENTION
+                </label>
+                <input
+                  type="number"
+                  min="100"
+                  value={retentionLimit}
+                  onChange={(e) => setRetentionLimit(Math.max(100, Number(e.target.value) || 100))}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(0,0,0,0.4)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: '6px',
+                    padding: '7px',
+                    color: '#fff',
+                    fontSize: '11px',
+                    outline: 'none',
+                  }}
+                />
+                <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>
+                  Maximum completed messages and audit events retained in SQLite.
+                </span>
               </div>
 
               {/* Command Blocklist */}

@@ -56,5 +56,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('dialog:select-workspace-directory'),
     
   logMessage: (cwd: string, message: any) =>
-    ipcRenderer.invoke('workspace:log-message', { cwd, message })
+    ipcRenderer.invoke('workspace:log-message', { cwd, message }),
+
+  getBrokerSnapshot: () =>
+    ipcRenderer.invoke('broker:get-snapshot'),
+
+  persistBrokerMessage: (message: any) =>
+    ipcRenderer.invoke('broker:upsert-message', message),
+
+  persistBrokerAgent: (agent: any) =>
+    ipcRenderer.invoke('broker:upsert-agent', agent),
+
+  setBrokerSetting: (key: string, value: any) =>
+    ipcRenderer.invoke('broker:set-setting', { key, value }),
+
+  onBrokerChanged: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('broker:changed', listener);
+    return () => {
+      ipcRenderer.removeListener('broker:changed', listener);
+    };
+  }
 });

@@ -136,14 +136,14 @@ temporary migration period.
 
 ### Tasks
 
-- [ ] Move authoritative broker state out of React module globals.
-- [ ] Introduce a broker service owned by the Electron main process.
-- [ ] Persist agents, messages, tasks, attempts, statuses, and events in SQLite.
-- [ ] Store an append-only event log for auditability and recovery.
-- [ ] Restore unfinished tasks and pending deliveries after application restart.
-- [ ] Add schema migrations and protocol-version migrations.
-- [ ] Add retention and cleanup settings for messages, logs, and completed tasks.
-- [ ] Keep renderer state as a subscribed projection of main-process broker state.
+- [x] Move authoritative broker state out of React module globals.
+- [x] Introduce a broker service owned by the Electron main process.
+- [x] Persist agents, messages, tasks, attempts, statuses, and events in SQLite.
+- [x] Store an append-only event log for auditability and recovery.
+- [x] Restore unfinished tasks and pending deliveries after application restart.
+- [x] Add schema migrations and protocol-version migrations.
+- [x] Add retention and cleanup settings for messages, logs, and completed tasks.
+- [x] Keep renderer state as a subscribed projection of main-process broker state.
 
 ### Acceptance Criteria
 
