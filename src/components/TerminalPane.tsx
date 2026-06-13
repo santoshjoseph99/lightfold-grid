@@ -51,16 +51,6 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
           }, 50);
         }
 
-        // Auto-boot agent if it hasn't been booted yet for this terminal session
-        if (!instance.isBooted && onBoot) {
-          instance.isBooted = true;
-          setTimeout(() => {
-            if (active) {
-              onBoot();
-            }
-          }, 400); // small delay to ensure terminal is active and focused
-        }
-
         // Setup ResizeObserver to automatically resize terminal cells on panels grid adjustment
         observer = new ResizeObserver((entries) => {
           if (!active) return;

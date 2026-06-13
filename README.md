@@ -18,6 +18,8 @@ workflows.
 - Track requests through delivery, acknowledgement, progress, and completion.
 - Retry unacknowledged requests with bounded exponential backoff.
 - Inspect and manually retry, cancel, or reassign failed requests.
+- Automatically start configured agents and queue work until they report readiness.
+- Track agent lifecycle, active tasks, heartbeats, crashes, and restarts.
 - Inspect message flow, status, and broker logs.
 - Test wheel/spoke communication using deterministic agents or local Ollama models.
 
@@ -85,10 +87,10 @@ Starlight supports a versioned protocol:
 }[[END]]
 ```
 
-Supported message kinds are `request`, `ack`, `progress`, `result`, `error`, and
-`cancel`. The broker generates message IDs and task IDs for new requests. Responses
-must include the request's task ID and may use `correlationId` to reference a specific
-message.
+Supported message kinds are `request`, `ack`, `progress`, `result`, `error`, `cancel`,
+`ready`, and `heartbeat`. The broker generates message IDs and task IDs for new
+requests. Responses must include the request's task ID and may use `correlationId` to
+reference a specific message.
 
 The legacy envelope format remains supported:
 
@@ -125,6 +127,25 @@ broker JSON log to retry or reassign it.
 Acknowledgement timeout, completion timeout, maximum attempts, and retry base delay are
 configurable under **Configure Grid -> General -> Reliable Delivery**.
 
+### Agent Lifecycle
+
+Every configured agent gets a PTY when its workspace loads, including agents whose
+terminal tab is not visible. Starlight waits until the configured CLI is observable
+before injecting its startup instructions. The agent must then emit:
+
+```text
+[[STARLIGHT-MSG]]{"protocolVersion":1,"to":"broker","kind":"ready","payload":{"summary":"ready"},"attempt":1}[[END]]
+```
+
+Ready agents receive at most one active task. Additional requests remain queued until
+the active task completes. Agents should emit a `heartbeat` message to `broker` at
+least every 20 seconds; after 30 seconds without one, Starlight marks the agent
+unresponsive. Failed or unresponsive agents can be restarted from their terminal tab,
+and their failed active request can be retried or reassigned from the broker log.
+
+Terminal tabs display lifecycle state and the current task. Hovering a tab shows its
+last heartbeat and failure details.
+
 ## Testing
 
 Run deterministic broker and wheel/spoke integration tests:
@@ -154,8 +175,8 @@ npm run build
 ## Current Limitations
 
 - Broker queues and workflow progress are not durable across restarts.
-- Agent readiness and heartbeats are not yet implemented.
 - Reliable acknowledgements require agents to follow the versioned protocol.
+- Lifecycle state remains renderer-owned and is not durable across application restarts.
 - Complex tasks are not yet represented as durable dependency graphs.
 - Concurrent coding agents do not yet use isolated Git worktrees.
 - Full Electron-to-PTY-to-agent integration testing is still planned.
@@ -180,7 +201,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
 - [x] Milestone 1: Reliable versioned message protocol
 - [x] Milestone 2: Acknowledgements, retries, and timeouts
-- [ ] Milestone 3: Agent lifecycle and readiness
+- [x] Milestone 3: Agent lifecycle and readiness
 - [ ] Milestone 4: Durable broker state
 - [ ] Milestone 5: Workflow dependency engine
 - [ ] Milestone 6: Git worktree isolation

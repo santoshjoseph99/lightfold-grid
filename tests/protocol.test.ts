@@ -89,6 +89,26 @@ test('assigns broker IDs to requests and preserves correlation fields on respons
   assert.equal(result.from, 'Pane-B');
 });
 
+test('accepts ready and heartbeat lifecycle messages without task IDs', () => {
+  const ready = normalizeAgentMessage(
+    {
+      protocolVersion: 1,
+      to: 'broker',
+      kind: 'ready',
+      payload: { summary: 'ready' },
+    },
+    {
+      sourceId: 'Pane-A',
+      createId: ids('ready-message-id'),
+      now: () => 4000,
+    }
+  );
+
+  assert.equal(ready.taskId, 'lifecycle:Pane-A');
+  assert.equal(ready.kind, 'ready');
+  assert.equal(ready.from, 'Pane-A');
+});
+
 test('rejects malformed, unsupported, and incomplete protocol messages', () => {
   assert.throws(
     () => normalizeAgentMessage('not-an-object', { sourceId: 'Pane-A' }),

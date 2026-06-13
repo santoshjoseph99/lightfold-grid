@@ -33,7 +33,7 @@ interface AgentMessage {
   correlationId?: string;
   from: string;
   to: string;
-  kind: "request" | "ack" | "progress" | "result" | "error" | "cancel";
+  kind: "request" | "ack" | "progress" | "result" | "error" | "cancel" | "ready" | "heartbeat";
   payload: {
     instruction?: string;
     summary?: string;
@@ -108,17 +108,17 @@ temporary migration period.
 
 ### Tasks
 
-- [ ] Define agent states:
+- [x] Define agent states:
       `stopped`, `starting`, `ready`, `busy`, `unresponsive`, `failed`, `stopping`.
-- [ ] Automatically spawn every configured agent when a workspace loads.
-- [ ] Add a startup handshake requiring each agent to emit a `ready` message.
-- [ ] Queue tasks until their target agent is ready.
-- [ ] Track one active task per agent unless the agent explicitly supports concurrency.
-- [ ] Add heartbeat messages and unresponsive-agent detection.
-- [ ] Support restart and task reassignment after agent failure.
-- [ ] Stop using fixed startup delays for prompt injection; wait for observable
+- [x] Automatically spawn every configured agent when a workspace loads.
+- [x] Add a startup handshake requiring each agent to emit a `ready` message.
+- [x] Queue tasks until their target agent is ready.
+- [x] Track one active task per agent unless the agent explicitly supports concurrency.
+- [x] Add heartbeat messages and unresponsive-agent detection.
+- [x] Support restart and task reassignment after agent failure.
+- [x] Stop using fixed startup delays for prompt injection; wait for observable
       readiness instead.
-- [ ] Display lifecycle state, current task, and last heartbeat in the UI.
+- [x] Display lifecycle state, current task, and last heartbeat in the UI.
 
 ### Acceptance Criteria
 

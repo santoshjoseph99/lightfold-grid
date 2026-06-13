@@ -1,6 +1,8 @@
 import { subscribeToStream } from './terminalRegistry';
 import {
   AgentMessage,
+  AgentLifecycleManager,
+  AgentLifecycleRecord,
   BoundedMessageHistory,
   createProtocolId,
   DEFAULT_MESSAGE_HISTORY_LIMIT,
@@ -30,6 +32,7 @@ export interface StarlightMessage extends AgentMessage {
 
 const messageListeners = new Set<(msg: StarlightMessage) => void>();
 const queueListeners = new Set<(paneId: string, queue: string[]) => void>();
+const lifecycleListeners = new Set<(record: AgentLifecycleRecord) => void>();
 
 // Bounded in-memory message history. Durable storage arrives in Milestone 4.
 const messagesLog = new BoundedMessageHistory<StarlightMessage>(DEFAULT_MESSAGE_HISTORY_LIMIT);
@@ -117,6 +120,9 @@ const notifyQueueListeners = (paneId: string) => {
 };
 
 const parser = new StarlightEnvelopeParser();
+const agentLifecycle = new AgentLifecycleManager((record) => {
+  lifecycleListeners.forEach((listener) => listener(record));
+});
 const deliveryQueue = new PtyDeliveryQueue(
   (paneId, data) => (window as any).electronAPI.writePty(paneId, data),
   (paneId) => notifyQueueListeners(paneId),
@@ -137,12 +143,57 @@ const reliableRequests = new ReliableRequestManager(
       acknowledgedAt: record.acknowledgedAt,
       completedAt: record.completedAt,
     });
+    if (record.status === 'queued') {
+      agentLifecycle.taskFinished(record.message.to, record.message.taskId);
+      reliableRequests.wakeTarget(record.message.to);
+    } else if (['completed', 'cancelled'].includes(record.status)) {
+      agentLifecycle.taskFinished(record.message.to, record.message.taskId);
+      reliableRequests.wakeTarget(record.message.to);
+    } else if (record.status === 'failed') {
+      const lifecycle = agentLifecycle.get(record.message.to);
+      if (lifecycle?.currentTaskId === record.message.taskId) {
+        agentLifecycle.unresponsive(record.message.to, record.error || 'Task delivery failed.');
+      }
+    }
+  },
+  undefined,
+  {},
+  Date.now,
+  {
+    canDeliver: (targetId) => agentLifecycle.canAcceptTask(targetId),
+    onTaskStarted: (targetId, taskId) => agentLifecycle.taskStarted(targetId, taskId),
   }
 );
 
 export const getDeadLetters = () => reliableRequests.getDeadLetters();
 export const getReliabilitySettings = () => reliableRequests.getOptions();
 export const setReliabilitySettings = (settings: ReliabilityOptions) => reliableRequests.configure(settings);
+export const getAgentLifecycles = () => agentLifecycle.values();
+export const subscribeToAgentLifecycle = (listener: (record: AgentLifecycleRecord) => void) => {
+  lifecycleListeners.add(listener);
+  return () => {
+    lifecycleListeners.delete(listener);
+  };
+};
+export const registerAgent = (agentId: string) => agentLifecycle.register(agentId);
+export const markAgentStarting = (agentId: string) => agentLifecycle.starting(agentId);
+export const markAgentReady = (agentId: string) => {
+  const record = agentLifecycle.ready(agentId);
+  reliableRequests.wakeTarget(agentId);
+  return record;
+};
+export const heartbeatAgent = (agentId: string) => agentLifecycle.heartbeat(agentId);
+export const markAgentStopping = (agentId: string) => agentLifecycle.stopping(agentId);
+export const markAgentStopped = (agentId: string) => agentLifecycle.stopped(agentId);
+export const markAgentFailed = (agentId: string, error: string) => {
+  reliableRequests.failTarget(agentId, error);
+  return agentLifecycle.failed(agentId, error);
+};
+export const checkAgentHealth = () => {
+  const unresponsive = agentLifecycle.checkHealth();
+  unresponsive.forEach((record) => reliableRequests.failTarget(record.agentId, record.error || 'Heartbeat timeout.'));
+  return unresponsive;
+};
 
 // Start listening to the raw terminal output stream
 subscribeToStream((id, chunk) => {
@@ -176,6 +227,26 @@ subscribeToStream((id, chunk) => {
 const processMessage = (msg: StarlightMessage) => {
   const targetPane = msg.to;
   const sourcePane = msg.from;
+
+  if (msg.kind === 'ready') {
+    if (targetPane !== 'broker') {
+      updateMessage(msg.messageId, { status: 'failed', error: 'Lifecycle messages must target broker.' });
+      return;
+    }
+    markAgentReady(sourcePane);
+    updateMessage(msg.messageId, { status: 'completed' });
+    return;
+  }
+  if (msg.kind === 'heartbeat') {
+    if (targetPane !== 'broker') {
+      updateMessage(msg.messageId, { status: 'failed', error: 'Lifecycle messages must target broker.' });
+      return;
+    }
+    heartbeatAgent(sourcePane);
+    updateMessage(msg.messageId, { status: 'completed' });
+    return;
+  }
+
   const isConnected = isRouteAllowed(routingConnections, sourcePane, targetPane);
   
   if (!isConnected) {

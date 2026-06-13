@@ -1,7 +1,12 @@
-import React from 'react';
-import { Terminal, Cpu, Plus, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Terminal, Cpu, Plus, RefreshCw, X } from 'lucide-react';
 import { TerminalPane } from './TerminalPane';
 import { AgentConfig } from './SettingsModal';
+import {
+  getAgentLifecycles,
+  subscribeToAgentLifecycle,
+} from '../services/brokerProtocol';
+import type { AgentLifecycleRecord, AgentLifecycleState } from '../services/brokerCore';
 
 interface TerminalGridProps {
   paneIds: string[];
@@ -26,6 +31,21 @@ export const TerminalGrid: React.FC<TerminalGridProps> = ({
   onBootPane,
   onAddPane,
 }) => {
+  const [lifecycles, setLifecycles] = useState<Record<string, AgentLifecycleRecord>>(() => (
+    Object.fromEntries(getAgentLifecycles().map((record) => [record.agentId, record]))
+  ));
+
+  useEffect(() => subscribeToAgentLifecycle((record) => {
+    setLifecycles((current) => ({ ...current, [record.agentId]: record }));
+  }), []);
+
+  const lifecycleColor = (state: AgentLifecycleState) => {
+    if (state === 'ready') return 'var(--accent-green)';
+    if (state === 'busy' || state === 'starting') return 'var(--accent-orange)';
+    if (state === 'failed' || state === 'unresponsive') return 'var(--accent-red)';
+    return 'var(--text-muted)';
+  };
+
   if (paneIds.length === 0) {
     return (
       <div
@@ -112,11 +132,22 @@ export const TerminalGrid: React.FC<TerminalGridProps> = ({
           const isActive = id === activePaneId;
           const config = agentConfigs[id];
           const isGemini = config?.cliCommand?.toLowerCase().includes('gemini');
+          const lifecycle = lifecycles[id] || { agentId: id, state: 'stopped' as const };
+          const canRestart = ['failed', 'unresponsive', 'stopped'].includes(lifecycle.state);
+          const heartbeat = lifecycle.lastHeartbeatAt
+            ? new Date(lifecycle.lastHeartbeatAt).toLocaleTimeString()
+            : 'never';
           
           return (
             <div
               key={id}
               onClick={() => onSelectPane(id)}
+              title={[
+                `State: ${lifecycle.state}`,
+                `Current task: ${lifecycle.currentTaskId || 'none'}`,
+                `Last heartbeat: ${heartbeat}`,
+                lifecycle.error ? `Error: ${lifecycle.error}` : '',
+              ].filter(Boolean).join('\n')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -157,14 +188,47 @@ export const TerminalGrid: React.FC<TerminalGridProps> = ({
               
               <span
                 style={{
+                  display: 'flex',
+                  flexDirection: 'column',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   flex: 1,
                 }}
               >
-                {getTabLabel(id)}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{getTabLabel(id)}</span>
+                <span
+                  style={{
+                    color: lifecycleColor(lifecycle.state),
+                    fontSize: '8px',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {lifecycle.state}
+                  {lifecycle.currentTaskId ? ` · ${lifecycle.currentTaskId.slice(0, 8)}` : ''}
+                </span>
               </span>
+
+              {canRestart && onBootPane && agentConfigs[id] && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBootPane(id);
+                  }}
+                  title={`Restart ${id}`}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: lifecycleColor(lifecycle.state),
+                    cursor: 'pointer',
+                    padding: '2px',
+                    display: 'flex',
+                  }}
+                >
+                  <RefreshCw size={10} />
+                </button>
+              )}
 
               {/* Close Tab Button */}
               <button

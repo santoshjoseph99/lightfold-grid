@@ -10,7 +10,15 @@ export interface StarlightEnvelope {
   type?: string;
 }
 
-export type AgentMessageKind = 'request' | 'ack' | 'progress' | 'result' | 'error' | 'cancel';
+export type AgentMessageKind =
+  | 'request'
+  | 'ack'
+  | 'progress'
+  | 'result'
+  | 'error'
+  | 'cancel'
+  | 'ready'
+  | 'heartbeat';
 
 export interface AgentMessagePayload {
   instruction?: string;
@@ -52,6 +60,8 @@ const MESSAGE_KINDS = new Set<AgentMessageKind>([
   'result',
   'error',
   'cancel',
+  'ready',
+  'heartbeat',
 ]);
 
 export class ProtocolValidationError extends Error {
@@ -180,7 +190,8 @@ export const normalizeAgentMessage = (
   }
   const kind = value.kind as AgentMessageKind;
   const suppliedTaskId = optionalString(value.taskId, 'taskId');
-  if (!suppliedTaskId && kind !== 'request') {
+  const isLifecycleMessage = kind === 'ready' || kind === 'heartbeat';
+  if (!suppliedTaskId && kind !== 'request' && !isLifecycleMessage) {
     throw new ProtocolValidationError(`${kind} messages must include taskId.`, 'MISSING_TASK_ID');
   }
 
@@ -192,7 +203,7 @@ export const normalizeAgentMessage = (
   return {
     protocolVersion: AGENT_PROTOCOL_VERSION,
     messageId,
-    taskId: kind === 'request' ? createId() : suppliedTaskId!,
+    taskId: kind === 'request' ? createId() : suppliedTaskId || `lifecycle:${options.sourceId}`,
     parentTaskId: optionalString(value.parentTaskId, 'parentTaskId'),
     correlationId: optionalString(value.correlationId, 'correlationId'),
     from: options.sourceId,
@@ -287,6 +298,11 @@ export interface ReliabilityOptions {
   retryBaseDelayMs?: number;
 }
 
+export interface DeliveryGate {
+  canDeliver(targetId: string): boolean;
+  onTaskStarted?(targetId: string, taskId: string): void;
+}
+
 export interface ReliabilityScheduler {
   schedule(callback: () => void, delayMs: number): unknown;
   cancel(handle: unknown): void;
@@ -329,18 +345,21 @@ export class ReliableRequestManager {
   private readonly queues = new Map<string, string[]>();
   private readonly processingTargets = new Set<string>();
   private options: Required<ReliabilityOptions>;
+  private readonly deliveryGate?: DeliveryGate;
 
   constructor(
     write: (targetId: string, data: string) => Promise<boolean>,
     onUpdate: (record: ReliableRequestRecord) => void = () => {},
     scheduler: ReliabilityScheduler = defaultScheduler,
     options: ReliabilityOptions = {},
-    now: () => number = Date.now
+    now: () => number = Date.now,
+    deliveryGate?: DeliveryGate
   ) {
     this.write = write;
     this.onUpdate = onUpdate;
     this.scheduler = scheduler;
     this.now = now;
+    this.deliveryGate = deliveryGate;
     this.options = resolveReliabilityOptions(options);
   }
 
@@ -456,6 +475,20 @@ export class ReliableRequestManager {
     return true;
   }
 
+  failTarget(targetId: string, error: string): string[] {
+    const failed: string[] = [];
+    for (const record of this.records.values()) {
+      if (
+        record.message.to === targetId &&
+        ['delivering', 'delivered', 'acknowledged'].includes(record.status)
+      ) {
+        this.fail(record, error);
+        failed.push(record.message.messageId);
+      }
+    }
+    return failed;
+  }
+
   get(messageId: string): ReliableRequestRecord | undefined {
     const record = this.records.get(messageId);
     return record ? this.copy(record) : undefined;
@@ -463,6 +496,10 @@ export class ReliableRequestManager {
 
   getDeadLetters(): ReliableRequestRecord[] {
     return [...this.deadLetters.values()].map((record) => this.copy(record));
+  }
+
+  wakeTarget(targetId: string) {
+    void this.process(targetId);
   }
 
   getOptions(): Required<ReliabilityOptions> {
@@ -507,12 +544,17 @@ export class ReliableRequestManager {
         const queue = this.queues.get(targetId) || [];
         if (queue.length === 0) break;
         const messageId = queue[0];
-        this.queues.set(targetId, queue.slice(1));
         const record = this.records.get(messageId);
-        if (!record || record.status !== 'queued') continue;
+        if (!record || record.status !== 'queued') {
+          this.queues.set(targetId, queue.slice(1));
+          continue;
+        }
+        if (this.deliveryGate && !this.deliveryGate.canDeliver(targetId)) break;
+        this.queues.set(targetId, queue.slice(1));
 
         record.attempt += 1;
         record.message = { ...record.message, attempt: record.attempt };
+        this.deliveryGate?.onTaskStarted?.(targetId, record.message.taskId);
         this.transition(record, {
           status: 'delivering',
           error: undefined,
@@ -617,6 +659,155 @@ export class ReliableRequestManager {
   private removeFromQueue(targetId: string, messageId: string) {
     const queue = this.queues.get(targetId) || [];
     this.queues.set(targetId, queue.filter((id) => id !== messageId));
+  }
+}
+
+export type AgentLifecycleState =
+  | 'stopped'
+  | 'starting'
+  | 'ready'
+  | 'busy'
+  | 'unresponsive'
+  | 'failed'
+  | 'stopping';
+
+export interface AgentLifecycleRecord {
+  agentId: string;
+  state: AgentLifecycleState;
+  currentTaskId?: string;
+  lastHeartbeatAt?: number;
+  error?: string;
+}
+
+export interface AgentLifecycleOptions {
+  heartbeatTimeoutMs?: number;
+}
+
+export class AgentLifecycleManager {
+  private readonly agents = new Map<string, AgentLifecycleRecord>();
+  private readonly heartbeatTimeoutMs: number;
+  private readonly onUpdate: (record: AgentLifecycleRecord) => void;
+  private readonly now: () => number;
+
+  constructor(
+    onUpdate: (record: AgentLifecycleRecord) => void = () => {},
+    options: AgentLifecycleOptions = {},
+    now: () => number = Date.now
+  ) {
+    this.onUpdate = onUpdate;
+    this.now = now;
+    this.heartbeatTimeoutMs = options.heartbeatTimeoutMs ?? 30_000;
+    if (!Number.isInteger(this.heartbeatTimeoutMs) || this.heartbeatTimeoutMs < 1) {
+      throw new Error('heartbeatTimeoutMs must be a positive integer.');
+    }
+  }
+
+  register(agentId: string): AgentLifecycleRecord {
+    const current = this.agents.get(agentId);
+    if (current) return { ...current };
+    return this.set(agentId, { state: 'stopped' });
+  }
+
+  starting(agentId: string): AgentLifecycleRecord {
+    return this.set(agentId, {
+      state: 'starting',
+      currentTaskId: undefined,
+      error: undefined,
+      lastHeartbeatAt: this.now(),
+    });
+  }
+
+  ready(agentId: string): AgentLifecycleRecord {
+    return this.set(agentId, {
+      state: 'ready',
+      currentTaskId: undefined,
+      error: undefined,
+      lastHeartbeatAt: this.now(),
+    });
+  }
+
+  heartbeat(agentId: string): AgentLifecycleRecord {
+    const current = this.agents.get(agentId);
+    const state = current?.state === 'unresponsive'
+      ? (current.currentTaskId ? 'busy' : 'ready')
+      : current?.state || 'ready';
+    return this.set(agentId, { state, lastHeartbeatAt: this.now(), error: undefined });
+  }
+
+  taskStarted(agentId: string, taskId: string): AgentLifecycleRecord {
+    return this.set(agentId, {
+      state: 'busy',
+      currentTaskId: taskId,
+      lastHeartbeatAt: this.now(),
+      error: undefined,
+    });
+  }
+
+  taskFinished(agentId: string, taskId?: string): AgentLifecycleRecord {
+    const current = this.agents.get(agentId);
+    if (taskId && current?.currentTaskId !== taskId) {
+      return current ? { ...current } : this.register(agentId);
+    }
+    return this.set(agentId, {
+      state: 'ready',
+      currentTaskId: undefined,
+      lastHeartbeatAt: this.now(),
+      error: undefined,
+    });
+  }
+
+  stopping(agentId: string): AgentLifecycleRecord {
+    return this.set(agentId, { state: 'stopping' });
+  }
+
+  stopped(agentId: string): AgentLifecycleRecord {
+    return this.set(agentId, { state: 'stopped', currentTaskId: undefined });
+  }
+
+  failed(agentId: string, error: string): AgentLifecycleRecord {
+    return this.set(agentId, { state: 'failed', currentTaskId: undefined, error });
+  }
+
+  unresponsive(agentId: string, error = 'Agent is unresponsive.'): AgentLifecycleRecord {
+    return this.set(agentId, { state: 'unresponsive', error });
+  }
+
+  checkHealth(): AgentLifecycleRecord[] {
+    const changed: AgentLifecycleRecord[] = [];
+    for (const record of this.agents.values()) {
+      if (
+        ['ready', 'busy'].includes(record.state) &&
+        record.lastHeartbeatAt !== undefined &&
+        this.now() - record.lastHeartbeatAt > this.heartbeatTimeoutMs
+      ) {
+        changed.push(this.set(record.agentId, {
+          state: 'unresponsive',
+          error: 'Heartbeat timeout.',
+        }));
+      }
+    }
+    return changed;
+  }
+
+  canAcceptTask(agentId: string): boolean {
+    return this.agents.get(agentId)?.state === 'ready';
+  }
+
+  get(agentId: string): AgentLifecycleRecord | undefined {
+    const record = this.agents.get(agentId);
+    return record ? { ...record } : undefined;
+  }
+
+  values(): AgentLifecycleRecord[] {
+    return [...this.agents.values()].map((record) => ({ ...record }));
+  }
+
+  private set(agentId: string, patch: Partial<AgentLifecycleRecord>): AgentLifecycleRecord {
+    const current = this.agents.get(agentId) || { agentId, state: 'stopped' as const };
+    const updated = { ...current, ...patch, agentId };
+    this.agents.set(agentId, updated);
+    this.onUpdate({ ...updated });
+    return { ...updated };
   }
 }
 

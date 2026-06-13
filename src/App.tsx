@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Columns, Sliders, Layout, ChevronLeft, ChevronRight, Star, Plus, Link2, Save, FolderOpen, Folder } from 'lucide-react';
 import { TerminalGrid } from './components/TerminalGrid';
 import { CentralBroker } from './components/CentralBroker';
@@ -6,8 +6,40 @@ import { SettingsModal, AgentConfig } from './components/SettingsModal';
 import { AddAgentModal } from './components/AddAgentModal';
 import { AddConnectionModal } from './components/AddConnectionModal';
 import { ApprovalOverlay } from './components/ApprovalOverlay';
-import { removeTerminalInstance, createTerminalInstance } from './services/terminalRegistry';
-import { getRoutingConnections, setRoutingConnections, subscribeToMessages } from './services/brokerProtocol';
+import {
+  removeTerminalInstance,
+  createTerminalInstance,
+  getTerminalInstance,
+  subscribeToTerminalExit,
+} from './services/terminalRegistry';
+import {
+  checkAgentHealth,
+  getAgentLifecycles,
+  getRoutingConnections,
+  markAgentFailed,
+  markAgentStarting,
+  markAgentStopped,
+  markAgentStopping,
+  registerAgent,
+  setRoutingConnections,
+  subscribeToMessages,
+} from './services/brokerProtocol';
+
+const STARTUP_TIMEOUT_MS = 20_000;
+const STARTUP_POLL_MS = 250;
+const HEALTH_CHECK_MS = 5_000;
+
+const sleep = (durationMs: number) => new Promise((resolve) => setTimeout(resolve, durationMs));
+
+const lifecyclePrompt = (paneId: string) => [
+  `You are agent ${paneId} running under the Starlight orchestrator.`,
+  'Immediately announce readiness by emitting one versioned Starlight protocol message to broker.',
+  `Use protocolVersion 1, kind ready, to broker, payload summary "ready", and attempt 1.`,
+  'Wrap JSON in the opening marker made from two left brackets, STARLIGHT-MSG, and two right brackets.',
+  'Close it with the marker made from two left brackets, END, and two right brackets.',
+  'While working, emit heartbeat messages to broker at least every 20 seconds using kind heartbeat.',
+  'For tasks, acknowledge before execution and return a structured result or error when finished.',
+].join('\n');
 
 export default function App() {
   const [paneIds, setPaneIds] = useState<string[]>(['Pane-A']);
@@ -22,6 +54,7 @@ export default function App() {
   // Agent configs mapped by pane ID
   const [agentConfigs, setAgentConfigs] = useState<Record<string, AgentConfig>>({});
   const [connections, setConnections] = useState<Record<string, string[]>>({});
+  const bootingAgents = useRef(new Set<string>());
 
   // Helper to save workspace state to local disk config
   const saveWorkspace = (
@@ -131,7 +164,9 @@ export default function App() {
   };
 
   const handleClosePane = (id: string) => {
+    markAgentStopping(id);
     removeTerminalInstance(id);
+    markAgentStopped(id);
     const updated = paneIds.filter((p) => p !== id);
     setPaneIds(updated);
     
@@ -284,41 +319,97 @@ export default function App() {
     return cmd;
   };
 
-  // Launch command injection & bracketed-paste system prompts to PTY
-  const handleBootPane = (paneId: string, customConfig?: AgentConfig) => {
+  const waitForAgentProcess = async (paneId: string) => {
+    const electronAPI = (window as any).electronAPI;
+    const deadline = Date.now() + STARTUP_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      const processName = await electronAPI.getActiveProcess(paneId);
+      if (processName && !['none', 'shell'].includes(processName)) {
+        return processName as string;
+      }
+      await sleep(STARTUP_POLL_MS);
+    }
+    throw new Error(`Agent CLI did not start within ${STARTUP_TIMEOUT_MS / 1000} seconds.`);
+  };
+
+  // Launch the configured CLI and wait for an observable child process before
+  // asking the agent to complete the Starlight readiness handshake.
+  const handleBootPane = async (paneId: string, customConfig?: AgentConfig, restart = false) => {
     const config = customConfig || agentConfigs[paneId];
     if (!config) {
       alert(`Please configure the Agent Profile for ${paneId} first in workspace settings!`);
       return;
     }
-    
+
     const electronAPI = (window as any).electronAPI;
-    if (!electronAPI) return;
-    
-    // Build boot command using our new logic
-    const bootCommand = buildBootCommand(config);
-    
-    // 1. Type the CLI Launch Command (e.g. gemini -m gemini-1.5-pro --yolo)
-    if (bootCommand) {
-      electronAPI.writePty(paneId, bootCommand + '\r');
-    }
-    
-    // 2. Inject system prompt instructions using bracketed-paste after a short startup delay
-    // (Only if we didn't specify the prompt path via command line options)
-    const hasCommandLinePrompt = (
-      (bootCommand.includes('-s') || bootCommand.includes('--system')) && 
-      config.promptPath
-    );
-    
-    if (config.promptContent && !hasCommandLinePrompt) {
-      setTimeout(() => {
-        const startPaste = '\x1b[200~';
-        const endPaste = '\x1b[201~';
-        const payload = startPaste + config.promptContent + endPaste + '\r';
-        electronAPI.writePty(paneId, payload);
-      }, 600);
+    if (!electronAPI || bootingAgents.current.has(paneId)) return;
+
+    const lifecycle = getAgentLifecycles().find((record) => record.agentId === paneId);
+    if (!restart && ['starting', 'ready', 'busy'].includes(lifecycle?.state || '')) return;
+
+    bootingAgents.current.add(paneId);
+    try {
+      if (restart) {
+        markAgentStopping(paneId);
+        removeTerminalInstance(paneId);
+      }
+
+      const instance = await createTerminalInstance(paneId, defaultShell, workspaceCwd);
+      instance.isBooted = true;
+      markAgentStarting(paneId);
+
+      const bootCommand = buildBootCommand(config);
+      if (!bootCommand) throw new Error('Agent CLI command is empty.');
+      await electronAPI.writePty(paneId, bootCommand + '\r');
+      await waitForAgentProcess(paneId);
+
+      const hasCommandLinePrompt = (
+        (bootCommand.includes('-s') || bootCommand.includes('--system')) &&
+        config.promptPath
+      );
+      const prompt = [
+        lifecyclePrompt(paneId),
+        !hasCommandLinePrompt && config.promptContent ? config.promptContent : '',
+      ].filter(Boolean).join('\n\n');
+      const payload = `\x1b[200~${prompt}\x1b[201~\r`;
+      await electronAPI.writePty(paneId, payload);
+    } catch (error) {
+      const description = error instanceof Error ? error.message : String(error);
+      markAgentFailed(paneId, description);
+      console.error(`Failed to boot ${paneId}:`, error);
+    } finally {
+      bootingAgents.current.delete(paneId);
     }
   };
+
+  // Configured agents exist independently of the visible terminal tab.
+  useEffect(() => {
+    if (!defaultShell) return;
+    Object.keys(agentConfigs).forEach((paneId) => {
+      registerAgent(paneId);
+      void createTerminalInstance(paneId, defaultShell, workspaceCwd).then((instance) => {
+        if (!instance.isBooted) {
+          instance.isBooted = true;
+          void handleBootPane(paneId, agentConfigs[paneId]);
+        }
+      }).catch((error) => {
+        markAgentFailed(paneId, error instanceof Error ? error.message : String(error));
+      });
+    });
+  }, [agentConfigs, defaultShell, workspaceCwd]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToTerminalExit((paneId, info) => {
+      if (getTerminalInstance(paneId)) {
+        markAgentFailed(paneId, `PTY exited with code ${info.exitCode}.`);
+      }
+    });
+    const interval = window.setInterval(() => checkAgentHealth(), HEALTH_CHECK_MS);
+    return () => {
+      unsubscribe();
+      window.clearInterval(interval);
+    };
+  }, []);
 
   // Add agent callback from sidebar modal
   const handleAddAgent = (paneId: string, config: AgentConfig, spawnPane: boolean) => {
@@ -340,10 +431,6 @@ export default function App() {
     setAgentConfigs(nextConfigs);
     saveWorkspace(spawnPane ? [...paneIds, targetId] : paneIds, targetId, nextConfigs);
 
-    // Boot agent immediately inside PTY
-    setTimeout(() => {
-      handleBootPane(targetId!, nextConfigs[targetId!]);
-    }, 400);
   };
 
   // Extract agent names to display inside connection list helper
@@ -614,7 +701,7 @@ export default function App() {
             agentConfigs={agentConfigs}
             onSelectPane={setActivePaneId}
             onClosePane={handleClosePane}
-            onBootPane={handleBootPane}
+            onBootPane={(paneId) => void handleBootPane(paneId, undefined, true)}
             onAddPane={() => handleSplit()}
           />
         </div>

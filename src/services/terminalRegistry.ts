@@ -22,8 +22,11 @@ export interface TerminalInstance {
 }
 
 const registry = new Map<string, TerminalInstance>();
+const pendingInstances = new Map<string, Promise<TerminalInstance>>();
 type StreamListener = (id: string, chunk: string) => void;
 const streamListeners = new Set<StreamListener>();
+type ExitListener = (id: string, info: { exitCode: number; signal?: number }) => void;
+const exitListeners = new Set<ExitListener>();
 
 export const getTerminalInstance = (id: string): TerminalInstance | undefined => {
   return registry.get(id);
@@ -42,6 +45,8 @@ export const createTerminalInstance = (
     // Configuration has changed (e.g. CWD updated): destroy stale process
     removeTerminalInstance(id);
   }
+  const pending = pendingInstances.get(id);
+  if (pending) return pending;
 
   const container = document.createElement('div');
   container.className = 'terminal-wrapper-inner';
@@ -74,7 +79,7 @@ export const createTerminalInstance = (
 
   const electronAPI = (window as any).electronAPI;
 
-  return electronAPI.spawnPty({ id, cols: 80, rows: 24, shellPath, cwd }).then((res: any) => {
+  const creation = electronAPI.spawnPty({ id, cols: 80, rows: 24, shellPath, cwd }).then((res: any) => {
     if (!res.success) {
       throw new Error(res.error || 'Failed to spawn PTY');
     }
@@ -87,8 +92,9 @@ export const createTerminalInstance = (
       notifyListeners(id, data);
     });
 
-    const onExitUnsubscribe = electronAPI.onPtyExit(id, () => {
+    const onExitUnsubscribe = electronAPI.onPtyExit(id, (info: { exitCode: number; signal?: number }) => {
       term.write('\r\n\x1b[1;31m[Process terminated]\x1b[0m\r\n');
+      exitListeners.forEach((listener) => listener(id, info));
     });
 
     term.onData((data) => {
@@ -115,9 +121,21 @@ export const createTerminalInstance = (
     registry.set(id, instance);
     return instance;
   });
+  const trackedCreation = creation.finally(() => {
+    if (pendingInstances.get(id) === trackedCreation) {
+      pendingInstances.delete(id);
+    }
+  });
+  pendingInstances.set(id, trackedCreation);
+  return trackedCreation;
 };
 
 export const removeTerminalInstance = (id: string) => {
+  const pending = pendingInstances.get(id);
+  if (pending) {
+    void pending.then(() => removeTerminalInstance(id), () => {});
+    return;
+  }
   const instance = registry.get(id);
   if (instance) {
     instance.onDataUnsubscribe();
@@ -133,6 +151,13 @@ export const subscribeToStream = (listener: StreamListener) => {
   streamListeners.add(listener);
   return () => {
     streamListeners.delete(listener);
+  };
+};
+
+export const subscribeToTerminalExit = (listener: ExitListener) => {
+  exitListeners.add(listener);
+  return () => {
+    exitListeners.delete(listener);
   };
 };
 
