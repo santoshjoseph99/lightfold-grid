@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "concurrently -k -p \"[{name}]\" -n \"Vite,Elec-TS,Elec-Run\" -c \"cyan,magenta,green\" \"vite\" \"tsc -w -p tsconfig.electron.json\" \"wait-on http://localhost:5173 && nodemon --delay 500ms --watch dist-electron --exec electron .\"",
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.electron.json && vite build",
-    "test": "node --experimental-strip-types --test tests/*.test.ts",
-    "test:ollama": "STARLIGHT_OLLAMA_TEST=1 node --experimental-strip-types --test tests/ollama-wheel.integration.test.ts",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/*.test.ts",
+    "test:ollama": "STARLIGHT_OLLAMA_TEST=1 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/ollama-wheel.integration.test.ts",
     "postinstall": "electron-rebuild"
   },
   "dependencies": {

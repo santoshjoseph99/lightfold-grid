@@ -52,15 +52,15 @@ temporary migration period.
 
 ### Tasks
 
-- [ ] Add protocol types and runtime validation in `src/services/brokerCore.ts`.
-- [ ] Assign broker-generated `messageId`, `taskId`, timestamps, and attempt counts.
-- [ ] Add message kinds: `request`, `ack`, `progress`, `result`, `error`, and `cancel`.
-- [ ] Preserve the physical PTY pane as the authoritative sender identity.
-- [ ] Reject malformed, unsupported-version, and unauthorized messages with explicit
+- [x] Add protocol types and runtime validation in `src/services/brokerCore.ts`.
+- [x] Assign broker-generated `messageId`, `taskId`, timestamps, and attempt counts.
+- [x] Add message kinds: `request`, `ack`, `progress`, `result`, `error`, and `cancel`.
+- [x] Preserve the physical PTY pane as the authoritative sender identity.
+- [x] Reject malformed, unsupported-version, and unauthorized messages with explicit
       broker errors.
-- [ ] Add legacy-envelope normalization into the new protocol.
-- [ ] Replace mutable message objects with immutable status updates.
-- [ ] Add bounded message-history retention to prevent unbounded renderer memory use.
+- [x] Add legacy-envelope normalization into the new protocol.
+- [x] Replace mutable message objects with immutable status updates.
+- [x] Add bounded message-history retention to prevent unbounded renderer memory use.
 
 ### Acceptance Criteria
 

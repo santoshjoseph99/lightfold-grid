@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   isRouteAllowed,
+  normalizeAgentMessage,
   STARLIGHT_END_TAG,
   STARLIGHT_START_TAG,
   StarlightEnvelopeParser,
@@ -43,8 +44,10 @@ ${STARLIGHT_START_TAG}{"from":"${spoke}","to":"Hub","command":"${command}","type
     const result = parser.push(spoke, payload.response);
 
     assert.equal(result.messages.length, 1, `Expected one Starlight envelope in ${spoke} output:\n${payload.response}`);
-    assert.equal(isRouteAllowed(connections, spoke, 'Hub'), true);
-    received.push(result.messages[0].envelope.command!);
+    const normalized = normalizeAgentMessage(result.messages[0].envelope, { sourceId: spoke });
+    assert.equal(normalized.from, spoke);
+    assert.equal(isRouteAllowed(connections, normalized.from, normalized.to), true);
+    received.push(normalized.payload.instruction!);
   }
 
   assert.deepEqual(received, ['spoke-a-ready', 'spoke-b-ready', 'spoke-c-ready']);

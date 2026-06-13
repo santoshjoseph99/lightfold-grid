@@ -65,7 +65,29 @@ Use the Starlight workspace to:
 
 ## Message Envelopes
 
-The current legacy envelope format is:
+Starlight supports a versioned protocol:
+
+```text
+[[STARLIGHT-MSG]]{
+  "protocolVersion": 1,
+  "taskId": "existing-task-id-for-responses",
+  "correlationId": "request-message-id",
+  "to": "Pane-A",
+  "kind": "result",
+  "payload": {
+    "summary": "Tests passed",
+    "artifacts": ["test-results.log"]
+  },
+  "attempt": 1
+}[[END]]
+```
+
+Supported message kinds are `request`, `ack`, `progress`, `result`, `error`, and
+`cancel`. The broker generates message IDs and task IDs for new requests. Responses
+must include the request's task ID and may use `correlationId` to reference a specific
+message.
+
+The legacy envelope format remains supported:
 
 ```text
 [[STARLIGHT-MSG]]{"from":"Pane-A","to":"Pane-B","command":"Inspect the failing tests","type":"task"}[[END]]
@@ -74,8 +96,9 @@ The current legacy envelope format is:
 The physical source pane is authoritative. Starlight does not trust an agent-generated
 `from` value to impersonate another pane.
 
-Milestone 1 introduces a versioned protocol with stable message and task identifiers,
-runtime validation, correlated message kinds, and legacy-envelope compatibility.
+All accepted messages are normalized into the versioned protocol. Malformed and
+unsupported messages are recorded as explicit broker errors. In-memory message history
+is bounded while durable history remains planned for Milestone 4.
 
 ## Testing
 
@@ -127,6 +150,18 @@ Development is organized into milestone commits. The roadmap covers:
 9. Observability and operational controls
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
+
+### Milestone Status
+
+- [x] Milestone 1: Reliable versioned message protocol
+- [ ] Milestone 2: Acknowledgements, retries, and timeouts
+- [ ] Milestone 3: Agent lifecycle and readiness
+- [ ] Milestone 4: Durable broker state
+- [ ] Milestone 5: Workflow dependency engine
+- [ ] Milestone 6: Git worktree isolation
+- [ ] Milestone 7: Prompt contract hardening
+- [ ] Milestone 8: Full end-to-end integration testing
+- [ ] Milestone 9: Observability and operational controls
 
 ## Open Source Status
 

@@ -97,6 +97,16 @@ test('parser recovers the final envelope after a terminal redraw leaves a partia
   assert.equal(result.messages[0].envelope.command, 'final');
 });
 
+test('parser reports malformed JSON without stalling later envelopes', () => {
+  const parser = new StarlightEnvelopeParser();
+  const malformed = `${STARLIGHT_START_TAG}{"to":${STARLIGHT_END_TAG}`;
+  const result = parser.push('Hub', malformed + envelope('Hub', 'Spoke-A', 'recovered'));
+
+  assert.equal(result.errors.length, 1);
+  assert.equal(result.messages.length, 1);
+  assert.equal(result.messages[0].envelope.command, 'recovered');
+});
+
 test('an explicit wheel blocks spoke-to-spoke and unconfigured-source routes', () => {
   const connections = {
     Hub: ['Spoke-A', 'Spoke-B'],

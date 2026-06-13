@@ -1,22 +1,32 @@
 import { subscribeToStream } from './terminalRegistry';
-import { isRouteAllowed, PtyDeliveryQueue, StarlightEnvelopeParser } from './brokerCore';
+import {
+  AgentMessage,
+  BoundedMessageHistory,
+  createProtocolId,
+  DEFAULT_MESSAGE_HISTORY_LIMIT,
+  getMessageInstruction,
+  isRouteAllowed,
+  normalizeAgentMessage,
+  ProtocolValidationError,
+  PtyDeliveryQueue,
+  StarlightEnvelopeParser,
+} from './brokerCore';
 
-export interface StarlightMessage {
+export type BrokerMessageStatus = 'pending' | 'approved' | 'rejected' | 'executing' | 'completed';
+
+export interface StarlightMessage extends AgentMessage {
   id: string;
-  from: string;
-  to: string;
   command: string;
   type: string;
-  status: 'pending' | 'approved' | 'rejected' | 'executing' | 'completed';
-  timestamp: number;
+  status: BrokerMessageStatus;
   error?: string;
 }
 
 const messageListeners = new Set<(msg: StarlightMessage) => void>();
 const queueListeners = new Set<(paneId: string, queue: string[]) => void>();
 
-// In-memory message logs
-let messagesLog: StarlightMessage[] = [];
+// Bounded in-memory message history. Durable storage arrives in Milestone 4.
+const messagesLog = new BoundedMessageHistory<StarlightMessage>(DEFAULT_MESSAGE_HISTORY_LIMIT);
 
 // Configuration variables (can be modified in Settings)
 let commandBlocklist: string[] = ['rm -rf /', 'sudo rm', 'mkfs'];
@@ -24,7 +34,7 @@ let trustedCommands: string[] = ['git status', 'ls -la', 'pwd', 'npm run build']
 let isAutopilot = false;
 let routingConnections: Record<string, string[]> = {};
 
-export const getMessagesLog = () => messagesLog;
+export const getMessagesLog = () => messagesLog.values();
 export const setAutopilot = (val: boolean) => { isAutopilot = val; };
 export const getAutopilot = () => isAutopilot;
 export const getBlocklist = () => commandBlocklist;
@@ -54,6 +64,47 @@ const notifyMessageListeners = (msg: StarlightMessage) => {
   messageListeners.forEach((l) => l(msg));
 };
 
+const appendMessage = (msg: StarlightMessage) => {
+  messagesLog.append(msg);
+  notifyMessageListeners(msg);
+};
+
+const updateMessage = (
+  messageId: string,
+  patch: Partial<Pick<StarlightMessage, 'status' | 'error' | 'command'>>
+) => {
+  const updated = messagesLog.update(messageId, (msg) => ({ ...msg, ...patch }));
+  if (updated) notifyMessageListeners(updated);
+  return updated;
+};
+
+const recordProtocolError = (sourceId: string, error: unknown) => {
+  const description = error instanceof Error ? error.message : String(error);
+  const messageId = createProtocolId();
+  const protocolError: StarlightMessage = {
+    protocolVersion: 1,
+    messageId,
+    id: messageId,
+    taskId: createProtocolId(),
+    from: 'broker',
+    to: sourceId,
+    kind: 'error',
+    payload: {
+      summary: description,
+      data: {
+        code: error instanceof ProtocolValidationError ? error.code : 'PARSE_ERROR',
+      },
+    },
+    attempt: 1,
+    timestamp: Date.now(),
+    command: description,
+    type: 'error',
+    status: 'rejected',
+    error: description,
+  };
+  appendMessage(protocolError);
+};
+
 const notifyQueueListeners = (paneId: string) => {
   const q = deliveryQueue.getQueue(paneId);
   queueListeners.forEach((l) => l(paneId, q.map((entry) => entry.command)));
@@ -64,11 +115,8 @@ const deliveryQueue = new PtyDeliveryQueue(
   (paneId, data) => (window as any).electronAPI.writePty(paneId, data),
   (paneId) => notifyQueueListeners(paneId),
   (entry, status, error) => {
-    const msg = entry.messageId ? messagesLog.find((item) => item.id === entry.messageId) : undefined;
-    if (!msg) return;
-    msg.status = status;
-    msg.error = error;
-    notifyMessageListeners(msg);
+    if (!entry.messageId) return;
+    updateMessage(entry.messageId, { status, error });
   }
 );
 
@@ -78,24 +126,26 @@ subscribeToStream((id, chunk) => {
 
   result.errors.forEach(({ error, payload }) => {
     console.error('Failed to parse intercepted broker JSON:', error, payload);
+    recordProtocolError(id, error);
   });
 
   for (const { sourceId, envelope } of result.messages) {
-    const newMsg: StarlightMessage = {
-      id: Math.random().toString(36).substring(2, 9),
-      // The physical PTY is authoritative. This prevents stale prompts or an
-      // agent-generated "from" value from impersonating another route.
-      from: sourceId,
-      to: envelope.to || 'broadcast',
-      command: envelope.command || '',
-      type: envelope.type || 'instruction',
-      status: 'pending',
-      timestamp: Date.now(),
-    };
+    try {
+      const normalized = normalizeAgentMessage(envelope, { sourceId });
+      const newMsg: StarlightMessage = {
+        ...normalized,
+        id: normalized.messageId,
+        command: getMessageInstruction(normalized),
+        type: normalized.kind,
+        status: 'pending',
+      };
 
-    messagesLog = [...messagesLog, newMsg];
-    notifyMessageListeners(newMsg);
-    routeMessage(newMsg);
+      appendMessage(newMsg);
+      routeMessage(newMsg);
+    } catch (error) {
+      console.error('Rejected invalid broker message:', error, envelope);
+      recordProtocolError(sourceId, error);
+    }
   }
 });
 
@@ -109,18 +159,17 @@ const routeMessage = (msg: StarlightMessage) => {
   const isConnected = isRouteAllowed(routingConnections, sourcePane, targetPane);
   
   if (!isConnected) {
-    msg.status = 'rejected';
-    msg.error = `Routing Blocked: No connection path configured from ${sourcePane} to ${targetPane}.`;
-    notifyMessageListeners(msg);
+    updateMessage(msg.messageId, {
+      status: 'rejected',
+      error: `Routing Blocked: No connection path configured from ${sourcePane} to ${targetPane}.`,
+    });
     return;
   }
   
   // Check Blocklists
   const isBlocked = commandBlocklist.some(cmd => msg.command.toLowerCase().includes(cmd.toLowerCase()));
   if (isBlocked) {
-    msg.status = 'rejected';
-    msg.error = 'Blocked command filter matched.';
-    notifyMessageListeners(msg);
+    updateMessage(msg.messageId, { status: 'rejected', error: 'Blocked command filter matched.' });
     return;
   }
   
@@ -128,9 +177,8 @@ const routeMessage = (msg: StarlightMessage) => {
   const isTrusted = trustedCommands.some(cmd => cmd.toLowerCase() === msg.command.trim().toLowerCase());
   
   if (isAutopilot || isTrusted) {
-    msg.status = 'approved';
-    notifyMessageListeners(msg);
-    enqueueCommand(targetPane, msg.command, msg.id);
+    updateMessage(msg.messageId, { status: 'approved' });
+    enqueueCommand(targetPane, msg.command, msg.messageId);
   } else {
     // Falls to Gatekeeper modal approval
     // (UI component listens to messagesLog with 'pending' status)
@@ -140,20 +188,12 @@ const routeMessage = (msg: StarlightMessage) => {
 // Queue commands for a terminal pane
 export const enqueueCommand = (paneId: string, command: string, msgId?: string) => {
   if (msgId) {
-    const msg = messagesLog.find(m => m.id === msgId);
-    if (msg) {
-      msg.status = 'approved';
-      notifyMessageListeners(msg);
-    }
+    updateMessage(msgId, { status: 'approved', command });
   }
 
   deliveryQueue.enqueue(paneId, { command, messageId: msgId });
 };
 
 export const rejectMessage = (msgId: string) => {
-  const msg = messagesLog.find(m => m.id === msgId);
-  if (msg) {
-    msg.status = 'rejected';
-    notifyMessageListeners(msg);
-  }
+  updateMessage(msgId, { status: 'rejected' });
 };
