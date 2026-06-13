@@ -361,3 +361,8 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 Starlight is being prepared for open-source release. A public license, contribution
 guide, security policy, and release packaging still need to be selected and added
 before the first public release.
+
+The working project name is also under review because Starlight is heavily used across
+software. **Prismfleet** is the current leading candidate, subject to trademark,
+package, repository, and domain clearance. See [OPEN_SOURCE_PLAN.md](./OPEN_SOURCE_PLAN.md)
+for the naming shortlist, positioning, release workstreams, and public-alpha criteria.
