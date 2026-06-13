@@ -9,10 +9,13 @@ import {
   normalizeAgentMessage,
   ProtocolValidationError,
   PtyDeliveryQueue,
+  ReliableRequestManager,
+  ReliableRequestStatus,
+  ReliabilityOptions,
   StarlightEnvelopeParser,
 } from './brokerCore';
 
-export type BrokerMessageStatus = 'pending' | 'approved' | 'rejected' | 'executing' | 'completed';
+export type BrokerMessageStatus = 'pending' | ReliableRequestStatus;
 
 export interface StarlightMessage extends AgentMessage {
   id: string;
@@ -20,6 +23,9 @@ export interface StarlightMessage extends AgentMessage {
   type: string;
   status: BrokerMessageStatus;
   error?: string;
+  deliveredAt?: number;
+  acknowledgedAt?: number;
+  completedAt?: number;
 }
 
 const messageListeners = new Set<(msg: StarlightMessage) => void>();
@@ -71,7 +77,7 @@ const appendMessage = (msg: StarlightMessage) => {
 
 const updateMessage = (
   messageId: string,
-  patch: Partial<Pick<StarlightMessage, 'status' | 'error' | 'command'>>
+  patch: Partial<Omit<StarlightMessage, 'id' | 'messageId'>>
 ) => {
   const updated = messagesLog.update(messageId, (msg) => ({ ...msg, ...patch }));
   if (updated) notifyMessageListeners(updated);
@@ -99,7 +105,7 @@ const recordProtocolError = (sourceId: string, error: unknown) => {
     timestamp: Date.now(),
     command: description,
     type: 'error',
-    status: 'rejected',
+    status: 'failed',
     error: description,
   };
   appendMessage(protocolError);
@@ -119,6 +125,24 @@ const deliveryQueue = new PtyDeliveryQueue(
     updateMessage(entry.messageId, { status, error });
   }
 );
+const reliableRequests = new ReliableRequestManager(
+  (paneId, data) => (window as any).electronAPI.writePty(paneId, data),
+  (record) => {
+    updateMessage(record.message.messageId, {
+      to: record.message.to,
+      attempt: record.attempt,
+      status: record.status,
+      error: record.error,
+      deliveredAt: record.deliveredAt,
+      acknowledgedAt: record.acknowledgedAt,
+      completedAt: record.completedAt,
+    });
+  }
+);
+
+export const getDeadLetters = () => reliableRequests.getDeadLetters();
+export const getReliabilitySettings = () => reliableRequests.getOptions();
+export const setReliabilitySettings = (settings: ReliabilityOptions) => reliableRequests.configure(settings);
 
 // Start listening to the raw terminal output stream
 subscribeToStream((id, chunk) => {
@@ -141,7 +165,7 @@ subscribeToStream((id, chunk) => {
       };
 
       appendMessage(newMsg);
-      routeMessage(newMsg);
+      processMessage(newMsg);
     } catch (error) {
       console.error('Rejected invalid broker message:', error, envelope);
       recordProtocolError(sourceId, error);
@@ -149,27 +173,38 @@ subscribeToStream((id, chunk) => {
   }
 });
 
-// Routing logic
-const routeMessage = (msg: StarlightMessage) => {
+const processMessage = (msg: StarlightMessage) => {
   const targetPane = msg.to;
   const sourcePane = msg.from;
-  
-  // Check connection matrix routing restrictions
-  // If the routing matrix has connections configured for source, verify target.
   const isConnected = isRouteAllowed(routingConnections, sourcePane, targetPane);
   
   if (!isConnected) {
     updateMessage(msg.messageId, {
-      status: 'rejected',
+      status: 'failed',
       error: `Routing Blocked: No connection path configured from ${sourcePane} to ${targetPane}.`,
     });
     return;
+  }
+
+  if (msg.kind !== 'request') {
+    const disposition = reliableRequests.handleResponse(msg);
+    if (msg.kind === 'ack') {
+      updateMessage(msg.messageId, {
+        status: disposition === 'unmatched' ? 'failed' : 'completed',
+        error: disposition === 'unmatched' ? 'No matching request for acknowledgement.' : undefined,
+      });
+      return;
+    }
+    if (disposition === 'duplicate') {
+      updateMessage(msg.messageId, { status: 'completed', error: 'Duplicate response ignored.' });
+      return;
+    }
   }
   
   // Check Blocklists
   const isBlocked = commandBlocklist.some(cmd => msg.command.toLowerCase().includes(cmd.toLowerCase()));
   if (isBlocked) {
-    updateMessage(msg.messageId, { status: 'rejected', error: 'Blocked command filter matched.' });
+    updateMessage(msg.messageId, { status: 'failed', error: 'Blocked command filter matched.' });
     return;
   }
   
@@ -177,8 +212,7 @@ const routeMessage = (msg: StarlightMessage) => {
   const isTrusted = trustedCommands.some(cmd => cmd.toLowerCase() === msg.command.trim().toLowerCase());
   
   if (isAutopilot || isTrusted) {
-    updateMessage(msg.messageId, { status: 'approved' });
-    enqueueCommand(targetPane, msg.command, msg.messageId);
+    approveMessage(msg.messageId, msg.command);
   } else {
     // Falls to Gatekeeper modal approval
     // (UI component listens to messagesLog with 'pending' status)
@@ -187,13 +221,50 @@ const routeMessage = (msg: StarlightMessage) => {
 
 // Queue commands for a terminal pane
 export const enqueueCommand = (paneId: string, command: string, msgId?: string) => {
-  if (msgId) {
-    updateMessage(msgId, { status: 'approved', command });
+  if (!msgId) {
+    deliveryQueue.enqueue(paneId, { command });
+    return;
   }
-
-  deliveryQueue.enqueue(paneId, { command, messageId: msgId });
+  approveMessage(msgId, command);
 };
 
 export const rejectMessage = (msgId: string) => {
-  updateMessage(msgId, { status: 'rejected' });
+  const msg = getMessagesLog().find((message) => message.messageId === msgId);
+  if (msg?.kind === 'request') {
+    if (!reliableRequests.cancel(msgId, 'Rejected by operator.')) {
+      updateMessage(msgId, { status: 'cancelled', error: 'Rejected by operator.' });
+    }
+  } else {
+    updateMessage(msgId, { status: 'cancelled', error: 'Rejected by operator.' });
+  }
+};
+
+export const retryMessage = (msgId: string) => reliableRequests.retry(msgId);
+
+export const cancelMessage = (msgId: string) => reliableRequests.cancel(msgId);
+
+export const reassignMessage = (msgId: string, targetId: string) => {
+  const msg = getMessagesLog().find((message) => message.messageId === msgId);
+  if (!msg || !isRouteAllowed(routingConnections, msg.from, targetId)) return false;
+  return reliableRequests.reassign(msgId, targetId);
+};
+
+const approveMessage = (messageId: string, command: string) => {
+  const msg = getMessagesLog().find((message) => message.messageId === messageId);
+  if (!msg) return false;
+  if (msg.kind === 'request' && reliableRequests.get(messageId)) return false;
+
+  const updated = updateMessage(messageId, {
+    command,
+    payload: { ...msg.payload, instruction: command },
+    status: 'queued',
+    error: undefined,
+  });
+  if (!updated) return false;
+
+  if (updated.kind === 'request') {
+    return reliableRequests.submit(updated);
+  }
+  deliveryQueue.enqueue(updated.to, { command, messageId });
+  return true;
 };

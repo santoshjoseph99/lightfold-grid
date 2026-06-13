@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Check, X, ShieldAlert, Cpu, Network, FileText, UploadCloud, Terminal } from 'lucide-react';
-import { getAutopilot, setAutopilot, getBlocklist, setBlocklist, getTrustedCommands, setTrustedCommands, getRoutingConnections, setRoutingConnections } from '../services/brokerProtocol';
+import { getAutopilot, setAutopilot, getBlocklist, setBlocklist, getTrustedCommands, setTrustedCommands, getRoutingConnections, setRoutingConnections, getReliabilitySettings, setReliabilitySettings } from '../services/brokerProtocol';
 
 export interface AgentConfig {
   paneId: string;
@@ -43,6 +43,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [autopilot, setAutopilotVal] = useState(getAutopilot());
   const [blocklistInput, setBlocklistInput] = useState(getBlocklist().join(', '));
   const [trustedInput, setTrustedInput] = useState(getTrustedCommands().join(', '));
+  const [reliabilitySettings, setLocalReliabilitySettings] = useState(() => getReliabilitySettings());
   
   // Agent profile configurations states
   const [localAgentConfigs, setLocalAgentConfigs] = useState<Record<string, AgentConfig>>(() => {
@@ -122,6 +123,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setAutopilot(autopilot);
     setBlocklist(blocklistInput.split(',').map((x) => x.trim()).filter((x) => x.length > 0));
     setTrustedCommands(trustedInput.split(',').map((x) => x.trim()).filter((x) => x.length > 0));
+    setReliabilitySettings(reliabilitySettings);
 
     // Save Matrix
     setRoutingConnections(localConnections);
@@ -587,6 +589,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     accentColor: 'var(--accent-cyan)',
                   }}
                 />
+              </div>
+
+              {/* Command Blocklist */}
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                  RELIABLE DELIVERY
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {[
+                    { key: 'acknowledgementTimeoutMs', label: 'ACK TIMEOUT (MS)' },
+                    { key: 'completionTimeoutMs', label: 'COMPLETION TIMEOUT (MS)' },
+                    { key: 'maxAttempts', label: 'MAX ATTEMPTS' },
+                    { key: 'retryBaseDelayMs', label: 'RETRY BASE DELAY (MS)' },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <label style={{ display: 'block', fontSize: '9px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                        {label}
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={reliabilitySettings[key as keyof typeof reliabilitySettings]}
+                        onChange={(e) => setLocalReliabilitySettings({
+                          ...reliabilitySettings,
+                          [key]: Math.max(1, Number(e.target.value) || 1),
+                        })}
+                        style={{
+                          width: '100%',
+                          background: 'rgba(0,0,0,0.4)',
+                          border: '1px solid var(--glass-border)',
+                          borderRadius: '6px',
+                          padding: '7px',
+                          color: '#fff',
+                          fontSize: '11px',
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Command Blocklist */}

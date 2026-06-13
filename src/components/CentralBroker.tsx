@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Network, Terminal as TermIcon, FileText, ChevronRight, ChevronDown, CheckCircle2, AlertOctagon, RefreshCw } from 'lucide-react';
-import { StarlightMessage, getMessagesLog, subscribeToMessages } from '../services/brokerProtocol';
+import { Network, ChevronRight, ChevronDown, RefreshCw, XOctagon, Shuffle } from 'lucide-react';
+import {
+  cancelMessage,
+  getDeadLetters,
+  getMessagesLog,
+  reassignMessage,
+  retryMessage,
+  StarlightMessage,
+  subscribeToMessages,
+} from '../services/brokerProtocol';
 
 interface CentralBrokerProps {
   paneIds: string[];
@@ -31,11 +39,19 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
   const getStatusColor = (status: StarlightMessage['status']) => {
     switch (status) {
       case 'completed': return 'var(--accent-green)';
-      case 'approved': return 'var(--accent-cyan)';
-      case 'rejected': return 'var(--accent-red)';
-      case 'executing': return 'var(--accent-purple)';
+      case 'acknowledged': return 'var(--accent-cyan)';
+      case 'delivered':
+      case 'delivering': return 'var(--accent-purple)';
+      case 'failed':
+      case 'cancelled': return 'var(--accent-red)';
       default: return 'var(--accent-orange)';
     }
+  };
+
+  const handleReassign = (msg: StarlightMessage) => {
+    const candidates = paneIds.filter((paneId) => paneId !== msg.to);
+    const target = window.prompt(`Reassign to pane (${candidates.join(', ')}):`, candidates[0] || '');
+    if (target) reassignMessage(msg.messageId, target);
   };
 
   return (
@@ -63,6 +79,11 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Network size={16} style={{ color: 'var(--accent-purple)' }} />
           <span style={{ fontWeight: 600, fontSize: '14px', letterSpacing: '0.05em' }}>CENTRAL BROKER</span>
+          {getDeadLetters().length > 0 && (
+            <span style={{ fontSize: '9px', color: 'var(--accent-red)' }}>
+              DEAD LETTERS {getDeadLetters().length}
+            </span>
+          )}
         </div>
         
         {/* Toggle Tab buttons */}
@@ -148,8 +169,9 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
                   {/* Loop through messages and draw arrows */}
                   {messages.map((msg, index) => {
                     const y = index * 90 + 65;
-                    const isApproved = msg.status === 'approved' || msg.status === 'executing' || msg.status === 'completed';
-                    const strokeColor = msg.status === 'completed' ? 'var(--accent-green)' : isApproved ? 'var(--accent-cyan)' : msg.status === 'rejected' ? 'var(--accent-red)' : 'var(--accent-orange)';
+                    const isActive = ['delivering', 'delivered', 'acknowledged', 'completed'].includes(msg.status);
+                    const isStopped = ['failed', 'cancelled'].includes(msg.status);
+                    const strokeColor = msg.status === 'completed' ? 'var(--accent-green)' : isActive ? 'var(--accent-cyan)' : isStopped ? 'var(--accent-red)' : 'var(--accent-orange)';
                     
                     return (
                       <g key={msg.id} style={{ animation: 'slideInUp 0.3s ease forwards' }}>
@@ -164,7 +186,7 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
                           fill="none"
                           stroke={strokeColor}
                           strokeWidth="1.5"
-                          markerEnd={`url(#${isApproved ? 'arrow-glow' : 'arrow'})`}
+                          markerEnd={`url(#${isActive ? 'arrow-glow' : 'arrow'})`}
                           strokeDasharray={msg.status === 'pending' ? '4 2' : 'none'}
                         />
                         <text x="32%" y={y + 12} fill="var(--text-muted)" fontSize="8" textAnchor="middle">
@@ -172,14 +194,14 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
                         </text>
 
                         {/* Arrow 2: Broker to Target */}
-                        {msg.status !== 'rejected' && (
+                        {!isStopped && (
                           <>
                             <path
                               d={`M 52% ${y} L 85% ${y}`}
                               fill="none"
                               stroke={strokeColor}
                               strokeWidth="1.5"
-                              markerEnd={`url(#${isApproved ? 'arrow-glow' : 'arrow'})`}
+                              markerEnd={`url(#${isActive ? 'arrow-glow' : 'arrow'})`}
                               strokeDasharray={msg.status === 'pending' ? '4 2' : 'none'}
                             />
                             <text x="68%" y={y + 12} fill="var(--text-muted)" fontSize="8" textAnchor="middle">
@@ -278,22 +300,47 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds }) => {
                     </div>
 
                     {isExpanded && (
-                      <pre
-                        style={{
-                          marginTop: '12px',
-                          background: 'rgba(0,0,0,0.3)',
-                          padding: '10px',
-                          borderRadius: '6px',
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '10px',
-                          color: '#a7f3d0',
-                          overflowX: 'auto',
-                          border: '1px solid rgba(255, 255, 255, 0.03)',
-                        }}
-                        onClick={(e) => e.stopPropagation()} // prevent toggle collapse on selection
-                      >
-                        {JSON.stringify(msg, null, 2)}
-                      </pre>
+                      <>
+                        <pre
+                          style={{
+                            marginTop: '12px',
+                            background: 'rgba(0,0,0,0.3)',
+                            padding: '10px',
+                            borderRadius: '6px',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '10px',
+                            color: '#a7f3d0',
+                            overflowX: 'auto',
+                            border: '1px solid rgba(255, 255, 255, 0.03)',
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {JSON.stringify(msg, null, 2)}
+                        </pre>
+                        {msg.kind === 'request' && ['failed', 'cancelled'].includes(msg.status) && (
+                          <div
+                            style={{ display: 'flex', gap: '6px', marginTop: '8px' }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button onClick={() => retryMessage(msg.messageId)} title="Retry request">
+                              <RefreshCw size={11} /> Retry
+                            </button>
+                            <button onClick={() => handleReassign(msg)} title="Reassign request">
+                              <Shuffle size={11} /> Reassign
+                            </button>
+                          </div>
+                        )}
+                        {msg.kind === 'request' && !['completed', 'failed', 'cancelled'].includes(msg.status) && (
+                          <div
+                            style={{ display: 'flex', gap: '6px', marginTop: '8px' }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button onClick={() => cancelMessage(msg.messageId)} title="Cancel request">
+                              <XOctagon size={11} /> Cancel
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 );

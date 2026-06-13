@@ -80,16 +80,16 @@ temporary migration period.
 
 ### Tasks
 
-- [ ] Track separate message states:
+- [x] Track separate message states:
       `queued`, `delivering`, `delivered`, `acknowledged`, `completed`, `failed`.
-- [ ] Treat successful PTY writes as `delivered`, never `completed`.
-- [ ] Require agents to send an `ack` after accepting a request.
-- [ ] Add configurable acknowledgement and task-completion timeouts.
-- [ ] Retry unacknowledged requests with exponential backoff and a maximum attempt
+- [x] Treat successful PTY writes as `delivered`, never `completed`.
+- [x] Require agents to send an `ack` after accepting a request.
+- [x] Add configurable acknowledgement and task-completion timeouts.
+- [x] Retry unacknowledged requests with exponential backoff and a maximum attempt
       count.
-- [ ] Deduplicate requests by `messageId` so retries do not execute work twice.
-- [ ] Add dead-letter storage for permanently failed messages.
-- [ ] Expose retry, cancel, and reassign controls in the broker UI.
+- [x] Deduplicate requests by `messageId` so retries do not execute work twice.
+- [x] Add dead-letter storage for permanently failed messages.
+- [x] Expose retry, cancel, and reassign controls in the broker UI.
 
 ### Acceptance Criteria
 

@@ -211,6 +211,27 @@ export const getMessageInstruction = (message: AgentMessage): string => {
   return '';
 };
 
+export const formatRequestForAgent = (message: AgentMessage): string => {
+  if (message.kind !== 'request') {
+    return getMessageInstruction(message);
+  }
+
+  return [
+    '[STARLIGHT TASK]',
+    `Task ID: ${message.taskId}`,
+    `Message ID: ${message.messageId}`,
+    `Attempt: ${message.attempt}`,
+    'If this Message ID was already accepted, do not execute it again; repeat the prior acknowledgement or result.',
+    'Acknowledge by emitting a Starlight protocol message with:',
+    `  kind=ack, taskId=${message.taskId}, correlationId=${message.messageId}, to=${message.from}`,
+    'When complete emit a Starlight protocol message with:',
+    `  kind=result, taskId=${message.taskId}, correlationId=${message.messageId}, to=${message.from}`,
+    '',
+    'Instruction:',
+    getMessageInstruction(message),
+  ].join('\n');
+};
+
 export class BoundedMessageHistory<T extends { messageId: string }> {
   private items: T[] = [];
   private readonly limit: number;
@@ -237,6 +258,365 @@ export class BoundedMessageHistory<T extends { messageId: string }> {
     const updated = update(current);
     this.items = this.items.map((item) => item.messageId === messageId ? updated : item);
     return updated;
+  }
+}
+
+export type ReliableRequestStatus =
+  | 'queued'
+  | 'delivering'
+  | 'delivered'
+  | 'acknowledged'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
+export interface ReliableRequestRecord {
+  message: AgentMessage;
+  status: ReliableRequestStatus;
+  attempt: number;
+  error?: string;
+  deliveredAt?: number;
+  acknowledgedAt?: number;
+  completedAt?: number;
+}
+
+export interface ReliabilityOptions {
+  acknowledgementTimeoutMs?: number;
+  completionTimeoutMs?: number;
+  maxAttempts?: number;
+  retryBaseDelayMs?: number;
+}
+
+export interface ReliabilityScheduler {
+  schedule(callback: () => void, delayMs: number): unknown;
+  cancel(handle: unknown): void;
+}
+
+const defaultScheduler: ReliabilityScheduler = {
+  schedule: (callback, delayMs) => setTimeout(callback, delayMs),
+  cancel: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+};
+
+const resolveReliabilityOptions = (
+  options: ReliabilityOptions,
+  current?: Required<ReliabilityOptions>
+): Required<ReliabilityOptions> => {
+  const resolved = {
+    acknowledgementTimeoutMs: options.acknowledgementTimeoutMs ?? current?.acknowledgementTimeoutMs ?? 15_000,
+    completionTimeoutMs: options.completionTimeoutMs ?? current?.completionTimeoutMs ?? 10 * 60_000,
+    maxAttempts: options.maxAttempts ?? current?.maxAttempts ?? 3,
+    retryBaseDelayMs: options.retryBaseDelayMs ?? current?.retryBaseDelayMs ?? 1_000,
+  };
+  for (const [key, value] of Object.entries(resolved)) {
+    if (!Number.isInteger(value) || value < 1) {
+      throw new Error(`${key} must be a positive integer.`);
+    }
+  }
+  return resolved;
+};
+
+export type ResponseDisposition = 'accepted' | 'duplicate' | 'unmatched';
+
+export class ReliableRequestManager {
+  private readonly write: (targetId: string, data: string) => Promise<boolean>;
+  private readonly onUpdate: (record: ReliableRequestRecord) => void;
+  private readonly scheduler: ReliabilityScheduler;
+  private readonly now: () => number;
+  private readonly records = new Map<string, ReliableRequestRecord>();
+  private readonly deadLetters = new Map<string, ReliableRequestRecord>();
+  private readonly seenResponseKeys = new Set<string>();
+  private readonly timers = new Map<string, unknown>();
+  private readonly queues = new Map<string, string[]>();
+  private readonly processingTargets = new Set<string>();
+  private options: Required<ReliabilityOptions>;
+
+  constructor(
+    write: (targetId: string, data: string) => Promise<boolean>,
+    onUpdate: (record: ReliableRequestRecord) => void = () => {},
+    scheduler: ReliabilityScheduler = defaultScheduler,
+    options: ReliabilityOptions = {},
+    now: () => number = Date.now
+  ) {
+    this.write = write;
+    this.onUpdate = onUpdate;
+    this.scheduler = scheduler;
+    this.now = now;
+    this.options = resolveReliabilityOptions(options);
+  }
+
+  submit(message: AgentMessage): boolean {
+    if (message.kind !== 'request') {
+      throw new Error('Only request messages can be submitted for reliable delivery.');
+    }
+    if (this.records.has(message.messageId)) return false;
+
+    const record: ReliableRequestRecord = {
+      message: { ...message, attempt: 1 },
+      status: 'queued',
+      attempt: 0,
+    };
+    this.records.set(message.messageId, record);
+    this.emit(record);
+    this.enqueue(record);
+    return true;
+  }
+
+  handleResponse(message: AgentMessage): ResponseDisposition {
+    const record = this.findRequestForResponse(message);
+    if (!record) return 'unmatched';
+
+    const responseKey = [
+      record.message.messageId,
+      record.attempt,
+      message.from,
+      message.taskId,
+      message.correlationId || '',
+      message.kind,
+      message.kind === 'progress' ? JSON.stringify(message.payload) : '',
+    ].join(':');
+    if (this.seenResponseKeys.has(responseKey)) return 'duplicate';
+    this.seenResponseKeys.add(responseKey);
+
+    if (['completed', 'cancelled'].includes(record.status)) return 'duplicate';
+
+    this.clearTimer(record.message.messageId);
+    if (message.kind === 'ack' || message.kind === 'progress') {
+      this.deadLetters.delete(record.message.messageId);
+      this.transition(record, {
+        status: 'acknowledged',
+        acknowledgedAt: this.now(),
+        error: undefined,
+      });
+      this.scheduleCompletionTimeout(record);
+      return 'accepted';
+    }
+    if (message.kind === 'result') {
+      this.deadLetters.delete(record.message.messageId);
+      this.transition(record, {
+        status: 'completed',
+        completedAt: this.now(),
+        error: undefined,
+      });
+      return 'accepted';
+    }
+    if (message.kind === 'error') {
+      this.fail(record, getMessageInstruction(message) || 'Agent reported an error.');
+      return 'accepted';
+    }
+    if (message.kind === 'cancel') {
+      this.transition(record, {
+        status: 'cancelled',
+        completedAt: this.now(),
+        error: getMessageInstruction(message) || 'Cancelled by agent.',
+      });
+      return 'accepted';
+    }
+    return 'unmatched';
+  }
+
+  retry(messageId: string): boolean {
+    const record = this.records.get(messageId);
+    if (!record || !['failed', 'cancelled'].includes(record.status)) return false;
+    this.clearTimer(messageId);
+    this.deadLetters.delete(messageId);
+    this.transition(record, {
+      status: 'queued',
+      error: undefined,
+      deliveredAt: undefined,
+      acknowledgedAt: undefined,
+      completedAt: undefined,
+    });
+    this.enqueue(record);
+    return true;
+  }
+
+  cancel(messageId: string, reason = 'Cancelled by operator.'): boolean {
+    const record = this.records.get(messageId);
+    if (!record || ['completed', 'cancelled'].includes(record.status)) return false;
+    this.clearTimer(messageId);
+    this.removeFromQueue(record.message.to, messageId);
+    this.transition(record, { status: 'cancelled', completedAt: this.now(), error: reason });
+    return true;
+  }
+
+  reassign(messageId: string, targetId: string): boolean {
+    const record = this.records.get(messageId);
+    if (!record || !['failed', 'cancelled'].includes(record.status) || !targetId.trim()) return false;
+    this.clearTimer(messageId);
+    this.deadLetters.delete(messageId);
+    record.message = { ...record.message, to: targetId.trim() };
+    this.transition(record, {
+      status: 'queued',
+      error: undefined,
+      deliveredAt: undefined,
+      acknowledgedAt: undefined,
+      completedAt: undefined,
+    });
+    this.enqueue(record);
+    return true;
+  }
+
+  get(messageId: string): ReliableRequestRecord | undefined {
+    const record = this.records.get(messageId);
+    return record ? this.copy(record) : undefined;
+  }
+
+  getDeadLetters(): ReliableRequestRecord[] {
+    return [...this.deadLetters.values()].map((record) => this.copy(record));
+  }
+
+  getOptions(): Required<ReliabilityOptions> {
+    return { ...this.options };
+  }
+
+  configure(options: ReliabilityOptions) {
+    this.options = resolveReliabilityOptions(options, this.options);
+  }
+
+  private findRequestForResponse(message: AgentMessage): ReliableRequestRecord | undefined {
+    const correlated = message.correlationId ? this.records.get(message.correlationId) : undefined;
+    if (
+      correlated &&
+      correlated.message.taskId === message.taskId &&
+      correlated.message.to === message.from &&
+      correlated.message.from === message.to
+    ) {
+      return correlated;
+    }
+    return [...this.records.values()].find((record) => (
+      record.message.taskId === message.taskId &&
+      record.message.to === message.from &&
+      record.message.from === message.to
+    ));
+  }
+
+  private enqueue(record: ReliableRequestRecord) {
+    const target = record.message.to;
+    const queue = this.queues.get(target) || [];
+    if (!queue.includes(record.message.messageId)) {
+      this.queues.set(target, [...queue, record.message.messageId]);
+    }
+    void this.process(target);
+  }
+
+  private async process(targetId: string) {
+    if (this.processingTargets.has(targetId)) return;
+    this.processingTargets.add(targetId);
+    try {
+      while (true) {
+        const queue = this.queues.get(targetId) || [];
+        if (queue.length === 0) break;
+        const messageId = queue[0];
+        this.queues.set(targetId, queue.slice(1));
+        const record = this.records.get(messageId);
+        if (!record || record.status !== 'queued') continue;
+
+        record.attempt += 1;
+        record.message = { ...record.message, attempt: record.attempt };
+        this.transition(record, {
+          status: 'delivering',
+          error: undefined,
+          deliveredAt: undefined,
+          acknowledgedAt: undefined,
+          completedAt: undefined,
+        });
+
+        try {
+          const delivered = await this.write(targetId, formatRequestForAgent(record.message) + '\r');
+          if (delivered) {
+            if (this.hasStatus(record, 'delivering')) {
+              this.transition(record, { status: 'delivered', deliveredAt: this.now() });
+              this.scheduleAcknowledgementTimeout(record);
+            }
+          } else {
+            if (this.hasStatus(record, 'delivering')) {
+              this.retryOrFail(record, `Target pane ${targetId} is not running.`);
+            }
+          }
+        } catch (error) {
+          if (this.hasStatus(record, 'delivering')) {
+            this.retryOrFail(record, error instanceof Error ? error.message : String(error));
+          }
+        }
+      }
+    } finally {
+      this.processingTargets.delete(targetId);
+    }
+  }
+
+  private scheduleAcknowledgementTimeout(record: ReliableRequestRecord) {
+    this.setTimer(record.message.messageId, () => {
+      if (record.status === 'delivered') {
+        this.retryOrFail(record, 'Acknowledgement timeout.');
+      }
+    }, this.options.acknowledgementTimeoutMs);
+  }
+
+  private scheduleCompletionTimeout(record: ReliableRequestRecord) {
+    this.setTimer(record.message.messageId, () => {
+      if (record.status === 'acknowledged') {
+        this.fail(record, 'Task completion timeout.');
+      }
+    }, this.options.completionTimeoutMs);
+  }
+
+  private retryOrFail(record: ReliableRequestRecord, error: string) {
+    this.clearTimer(record.message.messageId);
+    if (record.attempt >= this.options.maxAttempts) {
+      this.fail(record, error);
+      return;
+    }
+
+    this.transition(record, {
+      status: 'queued',
+      error,
+      deliveredAt: undefined,
+      acknowledgedAt: undefined,
+      completedAt: undefined,
+    });
+    const delay = this.options.retryBaseDelayMs * (2 ** (record.attempt - 1));
+    this.setTimer(record.message.messageId, () => this.enqueue(record), delay);
+  }
+
+  private fail(record: ReliableRequestRecord, error: string) {
+    this.clearTimer(record.message.messageId);
+    this.transition(record, { status: 'failed', completedAt: this.now(), error });
+    this.deadLetters.set(record.message.messageId, this.copy(record));
+  }
+
+  private transition(record: ReliableRequestRecord, patch: Partial<ReliableRequestRecord>) {
+    Object.assign(record, patch);
+    this.emit(record);
+  }
+
+  private hasStatus(record: ReliableRequestRecord, status: ReliableRequestStatus): boolean {
+    return record.status === status;
+  }
+
+  private emit(record: ReliableRequestRecord) {
+    this.onUpdate(this.copy(record));
+  }
+
+  private copy(record: ReliableRequestRecord): ReliableRequestRecord {
+    return { ...record, message: { ...record.message, payload: { ...record.message.payload } } };
+  }
+
+  private setTimer(messageId: string, callback: () => void, delayMs: number) {
+    this.clearTimer(messageId);
+    this.timers.set(messageId, this.scheduler.schedule(callback, delayMs));
+  }
+
+  private clearTimer(messageId: string) {
+    const timer = this.timers.get(messageId);
+    if (timer !== undefined) {
+      this.scheduler.cancel(timer);
+      this.timers.delete(messageId);
+    }
+  }
+
+  private removeFromQueue(targetId: string, messageId: string) {
+    const queue = this.queues.get(targetId) || [];
+    this.queues.set(targetId, queue.filter((id) => id !== messageId));
   }
 }
 
@@ -322,7 +702,7 @@ export interface DeliveryEntry {
   messageId?: string;
 }
 
-export type DeliveryStatus = 'executing' | 'completed' | 'rejected';
+export type DeliveryStatus = 'delivering' | 'delivered' | 'failed';
 
 export class PtyDeliveryQueue {
   private readonly queues = new Map<string, DeliveryEntry[]>();
@@ -385,19 +765,19 @@ export class PtyDeliveryQueue {
         const entry = queue[0];
         this.queues.set(targetId, queue.slice(1));
         this.notifyQueueChange(targetId);
-        this.onStatusChange(entry, 'executing');
+        this.onStatusChange(entry, 'delivering');
 
         try {
           const delivered = await this.write(targetId, entry.command + '\r');
           this.onStatusChange(
             entry,
-            delivered ? 'completed' : 'rejected',
+            delivered ? 'delivered' : 'failed',
             delivered ? undefined : `Target pane ${targetId} is not running.`
           );
         } catch (error) {
           this.onStatusChange(
             entry,
-            'rejected',
+            'failed',
             error instanceof Error ? error.message : String(error)
           );
         }

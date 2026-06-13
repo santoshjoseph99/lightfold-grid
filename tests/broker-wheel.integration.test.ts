@@ -66,8 +66,8 @@ test('wheel delivery writes to active agent PTYs and serializes messages per spo
     { target: 'Spoke-A', data: 'first\r' },
     { target: 'Spoke-A', data: 'second\r' },
   ]);
-  assert.deepEqual(statuses.filter((status) => status.startsWith('m1')), ['m1:executing', 'm1:completed']);
-  assert.deepEqual(statuses.filter((status) => status.startsWith('m2')), ['m2:executing', 'm2:completed']);
+  assert.deepEqual(statuses.filter((status) => status.startsWith('m1')), ['m1:delivering', 'm1:delivered']);
+  assert.deepEqual(statuses.filter((status) => status.startsWith('m2')), ['m2:delivering', 'm2:delivered']);
 });
 
 test('parser handles ANSI, markdown fences, and multiple envelopes without replaying messages', () => {
