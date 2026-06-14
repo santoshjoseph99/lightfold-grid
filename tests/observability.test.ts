@@ -142,3 +142,22 @@ test('diagnostic exports recursively redact secrets', () => {
   assert.equal(redacted.nested.safe, 'visible');
   assert.equal((createDiagnosticBundle({ generatedAt: 'now', snapshot: { password: 'hidden' }, health: [] }) as any).snapshot.password, '[REDACTED]');
 });
+
+test('diagnostic exports redact realistic provider and registry credentials', () => {
+  const joined = (...parts: string[]) => parts.join('');
+  const samples = [
+    joined('Authorization: Bearer ', 'eyJhbGciOiJIUzI1NiJ9', '.payload.signature'),
+    joined('OPENAI_API_KEY=', 'sk-', 'example-secret-value'),
+    joined('GITHUB_TOKEN=', 'github_', 'pat_example_secret_value'),
+    joined('GITLAB_TOKEN=', 'glpat-', 'example-secret'),
+    joined('NPM_TOKEN=', 'npm_', 'exampleSecretValue'),
+    joined('SLACK_TOKEN=', 'xoxb-', '123456789-secret'),
+    joined('AWS_ACCESS_KEY_ID=', 'AKIA', 'IOSFODNN7EXAMPLE'),
+    joined('GOOGLE_API_KEY=', 'AIza', 'SyExampleCredentialValue1234'),
+    joined('https://user:', 'password', '@example.test/private.git'),
+    joined('-----BEGIN ', 'PRIVATE KEY-----'),
+  ];
+  const redacted = redactDiagnostics({ samples, safe: 'npm run build' }) as any;
+  assert.deepEqual(redacted.samples, samples.map(() => '[REDACTED]'));
+  assert.equal(redacted.safe, 'npm run build');
+});

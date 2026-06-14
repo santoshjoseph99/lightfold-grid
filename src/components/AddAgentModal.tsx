@@ -306,13 +306,19 @@ export const AddAgentModal: React.FC<AddAgentModalProps> = ({
               <Cpu size={14} style={{ color: yoloMode ? 'var(--accent-cyan)' : 'var(--text-muted)' }} />
               <div>
                 <span style={{ fontSize: '11px', fontWeight: 600, display: 'block' }}>Agent YOLO Mode</span>
-                <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Automatically accept all agent tool requests (skip confirmation)</span>
+                <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Dangerous: bypasses the selected CLI's confirmation prompts</span>
               </div>
             </div>
             <input
               type="checkbox"
               checked={yoloMode}
-              onChange={(e) => setYoloMode(e.target.checked)}
+              onChange={(e) => {
+                if (
+                  e.target.checked &&
+                  !window.confirm('Enable YOLO mode? The agent CLI may execute tools and commands without asking again.')
+                ) return;
+                setYoloMode(e.target.checked);
+              }}
               style={{
                 width: '16px',
                 height: '16px',

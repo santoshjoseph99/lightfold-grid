@@ -1,12 +1,13 @@
 # Lightfold Grid
 
-Lightfold Grid is a desktop multi-agent orchestrator for coordinating CLI-based AI agents.
-It gives each agent an interactive pseudo-terminal, connects agents through a central
-message broker, and displays their communication in a shared workspace.
+Lightfold Grid is an open-source desktop control plane for mixed-model coding teams.
+Assign specialized local or cloud agents to tasks, see how they collaborate, and use
+strong-model tokens only where they matter.
 
-Lightfold Grid is currently an early-stage prototype. Its message transport works, but the
-project is actively being developed toward reliable orchestration of complex coding
-workflows.
+> [!WARNING]
+> Lightfold Grid is an experimental developer alpha, not a sandbox. Configured agent
+> CLIs and approved coding tasks run with your user permissions and can modify selected
+> repositories. Use trusted CLIs, prompts, repositories, models, and test commands.
 
 ## Features
 
@@ -63,7 +64,7 @@ See [plan.md](./plan.md) for the milestone roadmap.
 
 ## Requirements
 
-- Node.js 22 or newer
+- Node.js 22.12 or newer
 - npm
 - macOS or Linux for the current PTY process inspection behavior
 - Optional: [Ollama](https://ollama.com/) and a local model for live integration tests
@@ -83,6 +84,23 @@ Use the Lightfold Grid workspace to:
 3. Configure allowed routing connections.
 4. Boot the agents.
 5. Send tasks through Lightfold Grid message envelopes.
+
+## Security Model
+
+Lightfold Grid launches arbitrary user-configured CLIs and can execute approved coding
+task test commands through `/bin/sh`. It does not isolate agents from your account,
+filesystem, network, or provider credentials.
+
+Coding tasks, risky workflow goals, test execution, shared-file conflicts, and merges
+have explicit operator actions. The built-in YOLO mode is disabled by default, requires
+a warning confirmation, and is never persisted across restarts because it bypasses the
+selected CLI's own approval prompts. User-authored CLI command strings remain trusted
+configuration and may include their own unsafe flags.
+
+Do not use untrusted repositories, prompts, models, CLIs, or commands without stronger
+operating-system isolation. Review diagnostic exports before sharing them even though
+common credential formats are automatically redacted. See [SECURITY.md](./SECURITY.md)
+for the full trust model and vulnerability-reporting process.
 
 ## Message Envelopes
 
@@ -331,6 +349,8 @@ npm run build
 - Live delivery timers are reconstructed from persisted request state after restart.
 - Live-model behavior remains dependent on the selected CLI and model; Ollama coverage
   is intentionally opt-in.
+- Agent CLIs are not sandboxed.
+- Windows is not currently supported or tested.
 
 ## Roadmap
 
@@ -362,11 +382,14 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
 ## Open Source Status
 
-Lightfold Grid is being prepared for open-source release. A public license, contribution
-guide, security policy, and release packaging still need to be selected and added
-before the first public release.
+Lightfold Grid is licensed under Apache-2.0 and has contribution, conduct, governance,
+support, and security policies. Release packaging and broader name clearance still need
+to be completed before the first public release.
 
 The project was renamed from Starlight to **Lightfold Grid**. Broader trademark and
 brand clearance remains required before treating the name as protected. See
 [OPEN_SOURCE_PLAN.md](./OPEN_SOURCE_PLAN.md) for the decision record, release
 workstreams, and public-alpha criteria.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) to contribute and [SUPPORT.md](./SUPPORT.md)
+for community support boundaries.

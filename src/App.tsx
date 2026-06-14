@@ -32,6 +32,7 @@ import {
   generateAgentPromptContract,
   normalizeCapabilities,
 } from './services/promptContract';
+import { disablePersistedYoloModes } from './services/securityPolicy';
 
 const STARTUP_TIMEOUT_MS = 20_000;
 const STARTUP_POLL_MS = 250;
@@ -68,7 +69,7 @@ export default function App() {
     const config = {
       paneIds: nextPaneIds,
       activePaneId: nextActivePaneId,
-      agentConfigs: nextAgentConfigs,
+      agentConfigs: disablePersistedYoloModes(nextAgentConfigs),
       connections: getRoutingConnections(),
       defaultShell: nextShell,
       workspaceCwd: nextWorkspaceCwd
@@ -98,7 +99,7 @@ export default function App() {
             setActivePaneId(cfg.activePaneId);
           }
           if (cfg.agentConfigs) {
-            setAgentConfigs(cfg.agentConfigs);
+            setAgentConfigs(disablePersistedYoloModes(cfg.agentConfigs));
           }
           if (cfg.connections) {
             setRoutingConnections(cfg.connections);
@@ -217,7 +218,7 @@ export default function App() {
       setActivePaneId(cfg.activePaneId);
     }
     if (cfg.agentConfigs) {
-      setAgentConfigs(cfg.agentConfigs);
+      setAgentConfigs(disablePersistedYoloModes(cfg.agentConfigs));
     }
     if (cfg.connections) {
       setRoutingConnections(cfg.connections);
@@ -257,7 +258,13 @@ export default function App() {
     if (res && res.success && res.config) {
       applyWorkspaceConfig(res.config);
       // Auto-save this loaded file as the current default workspace config
-      saveWorkspace(res.config.paneIds, res.config.activePaneId, res.config.agentConfigs, res.config.defaultShell, res.config.workspaceCwd);
+      saveWorkspace(
+        res.config.paneIds,
+        res.config.activePaneId,
+        disablePersistedYoloModes(res.config.agentConfigs),
+        res.config.defaultShell,
+        res.config.workspaceCwd,
+      );
       alert(`Loaded workspace configuration from:\n${res.path}`);
     }
   };
@@ -311,11 +318,6 @@ export default function App() {
       } else if (!isGemini && !isCopilot && !isOllama && !cmd.includes('--yolo')) {
         cmd += ' --yolo';
       }
-    }
-
-    // Auto-append --skip-trust to bypass workspace trust warning prompts for gemini cli
-    if (isGemini && !cmd.includes('--skip-trust')) {
-      cmd += ' --skip-trust';
     }
 
     return cmd;

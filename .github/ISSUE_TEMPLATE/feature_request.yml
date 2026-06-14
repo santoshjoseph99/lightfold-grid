@@ -1,0 +1,34 @@
+name: Feature request
+description: Propose an improvement to Lightfold Grid
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: checkboxes
+    attributes:
+      label: Preparation
+      options:
+        - label: I searched existing issues and the roadmap.
+          required: true
+  - type: textarea
+    attributes:
+      label: Problem
+      description: What user problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposed behavior
+      description: Describe the desired outcome, not only an implementation.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Security and trust-boundary impact
+      description: Note any new commands, provider access, secrets, approvals, or data flows.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Alternatives
+      description: What other approaches did you consider?

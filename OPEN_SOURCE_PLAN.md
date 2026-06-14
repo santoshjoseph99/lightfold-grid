@@ -75,24 +75,24 @@ The alpha must prove one narrow workflow:
 ### 1. Project Identity And Governance
 
 - [x] Approve and execute the naming decision.
-- [ ] Adopt Apache-2.0 unless a legal review recommends another license.
+- [x] Adopt Apache-2.0 unless a legal review recommends another license.
 - [ ] Confirm the project has the right to publish every source file and bundled asset.
 - [x] Change the initial public version to `0.1.0-alpha.1`.
-- [ ] Add `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, and `GOVERNANCE.md`.
-- [ ] Add issue templates, a pull-request template, and support boundaries.
-- [ ] Document maintainer roles, decision-making, and release authority.
+- [x] Add `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, and `GOVERNANCE.md`.
+- [x] Add issue templates, a pull-request template, and support boundaries.
+- [x] Document maintainer roles, decision-making, and release authority.
 
 ### 2. Security And Trust Boundaries
 
-- [ ] Document that the application launches arbitrary CLIs and can execute repository
+- [x] Document that the application launches arbitrary CLIs and can execute repository
       commands.
-- [ ] Keep destructive actions, test execution, merges, and YOLO-style modes gated by
+- [x] Keep destructive actions, test execution, merges, and the built-in YOLO mode gated by
       explicit user approval.
-- [ ] Threat-model prompt injection, malicious repositories, compromised agent CLIs,
+- [x] Threat-model prompt injection, malicious repositories, compromised agent CLIs,
       unsafe test commands, secret leakage, and diagnostic exports.
-- [ ] Add automated secret scanning, dependency review, and security reporting.
-- [ ] Verify diagnostic redaction against realistic provider credentials and CLI output.
-- [ ] Publish a supported-platform and sandboxing policy.
+- [x] Add automated secret scanning, dependency review, and security reporting.
+- [x] Verify diagnostic redaction against realistic provider credentials and CLI output.
+- [x] Publish a supported-platform and sandboxing policy.
 
 ### 3. Installation And Release Engineering
 
@@ -106,7 +106,7 @@ The alpha must prove one narrow workflow:
 
 ### 4. Five-Minute Onboarding
 
-- [ ] Replace the prototype-focused README opening with the product thesis and alpha warning.
+- [x] Replace the prototype-focused README opening with the product thesis and alpha warning.
 - [ ] Add a five-minute local Ollama quickstart that completes one safe workflow.
 - [ ] Add a cloud/local mixed-model quickstart.
 - [ ] Ship role presets: orchestrator, planner, builder, tester, reviewer, and release.
@@ -181,7 +181,7 @@ Suggested alpha threshold:
 The repository is ready for a public alpha when:
 
 - [ ] The final name has passed the clearance gate.
-- [ ] License, security, contribution, governance, and conduct documents exist.
+- [x] License, security, contribution, governance, and conduct documents exist.
 - [ ] A new user can install a packaged build and complete the demo without maintainer help.
 - [ ] Supported CLIs and platforms are explicitly documented and tested.
 - [ ] Security-sensitive actions require clear approval.

@@ -23,8 +23,21 @@ export interface HealthCheckInput {
   agentConfigs?: Record<string, HealthAgentConfig>;
 }
 
-const SECRET_KEY = /(token|secret|password|passwd|authorization|api[-_]?key|credential|cookie)/i;
-const SECRET_VALUE = /(bearer\s+[a-z0-9._-]+|sk-[a-z0-9_-]+|gh[pousr]_[a-z0-9_]+|(password|token|secret|api[-_]?key)\s*[:=]\s*\S+)/i;
+const SECRET_KEY = /(token|secret|password|passwd|authorization|api[-_]?key|access[-_]?key|private[-_]?key|credential|cookie)/i;
+const SECRET_VALUE = new RegExp([
+  'bearer\\s+[a-z0-9._~+/-]+=*',
+  'sk-[a-z0-9_-]+',
+  'gh[pousr]_[a-z0-9_]+',
+  'github_pat_[a-z0-9_]+',
+  'glpat-[a-z0-9_-]+',
+  'npm_[a-z0-9]+',
+  'xox[baprs]-[a-z0-9-]+',
+  'AKIA[A-Z0-9]{16}',
+  'AIza[a-z0-9_-]{20,}',
+  '-----BEGIN [A-Z ]*PRIVATE KEY-----',
+  'https?://[^\\s/:]+:[^\\s/@]+@',
+  '(password|passwd|token|secret|api[-_]?key|access[-_]?key|private[-_]?key|authorization)\\s*[:=]\\s*\\S+',
+].join('|'), 'i');
 
 export const redactDiagnostics = (value: unknown, key = ''): unknown => {
   if (SECRET_KEY.test(key)) return '[REDACTED]';
