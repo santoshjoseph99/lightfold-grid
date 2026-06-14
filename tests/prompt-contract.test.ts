@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   AGENT_PROMPT_VERSION,
   findCapabilityMismatch,
@@ -9,8 +10,8 @@ import {
 } from '../src/services/promptContract.ts';
 import { normalizeAgentMessage, StarlightEnvelopeParser } from '../src/services/brokerCore.ts';
 
-const helper = new URL('../bin/lightfold-message.mjs', import.meta.url).pathname;
-const legacyHelper = new URL('../bin/starlight-message.mjs', import.meta.url).pathname;
+const helper = fileURLToPath(new URL('../bin/lightfold-message.mjs', import.meta.url));
+const legacyHelper = fileURLToPath(new URL('../bin/starlight-message.mjs', import.meta.url));
 
 test('generates one identity-safe versioned prompt contract', () => {
   const prompt = generateAgentPromptContract({

@@ -1,6 +1,7 @@
 import { execFileSync } from 'child_process';
 import { existsSync, mkdirSync } from 'fs';
 import * as path from 'path';
+import { getCommandSpec } from './platform.js';
 
 export type CodingWorktreeStatus =
   | 'active'
@@ -41,6 +42,7 @@ export interface CodingWorktreeRecord {
 export interface WorktreeManagerOptions {
   now?: () => number;
   onUpdate?: (record: CodingWorktreeRecord) => void;
+  platform?: NodeJS.Platform;
 }
 
 const keyFor = (workflowId: string, taskId: string) => `${workflowId}:${taskId}`;
@@ -63,10 +65,12 @@ export class WorktreeManager {
   private readonly records = new Map<string, CodingWorktreeRecord>();
   private readonly now: () => number;
   private readonly onUpdate?: (record: CodingWorktreeRecord) => void;
+  private readonly platform: NodeJS.Platform;
 
   constructor(options: WorktreeManagerOptions = {}) {
     this.now = options.now || Date.now;
     this.onUpdate = options.onUpdate;
+    this.platform = options.platform || process.platform;
   }
 
   restore(records: CodingWorktreeRecord[]) {
@@ -180,10 +184,12 @@ export class WorktreeManager {
       return this.update(record);
     }
     try {
-      record.testOutput = execFileSync('/bin/sh', ['-lc', record.testCommand!], {
+      const command = getCommandSpec(record.testCommand!, this.platform);
+      record.testOutput = execFileSync(command.executable, command.args, {
         cwd: record.worktreePath,
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
+        windowsHide: true,
       });
       record.status = 'review';
       record.error = undefined;

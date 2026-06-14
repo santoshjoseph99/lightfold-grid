@@ -66,7 +66,7 @@ See [plan.md](./plan.md) for the milestone roadmap.
 
 - Node.js 22.12 or newer
 - npm
-- macOS or Linux for the current PTY process inspection behavior
+- Windows 10+, macOS, or Linux
 - Optional: [Ollama](https://ollama.com/) and a local model for live integration tests
 - Optional: Gemini CLI, GitHub Copilot CLI, or another interactive agent CLI
 
@@ -88,7 +88,7 @@ Use the Lightfold Grid workspace to:
 ## Security Model
 
 Lightfold Grid launches arbitrary user-configured CLIs and can execute approved coding
-task test commands through `/bin/sh`. It does not isolate agents from your account,
+task test commands through the platform command shell. It does not isolate agents from your account,
 filesystem, network, or provider credentials.
 
 Coding tasks, risky workflow goals, test execution, shared-file conflicts, and merges
@@ -350,7 +350,8 @@ npm run build
 - Live-model behavior remains dependent on the selected CLI and model; Ollama coverage
   is intentionally opt-in.
 - Agent CLIs are not sandboxed.
-- Windows is not currently supported or tested.
+- Windows support is experimental; installers, code signing, and WSL integration are
+  not included yet. See [WINDOWS.md](./WINDOWS.md).
 
 ## Roadmap
 
@@ -365,6 +366,7 @@ Development is organized into milestone commits. The roadmap covers:
 7. Prompt contract hardening
 8. Full end-to-end integration testing
 9. Observability and operational controls
+10. Experimental Windows platform support
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -379,6 +381,8 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 7: Prompt contract hardening
 - [x] Milestone 8: Full end-to-end integration testing
 - [x] Milestone 9: Observability and operational controls
+- [ ] Milestone 10: Experimental Windows platform support (implementation complete;
+      hosted Windows CI validation pending)
 
 ## Open Source Status
 

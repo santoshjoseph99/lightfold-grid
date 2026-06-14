@@ -119,6 +119,7 @@ test('coding workflow completes isolated PTY edit, tests, review, and merge', { 
   git(['init', '-b', 'main']);
   git(['config', 'user.email', 'lightfold-grid@example.test']);
   git(['config', 'user.name', 'Lightfold Grid Test']);
+  git(['config', 'core.autocrlf', 'false']);
   git(['add', '.']);
   git(['commit', '-m', 'initial']);
 

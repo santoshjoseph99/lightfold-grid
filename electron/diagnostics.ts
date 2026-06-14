@@ -1,5 +1,6 @@
 import { execFileSync } from 'child_process';
 import { existsSync } from 'fs';
+import { commandExecutable, commandExists } from './platform.js';
 
 export type HealthStatus = 'pass' | 'warn' | 'fail';
 
@@ -49,23 +50,6 @@ export const redactDiagnostics = (value: unknown, key = ''): unknown => {
     )));
   }
   return value;
-};
-
-const commandExecutable = (command = '') => {
-  const match = command.trim().match(/^(?:"([^"]+)"|'([^']+)'|([^\s]+))/);
-  return match?.[1] || match?.[2] || match?.[3] || '';
-};
-
-const commandExists = (command: string) => {
-  const executable = commandExecutable(command);
-  if (!executable) return false;
-  if (executable.includes('/')) return existsSync(executable);
-  try {
-    execFileSync('/usr/bin/env', ['which', executable], { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
 };
 
 export const runWorkspaceHealthChecks = (input: HealthCheckInput): HealthCheck[] => {

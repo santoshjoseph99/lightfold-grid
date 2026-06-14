@@ -14,6 +14,7 @@ const repository = () => {
   git(root, ['init', '-b', 'main']);
   git(root, ['config', 'user.email', 'lightfold-grid@example.test']);
   git(root, ['config', 'user.name', 'Lightfold Grid Test']);
+  git(root, ['config', 'core.autocrlf', 'false']);
   writeFileSync(join(root, 'shared.txt'), 'base\n');
   git(root, ['add', '.']);
   git(root, ['commit', '-m', 'initial']);
@@ -26,13 +27,17 @@ const commitFile = (worktree: string, filename: string, content: string) => {
   git(worktree, ['commit', '-m', `update ${filename}`]);
 };
 
+const pass = 'node -e ""';
+const fail = 'node -e "process.exit(7)"';
+const featureExists = 'node -e "require(\'fs\').accessSync(\'feature.txt\')"';
+
 test('creates isolated branches and cleans merged worktrees explicitly', () => {
   const root = repository();
   try {
     const manager = new WorktreeManager();
     const record = manager.prepare(root, 'workflow', 'task', 'Builder', {
       files: ['feature.txt'],
-      testCommand: 'test -f feature.txt',
+      testCommand: featureExists,
     });
     assert.equal(git(record.worktreePath, ['branch', '--show-current']), 'lightfold-grid/workflow/task');
     commitFile(record.worktreePath, 'feature.txt', 'done\n');
@@ -55,15 +60,15 @@ test('allows parallel non-conflicting ownership and rejects overlapping files', 
   const root = repository();
   try {
     const manager = new WorktreeManager();
-    manager.prepare(root, 'workflow', 'a', 'A', { files: ['a.txt'], testCommand: 'true' });
-    manager.prepare(root, 'workflow', 'b', 'B', { files: ['b.txt'], testCommand: 'true' });
+    manager.prepare(root, 'workflow', 'a', 'A', { files: ['a.txt'], testCommand: pass });
+    manager.prepare(root, 'workflow', 'b', 'B', { files: ['b.txt'], testCommand: pass });
     assert.throws(
-      () => manager.prepare(root, 'workflow', 'c', 'C', { files: ['a.txt'], testCommand: 'true' }),
+      () => manager.prepare(root, 'workflow', 'c', 'C', { files: ['a.txt'], testCommand: pass }),
       (error: unknown) => error instanceof WorktreeError && error.message.includes('File ownership conflict')
     );
     const approved = manager.prepare(root, 'workflow', 'c', 'C', {
       files: ['a.txt'],
-      testCommand: 'true',
+      testCommand: pass,
       allowSharedFiles: true,
     });
     assert.equal(approved.sharedFilesApproved, true);
@@ -76,8 +81,8 @@ test('surfaces actual changed-file and merge conflicts without damaging integrat
   const root = repository();
   try {
     const manager = new WorktreeManager();
-    const first = manager.prepare(root, 'workflow', 'first', 'A', { files: ['first.txt'], testCommand: 'true' });
-    const second = manager.prepare(root, 'workflow', 'second', 'B', { files: ['second.txt'], testCommand: 'true' });
+    const first = manager.prepare(root, 'workflow', 'first', 'A', { files: ['first.txt'], testCommand: pass });
+    const second = manager.prepare(root, 'workflow', 'second', 'B', { files: ['second.txt'], testCommand: pass });
     commitFile(first.worktreePath, 'shared.txt', 'first\n');
     commitFile(second.worktreePath, 'shared.txt', 'second\n');
     assert.equal(manager.inspect('workflow', 'first').status, 'review');
@@ -103,7 +108,7 @@ test('rejects failed test branches and preserves them until forced cleanup', () 
     const manager = new WorktreeManager();
     const record = manager.prepare(root, 'workflow', 'failing', 'Builder', {
       files: ['feature.txt'],
-      testCommand: 'exit 7',
+      testCommand: fail,
     });
     commitFile(record.worktreePath, 'feature.txt', 'broken\n');
     assert.equal(manager.runTests('workflow', 'failing').status, 'tests-failed');

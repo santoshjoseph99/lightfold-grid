@@ -28,7 +28,8 @@ Lightfold Grid is a local orchestration control plane, not a sandbox.
 
 - Configured agent CLIs run with the current user's permissions.
 - Agent CLIs and coding tasks can read and modify selected repositories.
-- Approved coding tasks execute their configured test command through `/bin/sh`.
+- Approved coding tasks execute their configured test command through `/bin/sh` on
+  macOS/Linux or `cmd.exe` on Windows.
 - The built-in YOLO toggle requires an explicit warning confirmation, is never
   persisted across restarts, then reduces or removes the selected CLI's own confirmation
   prompts. User-authored CLI command strings remain trusted configuration.

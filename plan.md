@@ -284,6 +284,32 @@ temporary migration period.
 - Operators can identify stuck tasks, unavailable agents, and repeated retries.
 - Diagnostic exports do not expose secrets.
 
+## Milestone 10: Experimental Windows Platform Support
+
+### Tasks
+
+- [x] Centralize platform-aware shell discovery, arguments, and command execution.
+- [x] Use ConPTY-backed `node-pty` sessions with PowerShell as the Windows default.
+- [x] Add Windows-compatible child-process inspection for agent readiness.
+- [x] Make coding workflow commands and tests portable across Windows, macOS, and Linux.
+- [x] Adapt helper paths, fixtures, and line-ending assumptions for Windows.
+- [x] Add a Windows, macOS, and Linux CI matrix.
+- [x] Document Windows setup, behavior, and known limitations.
+
+### Acceptance Criteria
+
+- PowerShell 7 or Windows PowerShell starts by default when available.
+- Command Prompt and Git Bash can be selected as interactive shells.
+- Coding workflow commands execute through the platform command shell.
+- The real PTY integration harness passes on hosted Windows CI.
+- Windows limitations and support expectations are explicit.
+
+### Tests
+
+- Platform abstraction unit tests.
+- Portable coding workflow and worktree tests.
+- Real PTY integration harness on Windows, macOS, and Linux CI.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -295,6 +321,7 @@ temporary migration period.
 7. Prompt and agent contract hardening.
 8. Full end-to-end integration harness.
 9. Observability and operational controls.
+10. Experimental Windows platform support.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

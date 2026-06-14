@@ -20,7 +20,7 @@ Requirements:
 
 - Node.js 22.12 or newer
 - npm
-- macOS or Linux
+- Windows 10+, macOS, or Linux
 - Git
 
 ```bash

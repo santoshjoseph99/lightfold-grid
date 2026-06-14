@@ -1,12 +1,13 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { BrokerStore } from './brokerStore';
 import { createDiagnosticBundle, runWorkspaceHealthChecks } from './diagnostics';
 import { PtyService } from './ptyService';
 import { WorktreeManager } from './worktreeManager';
 import { brokerDatabasePath, workspaceConfigPath } from './productPaths';
+import { commandExists, getActiveChildProcess, getAvailableShells, getDefaultShell, getShellArgs } from './platform.js';
 
 let mainWindow: BrowserWindow | null = null;
 let brokerStore: BrokerStore | null = null;
@@ -29,7 +30,7 @@ function getLoginShellEnv(): Record<string, string> {
   try {
     const userShell = process.env.SHELL || '/bin/zsh';
     // Run login shell to output env variables (timeout in 2 seconds)
-    const envOutput = execSync(`${userShell} -lic "env"`, {
+    const envOutput = execFileSync(userShell, ['-lic', 'env'], {
       encoding: 'utf-8',
       timeout: 2000,
       env: { PATH: '/usr/bin:/bin:/usr/sbin:/sbin' } // safe minimal path to start
@@ -170,7 +171,7 @@ ipcMain.handle('diagnostics:export', async (_event, input) => {
 });
 ipcMain.handle('agent:get-helper-command', () => {
   const helperPath = path.join(app.getAppPath(), 'bin', 'lightfold-message.mjs');
-  return `"${helperPath}"`;
+  return `node "${helperPath}"`;
 });
 
 const worktreeOperation = (operation: () => unknown) => {
@@ -209,7 +210,7 @@ ipcMain.handle('worktree:cleanup', (_event, { workflowId, taskId, force }) =>
 // IPC Handlers for PTY lifecycle
 ipcMain.handle('pty:spawn', (event, { id, cols, rows, shellPath, cwd }) => {
   try {
-    const selectedShell = shellPath || process.env.SHELL || '/bin/zsh';
+    const selectedShell = shellPath && commandExists(shellPath) ? shellPath : getDefaultShell();
     const targetCwd = cwd && fs.existsSync(cwd) ? cwd : app.getPath('home');
 
     // Create log folder structure for this run
@@ -219,7 +220,7 @@ ipcMain.handle('pty:spawn', (event, { id, cols, rows, shellPath, cwd }) => {
     return ptyService.spawn({
       id,
       executable: selectedShell,
-      args: ['-l'],
+      args: getShellArgs(selectedShell),
       cols: cols || 80,
       rows: rows || 24,
       cwd: targetCwd,
@@ -256,35 +257,7 @@ ipcMain.handle('pty:kill', (event, id) => {
 
 // Get available shells on the host machine
 ipcMain.handle('shells:get-available', () => {
-  const defaultShells = [
-    { name: 'Zsh', path: '/bin/zsh' },
-    { name: 'Bash', path: '/bin/bash' },
-    { name: 'Sh', path: '/bin/sh' },
-  ];
-
-  if (process.platform === 'win32') {
-    return [
-      { name: 'PowerShell', path: 'powershell.exe' },
-      { name: 'Command Prompt', path: 'cmd.exe' },
-      { name: 'Git Bash', path: 'C:\\Program Files\\Git\\bin\\bash.exe' },
-    ];
-  }
-
-  // Check which UNIX shells actually exist
-  const availableShells = defaultShells.filter((s) => fs.existsSync(s.path));
-  
-  // Try checking common homebrew/custom installations
-  const homebrewZsh = '/opt/homebrew/bin/zsh';
-  const homebrewBash = '/opt/homebrew/bin/bash';
-  const fishShell = '/opt/homebrew/bin/fish';
-  const usrLocalFish = '/usr/local/bin/fish';
-
-  if (fs.existsSync(homebrewZsh)) availableShells.push({ name: 'Homebrew Zsh', path: homebrewZsh });
-  if (fs.existsSync(homebrewBash)) availableShells.push({ name: 'Homebrew Bash', path: homebrewBash });
-  if (fs.existsSync(fishShell)) availableShells.push({ name: 'Fish', path: fishShell });
-  else if (fs.existsSync(usrLocalFish)) availableShells.push({ name: 'Fish', path: usrLocalFish });
-
-  return availableShells;
+  return getAvailableShells();
 });
 
 // Fetch active process name under a PTY for busy checking
@@ -292,32 +265,7 @@ ipcMain.handle('pty:get-active-process', (event, id) => {
   const pid = ptyService.pid(id);
   if (!pid) return 'none';
   
-  try {
-    if (process.platform === 'darwin' || process.platform === 'linux') {
-      // Run ps to find child processes of the PTY session group
-      const output = execSync(`pgrep -P ${pid} | xargs ps -o state,comm -p`, { encoding: 'utf-8' });
-      const lines = output.trim().split('\n').slice(1);
-      
-      // Look for active processes (not sleeping shell)
-      let activeProcess = 'shell';
-      for (const line of lines) {
-        const parts = line.trim().split(/\s+/);
-        if (parts.length >= 2) {
-          const state = parts[0];
-          const name = parts.slice(1).join(' ');
-          // If the process state doesn't represent background sleep, return it
-          if (!name.includes('zsh') && !name.includes('bash') && !name.includes('fish') && !name.includes('sh')) {
-            activeProcess = name;
-            break;
-          }
-        }
-      }
-      return activeProcess;
-    }
-    return 'unknown';
-  } catch {
-    return 'shell'; // default fallback
-  }
+  return getActiveChildProcess(pid);
 });
 
 function getConfigPath(): string {
