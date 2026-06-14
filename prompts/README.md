@@ -34,12 +34,18 @@ User Prompt ➔ Orchestrator
                  └──[Ship Phase]──────➔ PRBuilder (commits & opens PR)
 ```
 
-## 🚀 How to Load in Lightfold Grid
-1. Split your terminal grid into the desired amount of panes (e.g. 4 panes).
-2. Click **Add Agent** in the left sidebar.
-3. Choose the appropriate preset (like Gemini) and click **Load Prompt**.
-4. Navigate to this repository's `prompts/` folder and select the markdown file matching the agent's role.
-5. Boot the agent!
+## How To Load In Lightfold Grid
+
+For a new workspace, use **Start With Preset** to create role contracts and explicit
+routes automatically. The built-in onboarding roles are intentionally smaller than this
+full TDD roster.
+
+To assemble this extended TDD team manually:
+
+1. Split the terminal grid into the desired number of panes.
+2. Click **Add Agent** and choose the CLI and model.
+3. Load the markdown file matching the agent's role.
+4. Configure explicit routes and verify each agent reports ready.
 
 Lightfold Grid injects the real pane identity, allowed routes, capabilities, prompt version,
 and current protocol instructions when the agent boots. Role prompt files intentionally

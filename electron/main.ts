@@ -6,7 +6,8 @@ import { BrokerStore } from './brokerStore';
 import { createDiagnosticBundle, runWorkspaceHealthChecks } from './diagnostics';
 import { PtyService } from './ptyService';
 import { WorktreeManager } from './worktreeManager';
-import { agentHelperPath, brokerDatabasePath, rendererEntryPath, workspaceConfigPath } from './productPaths';
+import { createDemoProject } from './demoProject';
+import { agentHelperPath, brokerDatabasePath, demoTemplatePath, rendererEntryPath, workspaceConfigPath } from './productPaths';
 import { commandExists, getActiveChildProcess, getAvailableShells, getDefaultShell, getShellArgs } from './platform.js';
 
 let mainWindow: BrowserWindow | null = null;
@@ -383,4 +384,19 @@ ipcMain.handle('dialog:select-workspace-directory', async () => {
   
   if (canceled || filePaths.length === 0) return null;
   return filePaths[0];
+});
+
+ipcMain.handle('dialog:create-demo-project', async () => {
+  if (!mainWindow) return { success: false, error: 'No main window' };
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    title: 'Choose Parent Folder For Lightfold Grid Demo',
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  if (canceled || filePaths.length === 0) return { success: false, error: 'Canceled' };
+  try {
+    const template = demoTemplatePath(app.getAppPath(), process.resourcesPath, app.isPackaged);
+    return { success: true, path: createDemoProject(template, filePaths[0]) };
+  } catch (error: any) {
+    return { success: false, error: error.message || String(error) };
+  }
 });

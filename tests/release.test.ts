@@ -22,6 +22,10 @@ test('packages the renderer, Electron main process, helpers, and native modules'
     to: 'bin',
     filter: ['*.mjs'],
   });
+  assert.deepEqual(packageJson.build.extraResources[1], {
+    from: 'examples/demo-repository',
+    to: 'examples/demo-repository',
+  });
   assert.match(packageJson.build.artifactName, /\$\{version\}.*\$\{os\}.*\$\{arch\}/);
 });
 

@@ -23,6 +23,7 @@
     "package:win": "npm run build && electron-builder --win --publish never",
     "release:validate": "node scripts/validate-release-tag.mjs",
     "release:metadata": "node scripts/generate-release-metadata.mjs",
+    "demo:setup": "node scripts/setup-demo.mjs",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/*.test.ts",
     "test:integration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/full-pty.integration.test.ts",
     "test:ollama": "LIGHTFOLD_GRID_OLLAMA_TEST=1 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/ollama-wheel.integration.test.ts",
@@ -74,6 +75,10 @@
         "filter": [
           "*.mjs"
         ]
+      },
+      {
+        "from": "examples/demo-repository",
+        "to": "examples/demo-repository"
       }
     ],
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",

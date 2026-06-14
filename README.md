@@ -77,11 +77,23 @@ npm install
 npm run dev
 ```
 
+For a known-good first workflow, choose **Create Demo Project** in the app and apply the
+built-in local Ollama wheel preset. Source contributors can do the same from a checkout:
+
+```bash
+ollama pull gemma4-32k:latest
+npm run demo:setup
+npm run dev
+```
+
+See [QUICKSTART.md](./QUICKSTART.md) for the five-minute local workflow, mixed
+local/cloud profile, and readiness troubleshooting.
+
 Use the Lightfold Grid workspace to:
 
 1. Select a project root.
-2. Add or configure agent panes.
-3. Configure allowed routing connections.
+2. Apply a built-in role and topology preset, or configure agent panes manually.
+3. Review the preset's explicit routing connections.
 4. Boot the agents.
 5. Send tasks through Lightfold Grid message envelopes.
 
@@ -378,6 +390,7 @@ Development is organized into milestone commits. The roadmap covers:
 9. Observability and operational controls
 10. Experimental Windows platform support
 11. Repeatable alpha packaging and release automation
+12. Five-minute onboarding and workspace presets
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -396,6 +409,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
       hosted Windows CI validation pending)
 - [ ] Milestone 11: Repeatable alpha packaging and release automation (implementation
       complete; hosted release-matrix validation pending)
+- [x] Milestone 12: Five-minute onboarding and workspace presets
 
 ## Open Source Status
 

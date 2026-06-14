@@ -39,3 +39,9 @@ export const agentHelperPath = (
   resourcesPath: string,
   packaged: boolean,
 ): string => join(packaged ? resourcesPath : appPath, 'bin', 'lightfold-message.mjs');
+
+export const demoTemplatePath = (
+  appPath: string,
+  resourcesPath: string,
+  packaged: boolean,
+): string => join(packaged ? resourcesPath : appPath, 'examples', 'demo-repository');

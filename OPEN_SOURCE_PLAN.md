@@ -108,13 +108,13 @@ The alpha must prove one narrow workflow:
 ### 4. Five-Minute Onboarding
 
 - [x] Replace the prototype-focused README opening with the product thesis and alpha warning.
-- [ ] Add a five-minute local Ollama quickstart that completes one safe workflow.
-- [ ] Add a cloud/local mixed-model quickstart.
-- [ ] Ship role presets: orchestrator, planner, builder, tester, reviewer, and release.
-- [ ] Ship topology presets: solo, wheel, pipeline, and review loop.
-- [ ] Ship a demo repository and one-click example workspace configuration.
+- [x] Add a five-minute local Ollama quickstart that completes one safe workflow.
+- [x] Add a cloud/local mixed-model quickstart.
+- [x] Ship role presets: orchestrator, planner, builder, tester, reviewer, and release.
+- [x] Ship topology presets: solo, wheel, pipeline, and review loop.
+- [x] Ship a demo repository and one-click example workspace configuration.
 - [ ] Record a short demo showing task routing, worktrees, tests, review, metrics, and cost.
-- [ ] Add troubleshooting for readiness handshakes and protocol compliance.
+- [x] Add troubleshooting for readiness handshakes and protocol compliance.
 
 ### 5. CLI And Provider Compatibility
 

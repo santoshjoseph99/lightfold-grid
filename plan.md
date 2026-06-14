@@ -336,6 +336,33 @@ temporary migration period.
 - Local unpacked application smoke test.
 - Hosted macOS, Linux, and Windows package workflow.
 
+## Milestone 12: Five-Minute Onboarding And Workspace Presets
+
+### Tasks
+
+- [x] Add role presets for orchestrator, planner, builder, tester, reviewer, and release.
+- [x] Add explicit solo, wheel, pipeline, and review-loop topology presets.
+- [x] Add one-click in-app local Ollama, mixed local/cloud, Gemini, Copilot, and custom CLI grids.
+- [x] Keep preset prompts embedded, routes explicit, and YOLO mode disabled.
+- [x] Add a deterministic demo Git repository generator and safe starter task.
+- [x] Add loadable local-only and mixed local/cloud workspace profiles.
+- [x] Document a five-minute quickstart and readiness/protocol troubleshooting.
+
+### Acceptance Criteria
+
+- A new user can create a demo repository and a local Ollama wheel without hand-editing JSON.
+- Applying a preset restarts the current grid with role contracts and explicit routes.
+- Presets never enable YOLO mode or execute repository tasks without the existing controls.
+- The demo repository starts clean and its baseline test passes.
+- Users have a documented path for diagnosing failed readiness handshakes.
+
+### Tests
+
+- Role and topology preset contract tests.
+- Demo repository generation and baseline test.
+- Loadable workspace safety tests.
+- Existing deterministic and live Ollama wheel integration tests.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -349,6 +376,7 @@ temporary migration period.
 9. Observability and operational controls.
 10. Experimental Windows platform support.
 11. Repeatable alpha packaging and release automation.
+12. Five-minute onboarding and workspace presets.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

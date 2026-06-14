@@ -1,0 +1,16 @@
+{
+  "paneIds": ["Pane-A", "Pane-B", "Pane-C", "Pane-D"],
+  "activePaneId": "Pane-A",
+  "agentConfigs": {
+    "Pane-A": {"paneId":"Pane-A","agentName":"Orchestrator","cliCommand":"ollama run","selectedModel":"gemma4-32k:latest","promptPath":"","promptContent":"Coordinate the team and prefer local agents unless a task needs the cloud builder or reviewer.","capabilities":["general","planning","orchestration"],"tools":[],"yoloMode":false},
+    "Pane-B": {"paneId":"Pane-B","agentName":"Cloud Builder","cliCommand":"gemini","selectedModel":"auto","promptPath":"","promptContent":"Implement assigned changes, keep edits scoped, and return changed files plus verification.","capabilities":["general","coding"],"tools":["git","npm"],"yoloMode":false},
+    "Pane-C": {"paneId":"Pane-C","agentName":"Local Tester","cliCommand":"ollama run","selectedModel":"gemma4-32k:latest","promptPath":"","promptContent":"Run reproducible tests locally and return passing or failing evidence.","capabilities":["general","testing"],"tools":["npm"],"yoloMode":false},
+    "Pane-D": {"paneId":"Pane-D","agentName":"Cloud Reviewer","cliCommand":"gemini","selectedModel":"auto","promptPath":"","promptContent":"Review correctness, regressions, security risks, and missing tests. Lead with actionable findings.","capabilities":["general","review"],"tools":["git"],"yoloMode":false}
+  },
+  "connections": {
+    "Pane-A": ["Pane-B", "Pane-C", "Pane-D"],
+    "Pane-B": ["Pane-A"],
+    "Pane-C": ["Pane-A"],
+    "Pane-D": ["Pane-A"]
+  }
+}

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Columns, Sliders, Layout, ChevronLeft, ChevronRight, Star, Plus, Link2, Save, FolderOpen, Folder } from 'lucide-react';
+import { Columns, Sliders, Layout, ChevronLeft, ChevronRight, Star, Plus, Link2, Save, FolderOpen, Folder, Sparkles } from 'lucide-react';
 import { TerminalGrid } from './components/TerminalGrid';
 import { CentralBroker } from './components/CentralBroker';
 import { SettingsModal, AgentConfig } from './components/SettingsModal';
 import { AddAgentModal } from './components/AddAgentModal';
 import { AddConnectionModal } from './components/AddConnectionModal';
 import { ApprovalOverlay } from './components/ApprovalOverlay';
+import { WorkspacePresetModal } from './components/WorkspacePresetModal';
+import { WorkspacePreset } from './services/workspacePresets';
 import {
   removeTerminalInstance,
   createTerminalInstance,
@@ -48,6 +50,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showAddAgent, setShowAddAgent] = useState(false);
   const [showAddConnection, setShowAddConnection] = useState(false);
+  const [showWorkspacePresets, setShowWorkspacePresets] = useState(false);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   
   // Agent configs mapped by pane ID
@@ -204,6 +207,26 @@ export default function App() {
     saveWorkspace(paneIds, activePaneId, agentConfigs);
   };
 
+  const handleApplyWorkspacePreset = (preset: WorkspacePreset) => {
+    paneIds.forEach((paneId) => {
+      markAgentStopping(paneId);
+      removeTerminalInstance(paneId);
+      markAgentStopped(paneId);
+    });
+    setPaneIds(preset.paneIds);
+    setActivePaneId(preset.activePaneId);
+    setAgentConfigs(preset.agentConfigs);
+    setRoutingConnections(preset.connections);
+    setConnections(preset.connections);
+    saveWorkspace(
+      preset.paneIds,
+      preset.activePaneId,
+      preset.agentConfigs,
+      defaultShell,
+      workspaceCwd,
+    );
+  };
+
   const applyWorkspaceConfig = (cfg: any) => {
     if (cfg.paneIds && cfg.paneIds.length > 0) {
       // Clean up previous terminal pane processes to prevent leaking
@@ -280,6 +303,19 @@ export default function App() {
       
       alert(`Workspace root directory set to:\n${path}\n\nAll terminal agent instances have been rebooted in the new directory!`);
     }
+  };
+
+  const handleCreateDemoProject = async () => {
+    const electronAPI = (window as any).electronAPI;
+    if (!electronAPI) return;
+    const result = await electronAPI.createDemoProject();
+    if (!result?.success) {
+      if (result?.error !== 'Canceled') alert(`Could not create demo project:\n${result?.error || 'Unknown error'}`);
+      return;
+    }
+    setWorkspaceCwd(result.path);
+    saveWorkspace(paneIds, activePaneId, agentConfigs, defaultShell, result.path);
+    setShowWorkspacePresets(true);
   };
 
   const buildBootCommand = (config: AgentConfig): string => {
@@ -529,6 +565,47 @@ export default function App() {
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
                 {workspaceCwd ? workspaceCwd.split('/').pop() || workspaceCwd : 'Choose project root...'}
               </span>
+            </button>
+
+            <button
+              onClick={handleCreateDemoProject}
+              style={{
+                width: '100%',
+                padding: '7px 10px',
+                borderRadius: '7px',
+                border: '1px solid rgba(0,240,255,0.12)',
+                background: 'rgba(0,240,255,0.04)',
+                color: 'var(--accent-cyan)',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Create Demo Project
+            </button>
+
+            <div style={{ margin: '4px 0', borderTop: '1px solid var(--panel-border)' }} />
+
+            <button
+              onClick={() => setShowWorkspacePresets(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: '8px',
+                border: '1px solid rgba(0, 240, 255, 0.18)',
+                background: 'linear-gradient(135deg, rgba(0,240,255,0.12), rgba(168,85,247,0.1))',
+                color: '#fff',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              <Sparkles size={13} style={{ color: 'var(--accent-cyan)' }} />
+              Start With Preset
             </button>
 
             <div style={{ margin: '4px 0', borderTop: '1px solid var(--panel-border)' }} />
@@ -803,6 +880,13 @@ export default function App() {
           onSaveConnections={handleSaveConnections}
           onClose={() => setShowAddConnection(false)}
           agentNames={getAgentNamesMap()}
+        />
+      )}
+
+      {showWorkspacePresets && (
+        <WorkspacePresetModal
+          onApply={handleApplyWorkspacePreset}
+          onClose={() => setShowWorkspacePresets(false)}
         />
       )}
     </div>

@@ -54,6 +54,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   selectWorkspaceDirectory: () => 
     ipcRenderer.invoke('dialog:select-workspace-directory'),
+
+  createDemoProject: () =>
+    ipcRenderer.invoke('dialog:create-demo-project'),
     
   logMessage: (cwd: string, message: any) =>
     ipcRenderer.invoke('workspace:log-message', { cwd, message }),
