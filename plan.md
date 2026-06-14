@@ -1,8 +1,8 @@
-# Starlight Reliability and Orchestration Plan
+# Lightfold Grid Reliability and Orchestration Plan
 
 ## Objective
 
-Evolve Starlight from a prompt-driven PTY message router into a reliable multi-agent
+Evolve Lightfold Grid from a prompt-driven PTY message router into a reliable multi-agent
 orchestrator capable of coordinating complex coding tasks.
 
 The finished system must distinguish message delivery from task completion, recover
@@ -147,7 +147,7 @@ temporary migration period.
 
 ### Acceptance Criteria
 
-- Restarting Starlight does not lose task progress or pending messages.
+- Restarting Lightfold Grid does not lose task progress or pending messages.
 - The renderer can reload without changing broker behavior.
 - Every task transition can be reconstructed from the event log.
 
@@ -176,7 +176,7 @@ temporary migration period.
 
 ### Acceptance Criteria
 
-- Starlight can execute a multi-step workflow without relying on one agent to remember
+- Lightfold Grid can execute a multi-step workflow without relying on one agent to remember
   every dependency.
 - Failed prerequisite tasks block dependent work.
 - Workflow completion means all required tasks and validation criteria passed.
@@ -244,7 +244,7 @@ temporary migration period.
 ### Tasks
 
 - [x] Build a deterministic fake-agent CLI that communicates through stdin/stdout.
-- [x] Launch Starlight's Electron main-process broker and real node-pty sessions in tests.
+- [x] Launch Lightfold Grid's Electron main-process broker and real node-pty sessions in tests.
 - [x] Create a wheel topology with one hub and at least three spokes.
 - [x] Verify startup handshakes, task routing, acknowledgements, results, retries, and
       failure recovery through actual PTYs.
@@ -264,7 +264,7 @@ temporary migration period.
 - Deterministic fake-agent wheel test required in CI.
 - Crash/restart recovery test required in CI.
 - Optional `npm run test:ollama` live-model test.
-- Complex coding workflow test required before declaring Starlight production-ready.
+- Complex coding workflow test required before declaring Lightfold Grid production-ready.
 
 ## Milestone 9: Observability and Operational Controls
 
@@ -298,13 +298,13 @@ temporary migration period.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 
-Starlight is ready for complex coding tasks when all of the following are true:
+Lightfold Grid is ready for complex coding tasks when all of the following are true:
 
 - [x] Every configured agent automatically starts and reports readiness.
 - [x] Requests are acknowledged, correlated, retried, and deduplicated.
 - [x] Task completion is based on structured results and validation criteria.
 - [x] Workflow dependencies and failures are managed by a durable scheduler.
-- [x] Restarting Starlight restores unfinished workflows.
+- [x] Restarting Lightfold Grid restores unfinished workflows.
 - [x] Concurrent coding agents use isolated Git worktrees.
 - [x] Integration requires passing tests and review.
 - [x] The full Electron-to-PTY-to-agent loop is covered by deterministic CI tests.

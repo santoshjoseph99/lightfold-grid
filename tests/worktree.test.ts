@@ -10,10 +10,10 @@ const git = (cwd: string, args: string[]) =>
   execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 
 const repository = () => {
-  const root = mkdtempSync(join(tmpdir(), 'starlight-worktree-'));
+  const root = mkdtempSync(join(tmpdir(), 'lightfold-grid-worktree-'));
   git(root, ['init', '-b', 'main']);
-  git(root, ['config', 'user.email', 'starlight@example.test']);
-  git(root, ['config', 'user.name', 'Starlight Test']);
+  git(root, ['config', 'user.email', 'lightfold-grid@example.test']);
+  git(root, ['config', 'user.name', 'Lightfold Grid Test']);
   writeFileSync(join(root, 'shared.txt'), 'base\n');
   git(root, ['add', '.']);
   git(root, ['commit', '-m', 'initial']);
@@ -34,7 +34,7 @@ test('creates isolated branches and cleans merged worktrees explicitly', () => {
       files: ['feature.txt'],
       testCommand: 'test -f feature.txt',
     });
-    assert.equal(git(record.worktreePath, ['branch', '--show-current']), 'starlight/workflow/task');
+    assert.equal(git(record.worktreePath, ['branch', '--show-current']), 'lightfold-grid/workflow/task');
     commitFile(record.worktreePath, 'feature.txt', 'done\n');
     assert.deepEqual(manager.inspect('workflow', 'task').changedFiles, ['feature.txt']);
     manager.runTests('workflow', 'task');

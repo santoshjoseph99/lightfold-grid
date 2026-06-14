@@ -8,8 +8,8 @@ import {
   StarlightEnvelopeParser,
 } from '../src/services/brokerCore.ts';
 
-const enabled = process.env.STARLIGHT_OLLAMA_TEST === '1';
-const model = process.env.STARLIGHT_OLLAMA_MODEL || 'gemma4-32k:latest';
+const enabled = process.env.LIGHTFOLD_GRID_OLLAMA_TEST === '1' || process.env.STARLIGHT_OLLAMA_TEST === '1';
+const model = process.env.LIGHTFOLD_GRID_OLLAMA_MODEL || process.env.STARLIGHT_OLLAMA_MODEL || 'gemma4-32k:latest';
 
 test('local Ollama spokes emit routable response envelopes to the hub', { skip: !enabled, timeout: 120_000 }, async () => {
   const parser = new StarlightEnvelopeParser();
@@ -24,7 +24,7 @@ test('local Ollama spokes emit routable response envelopes to the hub', { skip: 
 
   for (const spoke of spokes) {
     const command = `${spoke.toLowerCase()}-ready`;
-    const prompt = `You are ${spoke} in a Starlight wheel network.
+    const prompt = `You are ${spoke} in a Lightfold Grid wheel network.
 Reply with exactly one line and no markdown:
 ${STARLIGHT_START_TAG}{"from":"${spoke}","to":"Hub","command":"${command}","type":"result"}${STARLIGHT_END_TAG}`;
 
@@ -43,7 +43,7 @@ ${STARLIGHT_START_TAG}{"from":"${spoke}","to":"Hub","command":"${command}","type
     const payload = await response.json() as { response: string };
     const result = parser.push(spoke, payload.response);
 
-    assert.equal(result.messages.length, 1, `Expected one Starlight envelope in ${spoke} output:\n${payload.response}`);
+    assert.equal(result.messages.length, 1, `Expected one Lightfold Grid envelope in ${spoke} output:\n${payload.response}`);
     const normalized = normalizeAgentMessage(result.messages[0].envelope, { sourceId: spoke });
     assert.equal(normalized.from, spoke);
     assert.equal(isRouteAllowed(connections, normalized.from, normalized.to), true);

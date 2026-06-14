@@ -18,80 +18,43 @@ phrase, but it may be confused with cryptocurrency mining.
 
 ## Naming Decision
 
-The working name, Starlight, is heavily used across software and is strongly associated
-with Astro Starlight. Do not perform a repository-wide rename until a replacement has
-passed the clearance gate below.
-
-### Naming Principles
-
-A strong name should:
-
-- Suggest illumination, visibility, or making model behavior understandable.
-- Suggest coordinated agents rather than a single chatbot.
-- Be distinctive and searchable.
-- Be easy to say, spell, and use as a CLI or package scope.
-- Leave room for coding workflows and broader agent orchestration.
-- Avoid implying that the project provides or owns the underlying models.
-
-### Shortlist
-
-| Candidate | Meaning | Strengths | Risks |
-| --- | --- | --- | --- |
-| **Prismfleet** | A prism reveals the composition of light; a fleet coordinates specialized agents. | Distinctive, describes mixed-model visibility and orchestration, supports `prismfleet-message` and a strong visual identity. | Requires full legal, domain, package, and repository clearance. |
-| **Brightmesh** | An illuminated network of cooperating agents. | Friendly, directly communicates visibility and connections. | More generic; "mesh" may imply uncontrolled peer-to-peer routing. |
-| **LanternGrid** | A guided, visible grid of agents. | Clear illumination metaphor and close fit with the current grid UI. | Sounds infrastructure-oriented and has some technical-name usage. |
-| **Prismatic Starlight** | Makes the existing name more distinctive while preserving continuity. | Lowest migration cost and keeps the current visual language. | Still inherits Starlight's search and naming collisions; long CLI/package name. |
-
-### Recommendation
-
-Use **Prismfleet** as the leading candidate.
+**Lightfold Grid** is the approved project name. It combines the project's illumination
+theme with the visible grid of cooperating agents.
 
 Suggested positioning:
 
-> Prismfleet is an open-source desktop control plane for mixed-model coding teams.
+> Lightfold Grid is an open-source desktop control plane for mixed-model coding teams.
 > Assign specialized local or cloud agents to tasks, see how they collaborate, and
 > spend strong-model tokens only where they matter.
 
-This recommendation is preliminary naming research, not legal clearance.
-
-### Preliminary Research Notes
-
-As of June 12, 2026:
-
-- Starlight has substantial software-name collision, especially with Astro Starlight.
-- PrismForge, LumenGrid, LumenMesh, Modelight, and similar candidates have visible
-  software, AI, or commercial usage.
-- Exact-name web and npm checks did not surface an obvious direct Prismfleet software
-  product or package collision.
-
-These notes only guide the shortlist. They are not comprehensive searches or legal
-advice.
+The npm package name `lightfold-grid` was available when checked on June 13, 2026.
+Preliminary searches found several unrelated uses of "Lightfold", including a creator
+studio, deployment CLI, game, band, and data consultancy. "Lumenary" also had visible
+AI and multi-agent software conflicts. The combined **Lightfold Grid** name was chosen
+to be more distinctive, but this research is not comprehensive legal clearance.
 
 ### Clearance Gate
 
 Before approving a final name:
 
 - [ ] Search USPTO, EUIPO, WIPO, and relevant national trademark databases.
-- [ ] Search GitHub repositories, organizations, topics, and major package registries.
-- [ ] Check npm package and organization-scope availability.
+- [x] Search GitHub repositories, organizations, topics, and major package registries.
+- [x] Check npm package and organization-scope availability.
 - [ ] Check practical domains and social handles.
 - [ ] Search app stores and developer-tool directories.
-- [ ] Check confusingly similar names in AI, developer tooling, and orchestration.
-- [ ] Record the final decision and evidence in this document.
+- [x] Check confusingly similar names in AI, developer tooling, and orchestration.
+- [x] Record the final decision and evidence in this document.
 - [ ] Obtain legal review before treating the name as a protected product brand.
 
-### Rename Inventory
+### Compatibility Rules
 
-After the name is approved, rename in one dedicated commit:
-
-- Application title, README, roadmap, prompt handbook, and screenshots.
-- `package.json` package name, description, version, repository, bugs, and homepage.
-- Helper command and binary, while retaining `starlight-message` as a deprecated alias
-  for at least one release.
-- Protocol-facing TypeScript symbols only where the rename improves public API clarity.
-- Database, workspace, logs, branches, worktrees, and diagnostic filenames with backward
-  compatibility for existing users.
-- GitHub repository, organization, topics, release artifacts, and documentation URLs.
+- New package, workspace, database, diagnostic, branch, and worktree names use
+  `lightfold-grid`; the primary helper is `lightfold-message`.
+- `starlight-message` remains a deprecated helper alias for at least one release.
+- Existing Starlight workspace and broker files remain loadable.
+- The `[[STARLIGHT-MSG]]` marker and internal `Starlight*` protocol symbols remain stable
+  for version 1; changing them requires a separately versioned protocol migration.
+- Existing persisted worktree paths and branches remain valid.
 
 ## Release Scope
 
@@ -111,10 +74,10 @@ The alpha must prove one narrow workflow:
 
 ### 1. Project Identity And Governance
 
-- [ ] Approve and execute the naming decision.
+- [x] Approve and execute the naming decision.
 - [ ] Adopt Apache-2.0 unless a legal review recommends another license.
 - [ ] Confirm the project has the right to publish every source file and bundled asset.
-- [ ] Change the initial public version to `0.1.0-alpha.1`.
+- [x] Change the initial public version to `0.1.0-alpha.1`.
 - [ ] Add `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, and `GOVERNANCE.md`.
 - [ ] Add issue templates, a pull-request template, and support boundaries.
 - [ ] Document maintainer roles, decision-making, and release authority.

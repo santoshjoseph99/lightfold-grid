@@ -21,10 +21,10 @@ export const normalizeCapabilities = (capabilities: string[] | undefined): strin
 };
 
 export const generateAgentPromptContract = (input: AgentPromptContractInput): string => {
-  const helper = input.helperCommand || 'starlight-message';
+  const helper = input.helperCommand || 'lightfold-message';
   const capabilities = normalizeCapabilities(input.capabilities);
   const sections = [
-    '# Starlight Agent Contract',
+    '# Lightfold Grid Agent Contract',
     `Prompt version: ${AGENT_PROMPT_VERSION}`,
     `Agent ID: ${input.paneId}`,
     `Role: ${input.role || 'General agent'}`,

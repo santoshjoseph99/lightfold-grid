@@ -6,6 +6,7 @@ import { BrokerStore } from './brokerStore';
 import { createDiagnosticBundle, runWorkspaceHealthChecks } from './diagnostics';
 import { PtyService } from './ptyService';
 import { WorktreeManager } from './worktreeManager';
+import { brokerDatabasePath, workspaceConfigPath } from './productPaths';
 
 let mainWindow: BrowserWindow | null = null;
 let brokerStore: BrokerStore | null = null;
@@ -93,7 +94,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  brokerStore = new BrokerStore(path.join(app.getPath('userData'), 'starlight-broker.sqlite'));
+  const legacyUserData = path.join(app.getPath('appData'), 'starlight');
+  brokerStore = new BrokerStore(brokerDatabasePath(app.getPath('userData'), legacyUserData));
   brokerStore.recoverInterruptedWork();
   worktreeManager = new WorktreeManager({
     onUpdate: (record) => {
@@ -158,8 +160,8 @@ ipcMain.handle('diagnostics:export', async (_event, input) => {
     workspace: input,
   });
   const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
-    title: 'Export Starlight Diagnostic Bundle',
-    defaultPath: `starlight-diagnostics-${sessionTimestamp}.json`,
+    title: 'Export Lightfold Grid Diagnostic Bundle',
+    defaultPath: `lightfold-grid-diagnostics-${sessionTimestamp}.json`,
     filters: [{ name: 'JSON Diagnostic Bundle', extensions: ['json'] }],
   });
   if (canceled || !filePath) return { success: false, error: 'Canceled' };
@@ -167,7 +169,7 @@ ipcMain.handle('diagnostics:export', async (_event, input) => {
   return { success: true, path: filePath };
 });
 ipcMain.handle('agent:get-helper-command', () => {
-  const helperPath = path.join(app.getAppPath(), 'bin', 'starlight-message.mjs');
+  const helperPath = path.join(app.getAppPath(), 'bin', 'lightfold-message.mjs');
   return `"${helperPath}"`;
 });
 
@@ -223,6 +225,7 @@ ipcMain.handle('pty:spawn', (event, { id, cols, rows, shellPath, cwd }) => {
       cwd: targetCwd,
       env: {
         ...mergedEnv,
+        LIGHTFOLD_GRID_WORKSPACE: 'true',
         STARLIGHT_WORKSPACE: 'true',
         TERM: 'xterm-256color'
       },
@@ -319,9 +322,9 @@ ipcMain.handle('pty:get-active-process', (event, id) => {
 
 function getConfigPath(): string {
   if (app.isPackaged) {
-    return path.join(app.getPath('userData'), 'starlight-workspace.json');
+    return workspaceConfigPath(app.getPath('userData'), path.join(app.getPath('appData'), 'starlight'));
   }
-  return path.join(process.cwd(), 'starlight-workspace.json');
+  return workspaceConfigPath(process.cwd());
 }
 
 ipcMain.handle('workspace:save-config', async (event, config) => {
@@ -389,7 +392,7 @@ ipcMain.handle('dialog:save-workspace-file', async (event, config) => {
   if (!mainWindow) return { success: false, error: 'No main window' };
   const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
     title: 'Save Workspace Configuration',
-    defaultPath: 'starlight-workspace.json',
+    defaultPath: 'lightfold-grid-workspace.json',
     filters: [{ name: 'JSON Configuration', extensions: ['json'] }]
   });
   

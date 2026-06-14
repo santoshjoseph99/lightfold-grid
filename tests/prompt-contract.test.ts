@@ -9,7 +9,8 @@ import {
 } from '../src/services/promptContract.ts';
 import { normalizeAgentMessage, StarlightEnvelopeParser } from '../src/services/brokerCore.ts';
 
-const helper = new URL('../bin/starlight-message.mjs', import.meta.url).pathname;
+const helper = new URL('../bin/lightfold-message.mjs', import.meta.url).pathname;
+const legacyHelper = new URL('../bin/starlight-message.mjs', import.meta.url).pathname;
 
 test('generates one identity-safe versioned prompt contract', () => {
   const prompt = generateAgentPromptContract({
@@ -21,7 +22,7 @@ test('generates one identity-safe versioned prompt contract', () => {
     roleInstructions: 'Run the requested test suite.',
   });
 
-  assert.equal(prompt, `# Starlight Agent Contract
+  assert.equal(prompt, `# Lightfold Grid Agent Contract
 Prompt version: ${AGENT_PROMPT_VERSION}
 Agent ID: Dynamic-Pane-7
 Role: Test runner
@@ -39,13 +40,13 @@ Tools: git, npm
 - Repeated deliveries with the same message ID are retries; do not execute them twice.
 
 ## Message Helper
-Use \`starlight-message\` to emit protocol messages. Do not hand-write envelope markers or JSON.
-Ready: \`starlight-message ready --to broker --summary ready\`
-Heartbeat: \`starlight-message heartbeat --to broker --summary alive\`
-Acknowledge: \`starlight-message ack --to <sender> --task-id <task-id> --correlation-id <message-id> --summary accepted\`
-Progress: \`starlight-message progress --to <sender> --task-id <task-id> --correlation-id <message-id> --summary "status"\`
-Result: \`starlight-message result --to <sender> --task-id <task-id> --correlation-id <message-id> --summary "outcome" --artifact <path>\`
-Error: \`starlight-message error --to <sender> --task-id <task-id> --correlation-id <message-id> --summary "failure"\`
+Use \`lightfold-message\` to emit protocol messages. Do not hand-write envelope markers or JSON.
+Ready: \`lightfold-message ready --to broker --summary ready\`
+Heartbeat: \`lightfold-message heartbeat --to broker --summary alive\`
+Acknowledge: \`lightfold-message ack --to <sender> --task-id <task-id> --correlation-id <message-id> --summary accepted\`
+Progress: \`lightfold-message progress --to <sender> --task-id <task-id> --correlation-id <message-id> --summary "status"\`
+Result: \`lightfold-message result --to <sender> --task-id <task-id> --correlation-id <message-id> --summary "outcome" --artifact <path>\`
+Error: \`lightfold-message error --to <sender> --task-id <task-id> --correlation-id <message-id> --summary "failure"\`
 
 ## Role Instructions
 Run the requested test suite.`);
@@ -85,4 +86,14 @@ test('message helper rejects incomplete responses and capability checks are exac
     tools: ['markdown'],
   }]);
   assert.equal(mismatch?.id, 'build');
+});
+
+test('deprecated starlight-message alias emits the version-1 wire protocol', () => {
+  const output = execFileSync(process.execPath, [legacyHelper, 'ready', '--to', 'broker', '--summary', 'ready'], {
+    encoding: 'utf8',
+  });
+  assert.match(output, /^\[\[STARLIGHT-MSG\]\]/);
+  const parsed = new StarlightEnvelopeParser().push('Legacy-Agent', output);
+  assert.equal(parsed.errors.length, 0);
+  assert.equal(parsed.messages[0].envelope.kind, 'ready');
 });

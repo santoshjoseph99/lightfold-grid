@@ -36,7 +36,7 @@ setTimeout(() => send('ready', 'broker', undefined, undefined, `${id} ready`), d
 let task = null;
 readline.createInterface({ input: process.stdin, crlfDelay: Infinity }).on('line', (line) => {
   const clean = line.replace(/\r/g, '');
-  if (clean === '[STARLIGHT TASK]') task = {};
+  if (clean === '[LIGHTFOLD GRID TASK]' || clean === '[STARLIGHT TASK]') task = {};
   else if (task && clean.startsWith('Task ID: ')) task.taskId = clean.slice(9);
   else if (task && clean.startsWith('Message ID: ')) task.messageId = clean.slice(12);
   else if (task && clean.startsWith('Attempt: ')) task.attempt = Number(clean.slice(9));

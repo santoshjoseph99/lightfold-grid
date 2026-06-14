@@ -1,6 +1,6 @@
-# Starlight TDD Agent Prompts Handbook
+# Lightfold Grid TDD Agent Prompts Handbook
 
-This folder contains pre-configured system instructions for a multi-agent Test-Driven Development (TDD) workflow running on the Starlight split-pane terminal workspace.
+This folder contains pre-configured system instructions for a multi-agent Test-Driven Development (TDD) workflow running on the Lightfold Grid split-pane terminal workspace.
 
 ## 👥 Agent Roster
 
@@ -34,13 +34,13 @@ User Prompt ➔ Orchestrator
                  └──[Ship Phase]──────➔ PRBuilder (commits & opens PR)
 ```
 
-## 🚀 How to Load in Starlight
+## 🚀 How to Load in Lightfold Grid
 1. Split your terminal grid into the desired amount of panes (e.g. 4 panes).
 2. Click **Add Agent** in the left sidebar.
 3. Choose the appropriate preset (like Gemini) and click **Load Prompt**.
 4. Navigate to this repository's `prompts/` folder and select the markdown file matching the agent's role.
 5. Boot the agent!
 
-Starlight injects the real pane identity, allowed routes, capabilities, prompt version,
+Lightfold Grid injects the real pane identity, allowed routes, capabilities, prompt version,
 and current protocol instructions when the agent boots. Role prompt files intentionally
 contain no pane IDs or hand-written message envelopes.

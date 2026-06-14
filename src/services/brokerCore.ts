@@ -228,17 +228,17 @@ export const formatRequestForAgent = (message: AgentMessage): string => {
   }
 
   return [
-    '[STARLIGHT TASK]',
+    '[LIGHTFOLD GRID TASK]',
     `Task ID: ${message.taskId}`,
     `Message ID: ${message.messageId}`,
     `Attempt: ${message.attempt}`,
     'If this Message ID was already accepted, do not execute it again; repeat the prior acknowledgement or result.',
     'Acknowledge before work with:',
-    `  starlight-message ack --to ${message.from} --task-id ${message.taskId} --correlation-id ${message.messageId} --summary accepted`,
+    `  lightfold-message ack --to ${message.from} --task-id ${message.taskId} --correlation-id ${message.messageId} --summary accepted`,
     'Report progress during long-running work with:',
-    `  starlight-message progress --to ${message.from} --task-id ${message.taskId} --correlation-id ${message.messageId} --summary "status"`,
+    `  lightfold-message progress --to ${message.from} --task-id ${message.taskId} --correlation-id ${message.messageId} --summary "status"`,
     'When complete return a structured result with:',
-    `  starlight-message result --to ${message.from} --task-id ${message.taskId} --correlation-id ${message.messageId} --summary "outcome"`,
+    `  lightfold-message result --to ${message.from} --task-id ${message.taskId} --correlation-id ${message.messageId} --summary "outcome"`,
     '',
     'Instruction:',
     getMessageInstruction(message),

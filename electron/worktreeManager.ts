@@ -109,11 +109,11 @@ export class WorktreeManager {
 
     const baseCommit = this.git(workspaceRoot, ['rev-parse', 'HEAD']).trim();
     const gitCommonDir = this.git(workspaceRoot, ['rev-parse', '--path-format=absolute', '--git-common-dir']).trim();
-    const worktreeRoot = path.join(gitCommonDir, 'starlight-worktrees');
+    const worktreeRoot = path.join(gitCommonDir, 'lightfold-grid-worktrees');
     mkdirSync(worktreeRoot, { recursive: true });
     const suffix = `${safeName(workflowId)}-${safeName(taskId)}`;
     const worktreePath = path.join(worktreeRoot, suffix);
-    const branch = `starlight/${safeName(workflowId)}/${safeName(taskId)}`;
+    const branch = `lightfold-grid/${safeName(workflowId)}/${safeName(taskId)}`;
     if (existsSync(worktreePath)) {
       throw new WorktreeError(`Worktree path already exists: ${worktreePath}`);
     }
@@ -245,7 +245,7 @@ export class WorktreeManager {
     try {
       this.git(record.workspaceRoot, ['branch', '-D', record.branch]);
     } catch {
-      // A merged branch may already have been removed outside Starlight.
+      // A merged branch may already have been removed outside Lightfold Grid.
     }
     record.status = 'cleaned';
     record.error = undefined;

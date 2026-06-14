@@ -1,9 +1,11 @@
 {
-  "name": "starlight",
-  "version": "1.0.0",
-  "description": "Pseudo-Terminal Multi-Agent Workspace",
+  "name": "lightfold-grid",
+  "productName": "Lightfold Grid",
+  "version": "0.1.0-alpha.1",
+  "description": "Desktop control plane for mixed-model coding teams",
   "main": "dist-electron/main.js",
   "bin": {
+    "lightfold-message": "bin/lightfold-message.mjs",
     "starlight-message": "bin/starlight-message.mjs"
   },
   "scripts": {
@@ -11,7 +13,7 @@
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.electron.json && vite build",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/*.test.ts",
     "test:integration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/full-pty.integration.test.ts",
-    "test:ollama": "STARLIGHT_OLLAMA_TEST=1 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/ollama-wheel.integration.test.ts",
+    "test:ollama": "LIGHTFOLD_GRID_OLLAMA_TEST=1 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/ollama-wheel.integration.test.ts",
     "postinstall": "electron-rebuild"
   },
   "dependencies": {

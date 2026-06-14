@@ -315,7 +315,7 @@ export const AddConnectionModal: React.FC<AddConnectionModalProps> = ({
         {/* Footer controls */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--panel-border)', paddingTop: '12px' }}>
           <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-            Changes auto-saved to starlight-workspace.json
+            Changes auto-saved to lightfold-grid-workspace.json
           </span>
           <button
             onClick={onClose}

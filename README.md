@@ -1,10 +1,10 @@
-# Starlight
+# Lightfold Grid
 
-Starlight is a desktop multi-agent orchestrator for coordinating CLI-based AI agents.
+Lightfold Grid is a desktop multi-agent orchestrator for coordinating CLI-based AI agents.
 It gives each agent an interactive pseudo-terminal, connects agents through a central
 message broker, and displays their communication in a shared workspace.
 
-Starlight is currently an early-stage prototype. Its message transport works, but the
+Lightfold Grid is currently an early-stage prototype. Its message transport works, but the
 project is actively being developed toward reliable orchestration of complex coding
 workflows.
 
@@ -27,7 +27,7 @@ workflows.
 - Isolate coding tasks in per-task Git worktrees and branches.
 - Gate coding-task merges on file ownership, tests, and explicit review.
 - Generate versioned agent contracts with real identities, routes, capabilities, and tools.
-- Emit valid protocol messages through the bundled `starlight-message` helper.
+- Emit valid protocol messages through the bundled `lightfold-message` helper.
 - Exercise the complete broker-to-real-PTY-to-agent loop with deterministic fake agents.
 - Monitor queues, latency, task duration, retries, failures, agent uptime, and workspace health.
 - Inspect workflow dependency graphs, durable timelines, and correlated message chains.
@@ -76,17 +76,17 @@ npm install
 npm run dev
 ```
 
-Use the Starlight workspace to:
+Use the Lightfold Grid workspace to:
 
 1. Select a project root.
 2. Add or configure agent panes.
 3. Configure allowed routing connections.
 4. Boot the agents.
-5. Send tasks through Starlight message envelopes.
+5. Send tasks through Lightfold Grid message envelopes.
 
 ## Message Envelopes
 
-Starlight supports a versioned protocol:
+Lightfold Grid supports a versioned protocol:
 
 ```text
 [[STARLIGHT-MSG]]{
@@ -114,7 +114,11 @@ The legacy envelope format remains supported:
 [[STARLIGHT-MSG]]{"from":"Pane-A","to":"Pane-B","command":"Inspect the failing tests","type":"task"}[[END]]
 ```
 
-The physical source pane is authoritative. Starlight does not trust an agent-generated
+The `STARLIGHT` marker is retained as the stable version-1 wire protocol identifier.
+Existing `starlight-message`, `starlight-workspace.json`, and `starlight-broker.sqlite`
+installations continue to work; new installations use their `lightfold-*` equivalents.
+
+The physical source pane is authoritative. Lightfold Grid does not trust an agent-generated
 `from` value to impersonate another pane.
 
 All accepted messages are normalized into the versioned protocol. Malformed and
@@ -147,18 +151,18 @@ configurable under **Configure Grid -> General -> Reliable Delivery**.
 ### Agent Lifecycle
 
 Every configured agent gets a PTY when its workspace loads, including agents whose
-terminal tab is not visible. Starlight waits until the configured CLI is observable
+terminal tab is not visible. Lightfold Grid waits until the configured CLI is observable
 before injecting a generated, versioned contract containing the agent's real pane ID,
 role, allowed routes, capabilities, tools, and role instructions. The agent announces
 readiness using the bundled helper:
 
 ```bash
-starlight-message ready --to broker --summary ready
+lightfold-message ready --to broker --summary ready
 ```
 
 Ready agents receive at most one active task. Additional requests remain queued until
 the active task completes. Agents should emit a `heartbeat` message to `broker` at
-least every 20 seconds; after 30 seconds without one, Starlight marks the agent
+least every 20 seconds; after 30 seconds without one, Lightfold Grid marks the agent
 unresponsive. Failed or unresponsive agents can be restarted from their terminal tab,
 and their failed active request can be retried or reassigned from the broker log.
 
@@ -168,17 +172,17 @@ last heartbeat and failure details.
 Role prompt files contain role scope only. They intentionally contain no fixed pane
 identities or hand-written protocol envelopes. The generated contract requires
 acknowledgements, progress updates, and one structured terminal result. Use
-`starlight-message <kind>` with the arguments shown in the injected contract rather
+`lightfold-message <kind>` with the arguments shown in the injected contract rather
 than manually formatting JSON.
 
 ### Durable Broker State
 
 The Electron main process stores normalized agents, messages, tasks, delivery attempts,
-settings, and append-only audit events in `starlight-broker.sqlite` under Electron's
+settings, and append-only audit events in `lightfold-grid-broker.sqlite` under Electron's
 application data directory. Every message and lifecycle transition updates this
 authoritative store.
 
-When Starlight restarts, process-bound agent states reset to `stopped`. Requests that
+When Lightfold Grid restarts, process-bound agent states reset to `stopped`. Requests that
 were `delivering`, `delivered`, or `acknowledged` recover as `queued` with their stable
 message and task IDs, then resume after the target agent reports readiness. Schema and
 message protocol migrations run when the database opens.
@@ -197,7 +201,7 @@ planned -> blocked -> ready -> assigned -> running -> reviewing -> completed
                                                         \-> failed | cancelled
 ```
 
-Starlight dispatches a task only after every prerequisite completed successfully.
+Lightfold Grid dispatches a task only after every prerequisite completed successfully.
 Failed prerequisites keep dependents blocked. Result messages are validated against
 required artifacts and summary text before the task can complete.
 
@@ -256,14 +260,14 @@ Add a `coding` configuration to a workflow task to run it in an isolated Git wor
 
 Coding workflows require the selected workspace to be a Git repository, project-relative
 declared files, and a test command. Every coding task requires human approval before
-dispatch because its test command will execute locally. Starlight then creates a branch named
-`starlight/<workflow>/<task>` and a worktree under the repository's Git directory. The
+dispatch because its test command will execute locally. Lightfold Grid then creates a branch named
+`lightfold-grid/<workflow>/<task>` and a worktree under the repository's Git directory. The
 agent receives the exact worktree path and must work and commit there.
 
-Declared files are reserved while a task is active. Starlight also inspects the actual
+Declared files are reserved while a task is active. Lightfold Grid also inspects the actual
 files changed from the task's base commit, blocks overlapping ownership unless a human
 approves it, and surfaces merge conflicts in the workflow view. An agent result moves
-the task to review; it does not complete the task. Starlight runs the configured tests,
+the task to review; it does not complete the task. Lightfold Grid runs the configured tests,
 then requires **Approve & Merge** before serially merging the branch into the clean
 integration workspace. Failed and conflicted worktrees are preserved until explicit
 forced cleanup.
@@ -312,7 +316,7 @@ npm run test:ollama
 The live test defaults to `gemma4-32k:latest`. Override it with:
 
 ```bash
-STARLIGHT_OLLAMA_MODEL=your-model npm run test:ollama
+LIGHTFOLD_GRID_OLLAMA_MODEL=your-model npm run test:ollama
 ```
 
 Build the production application:
@@ -358,11 +362,11 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
 ## Open Source Status
 
-Starlight is being prepared for open-source release. A public license, contribution
+Lightfold Grid is being prepared for open-source release. A public license, contribution
 guide, security policy, and release packaging still need to be selected and added
 before the first public release.
 
-The working project name is also under review because Starlight is heavily used across
-software. **Prismfleet** is the current leading candidate, subject to trademark,
-package, repository, and domain clearance. See [OPEN_SOURCE_PLAN.md](./OPEN_SOURCE_PLAN.md)
-for the naming shortlist, positioning, release workstreams, and public-alpha criteria.
+The project was renamed from Starlight to **Lightfold Grid**. Broader trademark and
+brand clearance remains required before treating the name as protected. See
+[OPEN_SOURCE_PLAN.md](./OPEN_SOURCE_PLAN.md) for the decision record, release
+workstreams, and public-alpha criteria.

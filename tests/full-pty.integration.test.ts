@@ -40,7 +40,7 @@ const spawn = (broker: HeadlessBroker, root: string, id: string, options: string
   });
 
 test('real PTY wheel survives delayed readiness, malformed output, and a retried acknowledgement', { timeout: 10_000 }, async () => {
-  const root = mkdtempSync(join(tmpdir(), 'starlight-pty-wheel-'));
+  const root = mkdtempSync(join(tmpdir(), 'lightfold-grid-pty-wheel-'));
   const broker = new HeadlessBroker({
     databasePath: join(root, 'broker.sqlite'),
     connections: wheel,
@@ -83,7 +83,7 @@ test('real PTY wheel survives delayed readiness, malformed output, and a retried
 });
 
 test('real PTY request recovers after an agent crash and restart', { timeout: 10_000 }, async () => {
-  const root = mkdtempSync(join(tmpdir(), 'starlight-pty-crash-'));
+  const root = mkdtempSync(join(tmpdir(), 'lightfold-grid-pty-crash-'));
   const marker = join(root, 'crashing-agent');
   const broker = new HeadlessBroker({
     databasePath: join(root, 'broker.sqlite'),
@@ -111,14 +111,14 @@ test('real PTY request recovers after an agent crash and restart', { timeout: 10
 });
 
 test('coding workflow completes isolated PTY edit, tests, review, and merge', { timeout: 15_000 }, async () => {
-  const root = mkdtempSync(join(tmpdir(), 'starlight-coding-e2e-'));
+  const root = mkdtempSync(join(tmpdir(), 'lightfold-grid-coding-e2e-'));
   const repository = join(root, 'repository');
   cpSync(codingFixture, repository, { recursive: true });
   const git = (args: string[], cwd = repository) =>
     execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   git(['init', '-b', 'main']);
-  git(['config', 'user.email', 'starlight@example.test']);
-  git(['config', 'user.name', 'Starlight Test']);
+  git(['config', 'user.email', 'lightfold-grid@example.test']);
+  git(['config', 'user.name', 'Lightfold Grid Test']);
   git(['add', '.']);
   git(['commit', '-m', 'initial']);
 

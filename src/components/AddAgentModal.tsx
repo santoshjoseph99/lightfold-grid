@@ -379,7 +379,7 @@ export const AddAgentModal: React.FC<AddAgentModalProps> = ({
         {/* Footer */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--panel-border)', paddingTop: '12px', marginTop: '4px' }}>
           <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-            Saves to starlight-workspace.json
+            Saves to lightfold-grid-workspace.json
           </span>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button

@@ -1,5 +1,5 @@
 {
-  "name": "starlight-coding-fixture",
+  "name": "lightfold-grid-coding-fixture",
   "private": true,
   "scripts": {
     "test": "node --test"

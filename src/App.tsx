@@ -335,7 +335,7 @@ export default function App() {
   };
 
   // Launch the configured CLI and wait for an observable child process before
-  // asking the agent to complete the Starlight readiness handshake.
+  // asking the agent to complete the Lightfold Grid readiness handshake.
   const handleBootPane = async (paneId: string, customConfig?: AgentConfig, restart = false) => {
     const config = customConfig || agentConfigs[paneId];
     if (!config) {
@@ -478,7 +478,7 @@ export default function App() {
       <div className="titlebar-spacer" style={{ WebkitAppRegion: 'drag' } as any}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Star size={11} fill="var(--accent-cyan)" stroke="var(--accent-cyan)" />
-          <span>starlight // multi-agent grid</span>
+          <span>lightfold grid // mixed-model teams</span>
         </div>
       </div>
 
