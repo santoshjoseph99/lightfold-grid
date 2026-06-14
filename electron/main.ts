@@ -6,7 +6,7 @@ import { BrokerStore } from './brokerStore';
 import { createDiagnosticBundle, runWorkspaceHealthChecks } from './diagnostics';
 import { PtyService } from './ptyService';
 import { WorktreeManager } from './worktreeManager';
-import { brokerDatabasePath, workspaceConfigPath } from './productPaths';
+import { agentHelperPath, brokerDatabasePath, rendererEntryPath, workspaceConfigPath } from './productPaths';
 import { commandExists, getActiveChildProcess, getAvailableShells, getDefaultShell, getShellArgs } from './platform.js';
 
 let mainWindow: BrowserWindow | null = null;
@@ -84,7 +84,7 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../../dist/index.html'));
+    mainWindow.loadFile(rendererEntryPath(__dirname));
   }
 
   mainWindow.on('closed', () => {
@@ -170,7 +170,7 @@ ipcMain.handle('diagnostics:export', async (_event, input) => {
   return { success: true, path: filePath };
 });
 ipcMain.handle('agent:get-helper-command', () => {
-  const helperPath = path.join(app.getAppPath(), 'bin', 'lightfold-message.mjs');
+  const helperPath = agentHelperPath(app.getAppPath(), process.resourcesPath, app.isPackaged);
   return `node "${helperPath}"`;
 });
 

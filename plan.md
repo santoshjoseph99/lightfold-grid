@@ -310,6 +310,32 @@ temporary migration period.
 - Portable coding workflow and worktree tests.
 - Real PTY integration harness on Windows, macOS, and Linux CI.
 
+## Milestone 11: Repeatable Alpha Packaging And Release Automation
+
+### Tasks
+
+- [x] Add repeatable macOS, Linux, and Windows package commands.
+- [x] Package the renderer, Electron main process, native modules, and agent helpers.
+- [x] Correct and test installed-build renderer and helper paths.
+- [x] Add a tagged alpha release workflow with matching version-tag validation.
+- [x] Publish SHA-256 checksums and an SPDX software bill of materials.
+- [x] Document local packaging, installation trust warnings, upgrades, rollback, and data paths.
+
+### Acceptance Criteria
+
+- A clean checkout can create an installable package on each supported operating system.
+- Installed builds can load the renderer and invoke the external agent message helper.
+- Matching alpha tags create prerelease artifacts only after every platform package succeeds.
+- Every published alpha includes checksums and an SPDX software bill of materials.
+- Users can locate, back up, upgrade, and restore application data.
+
+### Tests
+
+- Package-manifest and release-workflow contract tests.
+- Installed-path resolution tests.
+- Local unpacked application smoke test.
+- Hosted macOS, Linux, and Windows package workflow.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -322,6 +348,7 @@ temporary migration period.
 8. Full end-to-end integration harness.
 9. Observability and operational controls.
 10. Experimental Windows platform support.
+11. Repeatable alpha packaging and release automation.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

@@ -343,6 +343,16 @@ Build the production application:
 npm run build
 ```
 
+Create an installable package for the current platform:
+
+```bash
+npm run package
+```
+
+Packages are unsigned experimental alpha artifacts. See [RELEASES.md](./RELEASES.md)
+for platform commands, checksum verification, release automation, upgrades, rollback,
+and application-data locations.
+
 ## Current Limitations
 
 - Reliable acknowledgements require agents to follow the versioned protocol.
@@ -367,6 +377,7 @@ Development is organized into milestone commits. The roadmap covers:
 8. Full end-to-end integration testing
 9. Observability and operational controls
 10. Experimental Windows platform support
+11. Repeatable alpha packaging and release automation
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -383,6 +394,8 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 9: Observability and operational controls
 - [ ] Milestone 10: Experimental Windows platform support (implementation complete;
       hosted Windows CI validation pending)
+- [ ] Milestone 11: Repeatable alpha packaging and release automation (implementation
+      complete; hosted release-matrix validation pending)
 
 ## Open Source Status
 

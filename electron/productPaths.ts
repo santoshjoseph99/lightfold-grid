@@ -30,3 +30,12 @@ export const workspaceConfigPath = (directory: string, legacyDirectory = directo
     `${LEGACY_PRODUCT_SLUG}-workspace.json`,
     legacyDirectory,
   );
+
+export const rendererEntryPath = (compiledElectronDirectory: string): string =>
+  join(compiledElectronDirectory, '..', 'dist', 'index.html');
+
+export const agentHelperPath = (
+  appPath: string,
+  resourcesPath: string,
+  packaged: boolean,
+): string => join(packaged ? resourcesPath : appPath, 'bin', 'lightfold-message.mjs');

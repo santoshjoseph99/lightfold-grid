@@ -31,7 +31,7 @@ body:
       options:
         - macOS
         - Linux
-        - Windows (unsupported)
+        - Windows (experimental)
         - Other
     validations:
       required: true

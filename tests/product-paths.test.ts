@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { brokerDatabasePath, workspaceConfigPath } from '../electron/productPaths.ts';
+import { agentHelperPath, brokerDatabasePath, rendererEntryPath, workspaceConfigPath } from '../electron/productPaths.ts';
 
 test('uses Lightfold Grid paths for new installations', () => {
   const directory = mkdtempSync(join(tmpdir(), 'lightfold-grid-paths-'));
@@ -47,4 +47,22 @@ test('finds legacy data after Electron changes the application-data directory', 
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('resolves the packaged renderer beside the compiled Electron directory', () => {
+  assert.equal(
+    rendererEntryPath(join('app.asar', 'dist-electron')),
+    join('app.asar', 'dist', 'index.html'),
+  );
+});
+
+test('resolves the external agent helper outside a packaged asar', () => {
+  assert.equal(
+    agentHelperPath(join('resources', 'app.asar'), 'resources', true),
+    join('resources', 'bin', 'lightfold-message.mjs'),
+  );
+  assert.equal(
+    agentHelperPath('repository', 'resources', false),
+    join('repository', 'bin', 'lightfold-message.mjs'),
+  );
 });

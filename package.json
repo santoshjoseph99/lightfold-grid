@@ -3,6 +3,7 @@
   "productName": "Lightfold Grid",
   "version": "0.1.0-alpha.1",
   "description": "Desktop control plane for mixed-model coding teams",
+  "author": "Lightfold Grid contributors",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=22.12.0"
@@ -15,10 +16,17 @@
   "scripts": {
     "dev": "concurrently -k -p \"[{name}]\" -n \"Vite,Elec-TS,Elec-Run\" -c \"cyan,magenta,green\" \"vite\" \"tsc -w -p tsconfig.electron.json\" \"wait-on http://localhost:5173 && nodemon --delay 500ms --watch dist-electron --exec electron .\"",
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.electron.json && vite build",
+    "package": "npm run build && electron-builder --publish never",
+    "package:dir": "npm run build && electron-builder --dir --publish never",
+    "package:linux": "npm run build && electron-builder --linux --publish never",
+    "package:mac": "npm run build && electron-builder --mac --publish never",
+    "package:win": "npm run build && electron-builder --win --publish never",
+    "release:validate": "node scripts/validate-release-tag.mjs",
+    "release:metadata": "node scripts/generate-release-metadata.mjs",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/*.test.ts",
     "test:integration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/full-pty.integration.test.ts",
     "test:ollama": "LIGHTFOLD_GRID_OLLAMA_TEST=1 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/ollama-wheel.integration.test.ts",
-    "postinstall": "electron-rebuild"
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "better-sqlite3": "^12.10.1",
@@ -32,16 +40,66 @@
     "xterm-addon-fit": "^0.8.0"
   },
   "devDependencies": {
-    "@electron/rebuild": "^4.0.4",
     "@types/node": "^20.14.2",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^6.0.2",
     "concurrently": "^8.2.2",
     "electron": "^42.4.0",
+    "electron-builder": "^26.15.3",
     "nodemon": "^3.1.3",
     "typescript": "^5.4.5",
     "vite": "^8.0.16",
     "wait-on": "^9.0.10"
+  },
+  "build": {
+    "appId": "io.lightfold.grid",
+    "productName": "Lightfold Grid",
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin",
+        "filter": [
+          "*.mjs"
+        ]
+      }
+    ],
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "linux": {
+      "category": "Development",
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

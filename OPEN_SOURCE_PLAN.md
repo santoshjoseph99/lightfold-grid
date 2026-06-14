@@ -96,12 +96,12 @@ The alpha must prove one narrow workflow:
 
 ### 3. Installation And Release Engineering
 
-- [ ] Add repeatable macOS and Linux packaging.
+- [x] Add repeatable macOS and Linux packaging.
 - [ ] Sign and notarize macOS releases.
-- [ ] Publish checksums and a software bill of materials for release artifacts.
+- [x] Publish checksums and a software bill of materials for release artifacts.
 - [ ] Test native dependencies such as `node-pty` and SQLite on every supported platform.
-- [ ] Add release CI for tagged alpha builds.
-- [ ] Document upgrade, rollback, data-directory, and schema-migration behavior.
+- [x] Add release CI for tagged alpha builds.
+- [x] Document upgrade, rollback, data-directory, and schema-migration behavior.
 - [x] Add experimental Windows support with platform-aware PTYs, process inspection,
       coding commands, documentation, and CI coverage.
 
