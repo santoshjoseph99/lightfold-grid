@@ -9,6 +9,7 @@ import test from 'node:test';
 
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const releaseWorkflow = readFileSync(new URL('../.github/workflows/release.yml', import.meta.url), 'utf8');
+const bundledOllamaAdapter = readFileSync(new URL('../bin/lightfold-ollama-adapter.mjs', import.meta.url), 'utf8');
 
 test('packages the renderer, Electron main process, helpers, and native modules', () => {
   assert.deepEqual(packageJson.build.files, [
@@ -26,6 +27,7 @@ test('packages the renderer, Electron main process, helpers, and native modules'
     from: 'examples/demo-repository',
     to: 'examples/demo-repository',
   });
+  assert.match(bundledOllamaAdapter, /\/api\/chat/);
   assert.match(packageJson.build.artifactName, /\$\{version\}.*\$\{os\}.*\$\{arch\}/);
 });
 

@@ -85,6 +85,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAgentHelperCommand: () =>
     ipcRenderer.invoke('agent:get-helper-command'),
 
+  getBundledAdapterCommand: (adapterId: string) =>
+    ipcRenderer.invoke('agent:get-bundled-adapter-command', adapterId),
+
   isGitRepository: (workspaceRoot: string) =>
     ipcRenderer.invoke('worktree:is-git-repository', workspaceRoot),
 

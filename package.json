@@ -24,6 +24,7 @@
     "release:validate": "node scripts/validate-release-tag.mjs",
     "release:metadata": "node scripts/generate-release-metadata.mjs",
     "demo:setup": "node scripts/setup-demo.mjs",
+    "adapter:conformance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/adapter-conformance.test.ts",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/*.test.ts",
     "test:integration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/full-pty.integration.test.ts",
     "test:ollama": "LIGHTFOLD_GRID_OLLAMA_TEST=1 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/ollama-wheel.integration.test.ts",

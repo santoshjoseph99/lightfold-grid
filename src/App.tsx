@@ -35,6 +35,7 @@ import {
   normalizeCapabilities,
 } from './services/promptContract';
 import { disablePersistedYoloModes } from './services/securityPolicy';
+import { buildAdapterLaunchPlan, resolveAdapter } from './services/cliAdapters';
 
 const STARTUP_TIMEOUT_MS = 20_000;
 const STARTUP_POLL_MS = 250;
@@ -318,47 +319,6 @@ export default function App() {
     setShowWorkspacePresets(true);
   };
 
-  const buildBootCommand = (config: AgentConfig): string => {
-    let cmd = config.cliCommand || '';
-    const isGemini = cmd.toLowerCase().includes('gemini');
-    const isCopilot = cmd.toLowerCase().includes('copilot');
-    const isOllama = cmd.toLowerCase().includes('ollama');
-
-    // Append model option if not already specified in the command
-    // Omit if "auto" (case-insensitive) to support Gemini CLI's native Auto Routing
-    if (config.selectedModel && config.selectedModel.toLowerCase() !== 'auto') {
-      if (isGemini && !cmd.includes('-m') && !cmd.includes('--model')) {
-        cmd += ` -m ${config.selectedModel}`;
-      } else if (isCopilot && !cmd.includes('-m') && !cmd.includes('--model')) {
-        cmd += ` --model ${config.selectedModel}`;
-      } else if (isOllama && !cmd.includes(config.selectedModel)) {
-        cmd += ` ${config.selectedModel}`;
-      }
-    }
-
-    // Append prompt file path option if present
-    if (config.promptPath) {
-      if (isGemini && !cmd.includes('-s') && !cmd.includes('--system')) {
-        cmd += ` -s "${config.promptPath}"`;
-      }
-    }
-
-    // Append YOLO flag if checked
-    if (config.yoloMode) {
-      if (isGemini && !cmd.includes('-y') && !cmd.includes('--yolo')) {
-        cmd += ' --yolo';
-      } else if (isCopilot && !cmd.includes('--yolo')) {
-        cmd += ' --yolo';
-      } else if (isOllama && !cmd.includes('--experimental-yolo')) {
-        cmd += ' --experimental-yolo';
-      } else if (!isGemini && !isCopilot && !isOllama && !cmd.includes('--yolo')) {
-        cmd += ' --yolo';
-      }
-    }
-
-    return cmd;
-  };
-
   const waitForAgentProcess = async (paneId: string) => {
     const electronAPI = (window as any).electronAPI;
     const deadline = Date.now() + STARTUP_TIMEOUT_MS;
@@ -398,15 +358,16 @@ export default function App() {
       instance.isBooted = true;
       markAgentStarting(paneId);
 
-      const bootCommand = buildBootCommand(config);
+      const adapter = resolveAdapter(config);
+      const bundledAdapterCommand = adapter.bundled
+        ? await electronAPI.getBundledAdapterCommand(adapter.id)
+        : '';
+      const launchPlan = buildAdapterLaunchPlan(config, bundledAdapterCommand);
+      const bootCommand = launchPlan.command;
       if (!bootCommand) throw new Error('Agent CLI command is empty.');
       await electronAPI.writePty(paneId, bootCommand + '\r');
       await waitForAgentProcess(paneId);
 
-      const hasCommandLinePrompt = (
-        (bootCommand.includes('-s') || bootCommand.includes('--system')) &&
-        config.promptPath
-      );
       const helperCommand = await electronAPI.getAgentHelperCommand();
       const routes = getRoutingConnections();
       const allowedRoutes = Object.keys(routes).length > 0
@@ -419,7 +380,7 @@ export default function App() {
           allowedRoutes,
           capabilities: normalizeCapabilities(config.capabilities?.length ? config.capabilities : DEFAULT_AGENT_CAPABILITIES),
           tools: normalizeCapabilities(config.tools),
-          roleInstructions: !hasCommandLinePrompt ? config.promptContent : undefined,
+          roleInstructions: launchPlan.injectPrompt ? config.promptContent : undefined,
           helperCommand,
         }),
       ].join('\n\n');

@@ -363,6 +363,32 @@ temporary migration period.
 - Loadable workspace safety tests.
 - Existing deterministic and live Ollama wheel integration tests.
 
+## Milestone 13: CLI And Provider Adapter Compatibility
+
+### Tasks
+
+- [x] Define a provider adapter registry separately from agent prompt instructions.
+- [x] Centralize tested launch templates for Ollama, Gemini, Copilot, and custom CLIs.
+- [x] Add an explicit adapter selector while preserving legacy command inference.
+- [x] Add a bundled stateful Ollama API adapter that owns lifecycle and correlated results.
+- [x] Expose adapter capability, lifecycle, prompt-delivery, and privacy metadata.
+- [x] Add a deterministic adapter conformance suite.
+- [x] Publish provider compatibility notes and a community adapter guide.
+
+### Acceptance Criteria
+
+- Provider-specific launch behavior no longer depends on substring checks in the workspace UI.
+- The bundled Ollama adapter retains contract context and emits ready, heartbeat,
+  acknowledgement, result, and error messages independently of model formatting.
+- Existing workspace files remain loadable without an explicit adapter ID.
+- Community adapters have a documented implementation and test contract.
+
+### Tests
+
+- Adapter registry, inference, capability-discovery, and launch-template tests.
+- Bundled Ollama adapter conformance test against a deterministic mock provider.
+- Existing broker, preset, integration, build, and packaging tests.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -377,6 +403,7 @@ temporary migration period.
 10. Experimental Windows platform support.
 11. Repeatable alpha packaging and release automation.
 12. Five-minute onboarding and workspace presets.
+13. CLI and provider adapter compatibility.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

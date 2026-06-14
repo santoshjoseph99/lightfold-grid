@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Cpu, UploadCloud, X, Check, Sparkles } from 'lucide-react';
 import { AgentConfig } from './SettingsModal';
+import type { AdapterId } from '../services/cliAdapters';
 
 interface AddAgentModalProps {
   paneIds: string[];
@@ -14,6 +15,7 @@ export const AddAgentModal: React.FC<AddAgentModalProps> = ({
   onClose,
 }) => {
   const [selectedPreset, setSelectedPreset] = useState<'gemini' | 'copilot' | 'ollama' | 'custom'>('gemini');
+  const [adapterId, setAdapterId] = useState<AdapterId>('gemini-cli');
   const [agentName, setAgentName] = useState('Gemini-Agent');
   const [cliCommand, setCliCommand] = useState('gemini');
   const [selectedModel, setSelectedModel] = useState('gemini-1.5-pro');
@@ -29,18 +31,22 @@ export const AddAgentModal: React.FC<AddAgentModalProps> = ({
   const handlePresetChange = (preset: 'gemini' | 'copilot' | 'ollama' | 'custom') => {
     setSelectedPreset(preset);
     if (preset === 'gemini') {
+      setAdapterId('gemini-cli');
       setAgentName('Gemini-Agent');
       setCliCommand('gemini');
       setSelectedModel('auto');
     } else if (preset === 'copilot') {
+      setAdapterId('copilot-cli');
       setAgentName('Copilot-Agent');
       setCliCommand('copilot');
       setSelectedModel('gpt-4o');
     } else if (preset === 'ollama') {
+      setAdapterId('ollama-api');
       setAgentName('Gemma-Agent');
       setCliCommand('ollama run');
       setSelectedModel('gemma2');
     } else {
+      setAdapterId('custom');
       setAgentName('Custom-Agent');
       setCliCommand('echo "Running..."');
       setSelectedModel('custom-model');
@@ -61,6 +67,7 @@ export const AddAgentModal: React.FC<AddAgentModalProps> = ({
   const handleSubmit = () => {
     const config: AgentConfig = {
       paneId: targetPane === 'new' ? '' : targetPane, // Will be assigned by parent App if 'new'
+      adapterId,
       agentName,
       cliCommand,
       selectedModel,

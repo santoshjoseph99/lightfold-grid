@@ -13,6 +13,8 @@ strong-model tokens only where they matter.
 
 - Run multiple CLI agents in managed Electron PTYs.
 - Configure each agent's CLI command, model, prompt, and workspace.
+- Select explicit provider adapters with discoverable lifecycle and privacy behavior.
+- Use the bundled stateful Ollama adapter for reliable local lifecycle and task results.
 - Route agent messages through explicit connection graphs.
 - Parse structured `[[STARLIGHT-MSG]]...[[END]]` envelopes from terminal output.
 - Deliver messages to active interactive agent sessions.
@@ -88,6 +90,8 @@ npm run dev
 
 See [QUICKSTART.md](./QUICKSTART.md) for the five-minute local workflow, mixed
 local/cloud profile, and readiness troubleshooting.
+See [ADAPTERS.md](./ADAPTERS.md) for provider compatibility, the adapter contract, and
+the community adapter guide.
 
 Use the Lightfold Grid workspace to:
 
@@ -332,6 +336,12 @@ Run only the full broker-to-PTY integration harness:
 npm run test:integration
 ```
 
+Run the deterministic provider-adapter conformance suite:
+
+```bash
+npm run adapter:conformance
+```
+
 The integration harness launches a hub and three spokes through real `node-pty`
 sessions. It verifies delayed readiness, malformed output recovery, acknowledgement
 retries, crash/restart recovery, durable broker updates, and a coding workflow that
@@ -367,7 +377,8 @@ and application-data locations.
 
 ## Current Limitations
 
-- Reliable acknowledgements require agents to follow the versioned protocol.
+- Direct CLI and custom adapters require agents to follow the versioned protocol; the
+  bundled Ollama adapter owns lifecycle and correlated terminal messages.
 - Live delivery timers are reconstructed from persisted request state after restart.
 - Live-model behavior remains dependent on the selected CLI and model; Ollama coverage
   is intentionally opt-in.
@@ -391,6 +402,7 @@ Development is organized into milestone commits. The roadmap covers:
 10. Experimental Windows platform support
 11. Repeatable alpha packaging and release automation
 12. Five-minute onboarding and workspace presets
+13. CLI and provider adapter compatibility
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -410,6 +422,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [ ] Milestone 11: Repeatable alpha packaging and release automation (implementation
       complete; hosted release-matrix validation pending)
 - [x] Milestone 12: Five-minute onboarding and workspace presets
+- [x] Milestone 13: CLI and provider adapter compatibility
 
 ## Open Source Status
 

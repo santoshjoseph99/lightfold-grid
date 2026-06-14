@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { agentHelperPath, brokerDatabasePath, demoTemplatePath, rendererEntryPath, workspaceConfigPath } from '../electron/productPaths.ts';
+import { agentHelperPath, brokerDatabasePath, bundledAdapterPath, demoTemplatePath, rendererEntryPath, workspaceConfigPath } from '../electron/productPaths.ts';
 
 test('uses Lightfold Grid paths for new installations', () => {
   const directory = mkdtempSync(join(tmpdir(), 'lightfold-grid-paths-'));
@@ -64,6 +64,17 @@ test('resolves the external agent helper outside a packaged asar', () => {
   assert.equal(
     agentHelperPath('repository', 'resources', false),
     join('repository', 'bin', 'lightfold-message.mjs'),
+  );
+});
+
+test('resolves bundled adapters outside a packaged asar', () => {
+  assert.equal(
+    bundledAdapterPath(join('resources', 'app.asar'), 'resources', true, 'lightfold-ollama-adapter.mjs'),
+    join('resources', 'bin', 'lightfold-ollama-adapter.mjs'),
+  );
+  assert.equal(
+    bundledAdapterPath('repository', 'resources', false, 'lightfold-ollama-adapter.mjs'),
+    join('repository', 'bin', 'lightfold-ollama-adapter.mjs'),
   );
 });
 

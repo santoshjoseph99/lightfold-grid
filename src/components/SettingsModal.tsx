@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Check, X, ShieldAlert, Cpu, Network, FileText, UploadCloud, Terminal } from 'lucide-react';
 import { getAutopilot, setAutopilot, getBlocklist, setBlocklist, getTrustedCommands, setTrustedCommands, getRoutingConnections, setRoutingConnections, getReliabilitySettings, setReliabilitySettings, getBrokerRetentionLimit, setBrokerRetentionLimit } from '../services/brokerProtocol';
+import { CLI_ADAPTERS, inferAdapterId, type AdapterId } from '../services/cliAdapters';
 
 export interface AgentConfig {
   paneId: string;
+  adapterId?: AdapterId;
   agentName: string;
   cliCommand: string;
   selectedModel: string;
@@ -56,6 +58,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (!initial[id]) {
         initial[id] = {
           paneId: id,
+          adapterId: 'custom',
           agentName: id === 'Pane-A' ? 'Orchestrator' : `Agent-${id.replace('Pane-', '')}`,
           cliCommand: 'echo "Booting agent..."',
           selectedModel: 'auto',
@@ -142,6 +145,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const currentAgent = localAgentConfigs[selectedConfigPaneId] || {
     paneId: selectedConfigPaneId,
+    adapterId: 'custom' as AdapterId,
     agentName: '',
     cliCommand: '',
     selectedModel: '',
@@ -380,6 +384,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       outline: 'none',
                     }}
                   />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                    CLI ADAPTER
+                  </label>
+                  <select
+                    value={currentAgent.adapterId || inferAdapterId(currentAgent.cliCommand)}
+                    onChange={(e) => setLocalAgentConfigs({
+                      ...localAgentConfigs,
+                      [selectedConfigPaneId]: { ...currentAgent, adapterId: e.target.value as AdapterId }
+                    })}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(0,0,0,0.3)',
+                      border: '1px solid var(--glass-border)',
+                      borderRadius: '6px',
+                      padding: '8px',
+                      color: '#fff',
+                      fontSize: '12px',
+                      outline: 'none',
+                    }}
+                  >
+                    {Object.values(CLI_ADAPTERS).map((adapter) => (
+                      <option key={adapter.id} value={adapter.id}>{adapter.label}</option>
+                    ))}
+                  </select>
+                  <div style={{ marginTop: '4px', color: 'var(--text-dark)', fontSize: '9px' }}>
+                    {CLI_ADAPTERS[currentAgent.adapterId || inferAdapterId(currentAgent.cliCommand)].notes}
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px' }}>

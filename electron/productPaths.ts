@@ -45,3 +45,10 @@ export const demoTemplatePath = (
   resourcesPath: string,
   packaged: boolean,
 ): string => join(packaged ? resourcesPath : appPath, 'examples', 'demo-repository');
+
+export const bundledAdapterPath = (
+  appPath: string,
+  resourcesPath: string,
+  packaged: boolean,
+  filename: string,
+): string => join(packaged ? resourcesPath : appPath, 'bin', filename);

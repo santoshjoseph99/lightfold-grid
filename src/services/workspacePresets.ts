@@ -1,9 +1,12 @@
+import type { AdapterId } from './cliAdapters';
+
 export type RolePresetId = 'orchestrator' | 'planner' | 'builder' | 'tester' | 'reviewer' | 'release';
 export type TopologyPresetId = 'solo' | 'wheel' | 'pipeline' | 'review-loop';
 export type ProviderPresetId = 'ollama' | 'mixed' | 'gemini' | 'copilot' | 'custom';
 
 export interface PresetAgentConfig {
   paneId: string;
+  adapterId?: AdapterId;
   agentName: string;
   cliCommand: string;
   selectedModel: string;
@@ -142,9 +145,20 @@ export const buildWorkspacePreset = (options: WorkspacePresetOptions): Workspace
   const agentConfigs = Object.fromEntries(roles.map((role, index) => {
     const pane = panes[index];
     const mixedCloudRole = options.provider === 'mixed' && (role === 'builder' || role === 'reviewer');
+    const adapterId: AdapterId = mixedCloudRole
+      ? 'gemini-cli'
+      : options.provider === 'ollama' || options.provider === 'mixed'
+        ? 'ollama-api'
+        : options.provider === 'gemini'
+          ? 'gemini-cli'
+          : options.provider === 'copilot'
+            ? 'copilot-cli'
+            : 'custom';
+
     return [pane, {
       ...ROLE_PRESETS[role],
       paneId: pane,
+      adapterId,
       cliCommand: mixedCloudRole ? PROVIDER_PRESETS.gemini.command : command,
       selectedModel: mixedCloudRole ? PROVIDER_PRESETS.gemini.defaultModel : model,
       promptPath: '',

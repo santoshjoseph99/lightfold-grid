@@ -118,12 +118,12 @@ The alpha must prove one narrow workflow:
 
 ### 5. CLI And Provider Compatibility
 
-- [ ] Define the supported CLI adapter contract separately from prompt instructions.
-- [ ] Add tested launch templates and compatibility notes for each supported CLI.
-- [ ] Add adapter processes where possible so reliability does not depend entirely on a
+- [x] Define the supported CLI adapter contract separately from prompt instructions.
+- [x] Add tested launch templates and compatibility notes for each supported CLI.
+- [x] Add adapter processes where possible so reliability does not depend entirely on a
       model reproducing protocol messages.
-- [ ] Publish a community adapter guide and conformance test suite.
-- [ ] Add capability discovery for models, context windows, tool support, and privacy mode.
+- [x] Publish a community adapter guide and conformance test suite.
+- [x] Add capability discovery for models, context windows, tool support, and privacy mode.
 
 ### 6. Model Right-Sizing
 

@@ -7,7 +7,7 @@ import { createDiagnosticBundle, runWorkspaceHealthChecks } from './diagnostics'
 import { PtyService } from './ptyService';
 import { WorktreeManager } from './worktreeManager';
 import { createDemoProject } from './demoProject';
-import { agentHelperPath, brokerDatabasePath, demoTemplatePath, rendererEntryPath, workspaceConfigPath } from './productPaths';
+import { agentHelperPath, brokerDatabasePath, bundledAdapterPath, demoTemplatePath, rendererEntryPath, workspaceConfigPath } from './productPaths';
 import { commandExists, getActiveChildProcess, getAvailableShells, getDefaultShell, getShellArgs } from './platform.js';
 
 let mainWindow: BrowserWindow | null = null;
@@ -173,6 +173,16 @@ ipcMain.handle('diagnostics:export', async (_event, input) => {
 ipcMain.handle('agent:get-helper-command', () => {
   const helperPath = agentHelperPath(app.getAppPath(), process.resourcesPath, app.isPackaged);
   return `node "${helperPath}"`;
+});
+ipcMain.handle('agent:get-bundled-adapter-command', (_event, adapterId) => {
+  if (adapterId !== 'ollama-api') return '';
+  const adapterPath = bundledAdapterPath(
+    app.getAppPath(),
+    process.resourcesPath,
+    app.isPackaged,
+    'lightfold-ollama-adapter.mjs',
+  );
+  return `node "${adapterPath}"`;
 });
 
 const worktreeOperation = (operation: () => unknown) => {
