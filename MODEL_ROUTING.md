@@ -73,4 +73,9 @@ token counts. Direct CLI adapters may not expose token usage, so their totals ca
 unknown while cost estimates use the configured profile.
 
 Cost metadata is user-supplied and is not a billing guarantee. Workflow-level budgets,
-historical model recommendations, and automatic pricing catalogs remain future work.
+historical model recommendations, and workflow budget guardrails use these estimates.
+Automatic pricing catalogs remain future work.
+
+Cloud candidates can also be constrained with `maxCloudEstimatedCostUsd`. Workflow-level
+total cost, cloud cost, and cloud assignment limits are documented in
+[WORKFLOW_BUDGETS.md](./WORKFLOW_BUDGETS.md).

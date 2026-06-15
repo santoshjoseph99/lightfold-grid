@@ -1,6 +1,6 @@
 import { createRequire } from 'module';
 
-export const BROKER_SCHEMA_VERSION = 5;
+export const BROKER_SCHEMA_VERSION = 6;
 export const BROKER_PROTOCOL_VERSION = 1;
 export const DEFAULT_BROKER_RETENTION_LIMIT = 5_000;
 
@@ -231,12 +231,16 @@ export class BrokerStore {
     const timestamp = this.now();
     this.transaction(() => {
       this.db.prepare(`
-        INSERT INTO workflows (workflow_id, name, goal, created_by, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO workflows (
+          workflow_id, name, goal, created_by, status, budget_json, budget_reservations_json, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(workflow_id) DO UPDATE SET
           name = excluded.name,
           goal = excluded.goal,
           status = excluded.status,
+          budget_json = excluded.budget_json,
+          budget_reservations_json = excluded.budget_reservations_json,
           updated_at = excluded.updated_at
       `).run(
         workflow.id,
@@ -244,6 +248,8 @@ export class BrokerStore {
         workflow.goal,
         workflow.createdBy,
         workflow.status,
+        JSON.stringify(workflow.budget || null),
+        JSON.stringify(workflow.budgetReservations || []),
         workflow.createdAt || timestamp,
         workflow.updatedAt || timestamp
       );
@@ -495,6 +501,8 @@ export class BrokerStore {
       goal: workflow.goal,
       createdBy: workflow.created_by,
       status: workflow.status,
+      budget: parseJson(workflow.budget_json, undefined),
+      budgetReservations: parseJson(workflow.budget_reservations_json, []),
       createdAt: workflow.created_at,
       updatedAt: workflow.updated_at,
       tasks: workflowTasks.filter((task) => task.workflow_id === workflow.workflow_id).map((task) => ({
@@ -706,6 +714,12 @@ export class BrokerStore {
         ALTER TABLE workflow_tasks ADD COLUMN assigned_at INTEGER;
         ALTER TABLE workflow_tasks ADD COLUMN completed_at INTEGER;
         ALTER TABLE workflow_tasks ADD COLUMN usage_json TEXT;
+      `);
+    }
+    if (version < 6) {
+      this.db.exec(`
+        ALTER TABLE workflows ADD COLUMN budget_json TEXT;
+        ALTER TABLE workflows ADD COLUMN budget_reservations_json TEXT;
       `);
     }
     this.db.exec(`PRAGMA user_version = ${BROKER_SCHEMA_VERSION};`);

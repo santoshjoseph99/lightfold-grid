@@ -18,6 +18,7 @@ export interface AgentModelProfile {
 export interface TaskRoutingConstraints {
   localOnly?: boolean;
   maxEstimatedCostUsd?: number;
+  maxCloudEstimatedCostUsd?: number;
   minCapabilityTier?: ModelCapabilityTier;
   minContextWindow?: number;
   candidateOwners?: string[];
@@ -37,6 +38,7 @@ export interface RoutingCandidateEvaluation {
 export interface RoutingDecision {
   selectedAgentId: string;
   selectedModel: string;
+  selectedPrivacy?: ModelPrivacy;
   estimatedCostUsd: number;
   strongestModelCostUsd: number;
   estimatedSavingsUsd: number;
@@ -114,6 +116,13 @@ export const routeTaskToModel = ({
       if (constraints.maxEstimatedCostUsd !== undefined && estimatedCostUsd > constraints.maxEstimatedCostUsd) {
         reasons.push(`estimated cost $${estimatedCostUsd.toFixed(4)} exceeds budget`);
       }
+      if (
+        profile.privacy === 'cloud' &&
+        constraints.maxCloudEstimatedCostUsd !== undefined &&
+        estimatedCostUsd > constraints.maxCloudEstimatedCostUsd
+      ) {
+        reasons.push(`cloud estimated cost $${estimatedCostUsd.toFixed(4)} exceeds cloud budget`);
+      }
       return {
         agentId: profile.agentId,
         model: profile.model,
@@ -146,6 +155,7 @@ export const routeTaskToModel = ({
   return {
     selectedAgentId: selected.agentId,
     selectedModel: selected.model,
+    selectedPrivacy: profiles.find((profile) => profile.agentId === selected.agentId)!.privacy,
     estimatedCostUsd: selected.estimatedCostUsd,
     strongestModelCostUsd: strongestCost,
     estimatedSavingsUsd: Number(Math.max(0, strongestCost - selected.estimatedCostUsd).toFixed(6)),

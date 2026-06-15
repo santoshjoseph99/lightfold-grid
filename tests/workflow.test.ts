@@ -207,6 +207,7 @@ test('reschedule re-emits ready work after deferred startup dependencies arrive'
 test('manual retry resets routing history and reassignment pins the requested candidate', () => {
   const engine = new WorkflowEngine();
   engine.create(definition({
+    budget: { maxEstimatedCostUsd: 1 },
     tasks: [{ id: 'route', owner: 'local', goal: 'work', routing: { fallbackOwners: ['local', 'cloud'] } }],
   }));
   engine.setRoutingDecision('workflow-1', 'route', {
@@ -223,8 +224,26 @@ test('manual retry resets routing history and reassignment pins the requested ca
   engine.failTask('workflow-1', 'route', 'exhausted');
   assert.equal(engine.retryTask('workflow-1', 'route'), true);
   assert.equal(engine.get('workflow-1')!.tasks[0].routingHistory.length, 0);
+  assert.equal(engine.get('workflow-1')!.budgetReservations?.length, 1);
   engine.failTask('workflow-1', 'route', 'failed again');
   assert.equal(engine.reassignTask('workflow-1', 'route', 'cloud'), true);
   assert.deepEqual(engine.get('workflow-1')!.tasks[0].routing?.candidateOwners, ['cloud']);
   assert.equal(engine.get('workflow-1')!.tasks[0].routing?.fallbackOwners, undefined);
+});
+
+test('validates and preserves workflow budgets', () => {
+  const engine = new WorkflowEngine();
+  const created = engine.create(definition({
+    budget: { maxEstimatedCostUsd: 1, maxCloudEstimatedCostUsd: 0.5, maxCloudAssignments: 2 },
+  }));
+  assert.deepEqual(created.budget, {
+    maxEstimatedCostUsd: 1,
+    maxCloudEstimatedCostUsd: 0.5,
+    maxCloudAssignments: 2,
+  });
+  assert.deepEqual(created.budgetReservations, []);
+  assert.throws(() => engine.create(definition({
+    id: 'invalid-budget',
+    budget: { maxCloudAssignments: -1 },
+  })), /maxCloudAssignments/);
 });

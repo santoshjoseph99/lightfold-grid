@@ -68,3 +68,15 @@ test('rejects adapters that cannot execute required tools', () => {
     requiredTools: ['git'],
   }), /adapter does not support tools/);
 });
+
+test('enforces a cloud-specific estimated cost budget', () => {
+  assert.throws(() => routeTaskToModel({
+    profiles: [profile({
+      agentId: 'cloud',
+      privacy: 'cloud',
+      inputCostPerMillionTokens: 10,
+      outputCostPerMillionTokens: 10,
+    })],
+    constraints: { estimatedInputTokens: 10_000, maxCloudEstimatedCostUsd: 0.05 },
+  }), /exceeds cloud budget/);
+});

@@ -136,7 +136,7 @@ This workstream turns the project's intended differentiator into a measurable fe
 - [x] Track prompt tokens, completion tokens, estimated cost, latency, retries, and
       escalations per task and workflow.
 - [x] Recommend model assignments based on previous successful tasks.
-- [ ] Allow users to set workflow-level cost and cloud-usage budgets.
+- [x] Allow users to set workflow-level cost and cloud-usage budgets.
 - [x] Show why a task was assigned or escalated to a model.
 
 ### 7. Benchmark And Proof

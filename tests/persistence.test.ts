@@ -125,6 +125,22 @@ test('persists workflow graphs and task execution state', () => {
       goal: 'Ship feature',
       createdBy: 'Hub',
       status: 'running',
+      budget: { maxEstimatedCostUsd: 2, maxCloudEstimatedCostUsd: 1, maxCloudAssignments: 3 },
+      budgetReservations: [{
+        taskId: 'spec',
+        decision: {
+          selectedAgentId: 'Spec',
+          selectedModel: 'local',
+          selectedPrivacy: 'local',
+          estimatedCostUsd: 0,
+          strongestModelCostUsd: 1,
+          estimatedSavingsUsd: 1,
+          reason: 'least expensive',
+          escalation: 0,
+          evaluatedAt: 90,
+          candidates: [],
+        },
+      }],
       createdAt: 100,
       updatedAt: 200,
       tasks: [
@@ -147,6 +163,7 @@ test('persists workflow graphs and task execution state', () => {
           routingDecision: {
             selectedAgentId: 'Spec',
             selectedModel: 'local',
+            selectedPrivacy: 'local',
             estimatedCostUsd: 0,
             strongestModelCostUsd: 1,
             estimatedSavingsUsd: 1,
@@ -178,6 +195,12 @@ test('persists workflow graphs and task execution state', () => {
     });
     const snapshot = store.snapshot();
     assert.equal(snapshot.workflows.length, 1);
+    assert.deepEqual((snapshot.workflows[0] as any).budget, {
+      maxEstimatedCostUsd: 2,
+      maxCloudEstimatedCostUsd: 1,
+      maxCloudAssignments: 3,
+    });
+    assert.equal((snapshot.workflows[0] as any).budgetReservations[0].taskId, 'spec');
     const release = (snapshot.workflows[0] as any).tasks.find((task: any) => task.id === 'release');
     assert.equal(release.dependencies[0], 'spec');
     assert.equal(release.requiresApproval, true);
@@ -187,6 +210,7 @@ test('persists workflow graphs and task execution state', () => {
     assert.equal(spec.promptVersion, 1);
     assert.equal(spec.routing.localOnly, true);
     assert.equal(spec.routingDecision.selectedAgentId, 'Spec');
+    assert.equal(spec.routingDecision.selectedPrivacy, 'local');
     assert.equal(spec.assignedAt, 110);
     assert.equal(spec.completedAt, 180);
     assert.equal(spec.usage.totalTokens, 120);

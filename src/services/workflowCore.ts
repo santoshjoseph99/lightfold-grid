@@ -1,4 +1,5 @@
 import type { ModelUsage, RoutingDecision, TaskRoutingConstraints } from './modelRouting';
+import type { WorkflowBudget } from './workflowBudget';
 
 export type WorkflowStatus = 'planned' | 'running' | 'completed' | 'failed' | 'cancelled';
 
@@ -57,6 +58,7 @@ export interface WorkflowDefinition {
   name: string;
   goal: string;
   createdBy: string;
+  budget?: WorkflowBudget;
   tasks: WorkflowTaskDefinition[];
 }
 
@@ -81,6 +83,7 @@ export interface WorkflowTaskRecord extends WorkflowTaskDefinition {
 export interface WorkflowRecord extends Omit<WorkflowDefinition, 'tasks'> {
   status: WorkflowStatus;
   tasks: WorkflowTaskRecord[];
+  budgetReservations?: Array<{ taskId: string; decision: RoutingDecision }>;
   createdAt: number;
   updatedAt: number;
 }
@@ -126,6 +129,14 @@ const copyTask = (task: WorkflowTaskRecord): WorkflowTaskRecord => ({
 
 const copyWorkflow = (workflow: WorkflowRecord): WorkflowRecord => ({
   ...workflow,
+  budget: workflow.budget ? { ...workflow.budget } : undefined,
+  budgetReservations: (workflow.budgetReservations || []).map((reservation) => ({
+    taskId: reservation.taskId,
+    decision: {
+      ...reservation.decision,
+      candidates: reservation.decision.candidates.map((candidate) => ({ ...candidate, reasons: [...candidate.reasons] })),
+    },
+  })),
   tasks: workflow.tasks.map(copyTask),
 });
 
@@ -157,6 +168,8 @@ export class WorkflowEngine {
       name: definition.name,
       goal: definition.goal,
       createdBy: definition.createdBy,
+      budget: definition.budget ? { ...definition.budget } : undefined,
+      budgetReservations: [],
       status: 'planned',
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -275,12 +288,17 @@ export class WorkflowEngine {
   }
 
   setRoutingDecision(workflowId: string, taskId: string, decision: RoutingDecision): boolean {
+    const workflow = this.requireWorkflow(workflowId);
     const task = this.requireTask(workflowId, taskId);
     task.owner = decision.selectedAgentId;
     task.routingDecision = { ...decision, candidates: decision.candidates.map((candidate) => ({ ...candidate, reasons: [...candidate.reasons] })) };
     task.routingHistory.push(task.routingDecision);
+    if (workflow.budget) {
+      workflow.budgetReservations = workflow.budgetReservations || [];
+      workflow.budgetReservations.push({ taskId, decision: task.routingDecision });
+    }
     this.emitTask(task);
-    this.updateWorkflow(this.requireWorkflow(workflowId));
+    this.updateWorkflow(workflow);
     return true;
   }
 
@@ -481,6 +499,9 @@ export class WorkflowEngine {
       if (task.routing?.maxEstimatedCostUsd !== undefined && task.routing.maxEstimatedCostUsd < 0) {
         throw new WorkflowValidationError(`Task ${task.id} maxEstimatedCostUsd must not be negative.`);
       }
+      if (task.routing?.maxCloudEstimatedCostUsd !== undefined && task.routing.maxCloudEstimatedCostUsd < 0) {
+        throw new WorkflowValidationError(`Task ${task.id} maxCloudEstimatedCostUsd must not be negative.`);
+      }
       if (task.routing?.minCapabilityTier !== undefined && (![1, 2, 3, 4, 5].includes(task.routing.minCapabilityTier))) {
         throw new WorkflowValidationError(`Task ${task.id} minCapabilityTier must be between 1 and 5.`);
       }
@@ -511,6 +532,24 @@ export class WorkflowEngine {
       if (ids.has(task.id)) throw new WorkflowValidationError(`Duplicate task id ${task.id}.`);
       ids.add(task.id);
     });
+    if (
+      definition.budget?.maxEstimatedCostUsd !== undefined &&
+      definition.budget.maxEstimatedCostUsd < 0
+    ) {
+      throw new WorkflowValidationError('Workflow maxEstimatedCostUsd must not be negative.');
+    }
+    if (
+      definition.budget?.maxCloudEstimatedCostUsd !== undefined &&
+      definition.budget.maxCloudEstimatedCostUsd < 0
+    ) {
+      throw new WorkflowValidationError('Workflow maxCloudEstimatedCostUsd must not be negative.');
+    }
+    if (
+      definition.budget?.maxCloudAssignments !== undefined &&
+      (!Number.isInteger(definition.budget.maxCloudAssignments) || definition.budget.maxCloudAssignments < 0)
+    ) {
+      throw new WorkflowValidationError('Workflow maxCloudAssignments must be a non-negative integer.');
+    }
     definition.tasks.forEach((task) => {
       (task.dependencies || []).forEach((dependency) => {
         if (!ids.has(dependency)) throw new WorkflowValidationError(`Task ${task.id} has unknown dependency ${dependency}.`);

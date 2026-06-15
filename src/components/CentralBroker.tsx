@@ -24,6 +24,7 @@ import {
   testWorkflowWorktree,
 } from '../services/brokerProtocol';
 import type { WorkflowRecord, WorkflowTaskRecord } from '../services/workflowCore';
+import { calculateWorkflowBudgetUsage } from '../services/workflowBudget';
 
 interface CentralBrokerProps {
   paneIds: string[];
@@ -205,6 +206,7 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
               </div>
             ) : workflows.map((workflow) => {
               const completed = workflow.tasks.filter((task) => task.status === 'completed').length;
+              const budgetUsage = calculateWorkflowBudgetUsage(workflow);
               return (
                 <div key={workflow.id} className="glass-panel" style={{ padding: '10px', borderRadius: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
@@ -216,6 +218,17 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
                       <div style={{ color: 'var(--text-muted)', fontSize: '9px', marginTop: '3px' }}>
                         {completed}/{workflow.tasks.length} complete · {workflow.status}
                       </div>
+                      {workflow.budget && (
+                        <div style={{ color: 'var(--accent-orange)', fontSize: '8px', marginTop: '3px' }}>
+                          Budget: ${budgetUsage.estimatedCostUsd.toFixed(4)}
+                          {workflow.budget.maxEstimatedCostUsd !== undefined && ` / $${workflow.budget.maxEstimatedCostUsd.toFixed(4)} total`}
+                          {' · '}${budgetUsage.cloudEstimatedCostUsd.toFixed(4)}
+                          {workflow.budget.maxCloudEstimatedCostUsd !== undefined && ` / $${workflow.budget.maxCloudEstimatedCostUsd.toFixed(4)}`} cloud
+                          {' · '}{budgetUsage.cloudAssignments}
+                          {workflow.budget.maxCloudAssignments !== undefined && ` / ${workflow.budget.maxCloudAssignments}`} cloud assignments
+                          {budgetUsage.actualCostUsd > 0 && ` · $${budgetUsage.actualCostUsd.toFixed(4)} reported actual`}
+                        </div>
+                      )}
                     </div>
                     {!['completed', 'cancelled'].includes(workflow.status) && (
                       <button onClick={() => cancelWorkflow(workflow.id)} title="Cancel workflow">

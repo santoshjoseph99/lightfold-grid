@@ -32,6 +32,7 @@ import {
 import type { BrokerEvent, BrokerObservabilitySnapshot } from './observability';
 import { routeTaskToModel, type AgentModelProfile } from './modelRouting';
 import { recommendModelForTask } from './modelRecommendation';
+import { applyWorkflowBudget } from './workflowBudget';
 
 export type BrokerMessageStatus = 'pending' | ReliableRequestStatus;
 
@@ -286,9 +287,10 @@ const dispatchWorkflowTask = async (task: WorkflowTaskRecord) => {
       return;
     }
     try {
+      const workflow = workflowEngine.get(task.workflowId)!;
       const decision = routeTaskToModel({
         profiles: [...agentModelProfiles.values()],
-        constraints: task.routing,
+        constraints: applyWorkflowBudget(workflow, task.routing, [...agentModelProfiles.values()]),
         requiredCapabilities: task.requiredCapabilities,
         requiredTools: task.requiredTools,
         previousOwners: task.routingHistory.map((decision) => decision.selectedAgentId),

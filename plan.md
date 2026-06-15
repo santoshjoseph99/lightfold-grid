@@ -444,6 +444,33 @@ temporary migration period.
 - Eligibility, changed-model, failed-task, and self-evidence exclusion tests.
 - Existing workflow, persistence, integration, build, and packaging tests.
 
+## Milestone 16: Workflow Cost And Cloud-Usage Budgets
+
+### Tasks
+
+- [x] Add durable workflow limits for total estimated cost, cloud estimated cost, and
+      cloud assignment count.
+- [x] Reserve budget synchronously for every routed assignment and escalation.
+- [x] Constrain model selection using the remaining workflow budget.
+- [x] Force local-only routing after the cloud-assignment budget is exhausted.
+- [x] Record selected-model privacy for durable cloud-usage accounting.
+- [x] Display estimated, cloud, assignment, and provider-reported actual usage.
+
+### Acceptance Criteria
+
+- Parallel routed tasks cannot independently spend the same remaining budget.
+- Cloud candidates are rejected after cloud cost or assignment limits are exhausted.
+- Budget usage and limits survive application restart.
+- Fixed-owner tasks remain explicit user assignments outside automatic routing budgets.
+- Budget rejection reasons remain inspectable in routing candidate evaluations.
+
+### Tests
+
+- Deterministic budget accounting and remaining-budget constraint tests.
+- Cloud-specific routing rejection and workflow validation tests.
+- Schema migration and workflow budget persistence tests.
+- Existing workflow, integration, live Ollama, build, and packaging tests.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -461,6 +488,7 @@ temporary migration period.
 13. CLI and provider adapter compatibility.
 14. Constraint-aware model routing.
 15. Historical model recommendations.
+16. Workflow cost and cloud-usage budgets.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 
