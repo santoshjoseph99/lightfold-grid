@@ -7,6 +7,7 @@
 - [ ] `npm test`
 - [ ] `npm run native:smoke`
 - [ ] `npm run alpha:readiness`
+- [ ] `npm run community:readiness`
 - [ ] `npm run test:integration`
 - [ ] `npm run build`
 - [ ] Optional live-provider tests were run or are not applicable

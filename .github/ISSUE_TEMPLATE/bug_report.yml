@@ -10,6 +10,7 @@ body:
         Thanks for reporting a bug. Remove credentials, private prompts, proprietary
         code, and other sensitive data before submitting.
   - type: checkboxes
+    id: safety
     attributes:
       label: Safety check
       options:
@@ -20,12 +21,14 @@ body:
         - label: This is not a vulnerability report.
           required: true
   - type: input
+    id: version
     attributes:
       label: Version or commit
       placeholder: 0.1.0-alpha.1 or commit SHA
     validations:
       required: true
   - type: dropdown
+    id: operating-system
     attributes:
       label: Operating system
       options:
@@ -36,22 +39,26 @@ body:
     validations:
       required: true
   - type: textarea
+    id: reproduction
     attributes:
       label: Reproduction steps
       description: Provide the smallest safe reproduction you can.
     validations:
       required: true
   - type: textarea
+    id: expected
     attributes:
       label: Expected behavior
     validations:
       required: true
   - type: textarea
+    id: actual
     attributes:
       label: Actual behavior
     validations:
       required: true
   - type: textarea
+    id: diagnostics
     attributes:
       label: Redacted diagnostics
       description: Include only data you have reviewed and safely redacted.

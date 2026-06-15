@@ -13,6 +13,11 @@ Contributions are submitted under the [Apache License 2.0](./LICENSE).
 - Report vulnerabilities privately according to [SECURITY.md](./SECURITY.md).
 - Keep changes scoped. Do not combine unrelated refactors with a feature or fix.
 - Never include provider credentials, private prompts, user logs, or proprietary code.
+- Look for `good first issue`, `documentation`, and `adapter` labels for scoped
+  contribution opportunities.
+
+Adapter contributors should read [ADAPTERS.md](./ADAPTERS.md) and use the adapter
+contribution issue form before substantial implementation work.
 
 ## Development Setup
 

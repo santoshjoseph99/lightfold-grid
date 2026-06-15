@@ -1,0 +1,21 @@
+- name: good first issue
+  color: "7057ff"
+  description: Small, well-scoped contribution suitable for a first pull request.
+- name: adapter
+  color: "1d76db"
+  description: CLI or provider adapter work and compatibility.
+- name: contribution
+  color: "0e8a16"
+  description: A community contribution opportunity.
+- name: documentation
+  color: "0075ca"
+  description: Documentation improvement.
+- name: private alpha
+  color: "fbca04"
+  description: Structured feedback from a private-alpha participant.
+- name: feedback
+  color: "d4c5f9"
+  description: User outcome or usability feedback.
+- name: security
+  color: "b60205"
+  description: Public security-hardening work; vulnerabilities must be reported privately.

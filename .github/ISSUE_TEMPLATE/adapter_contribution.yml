@@ -1,0 +1,43 @@
+name: Adapter contribution
+description: Propose or contribute a CLI or provider adapter
+title: "[Adapter]: "
+labels:
+  - adapter
+  - contribution
+body:
+  - type: checkboxes
+    id: preparation
+    attributes:
+      label: Preparation
+      options:
+        - label: I read ADAPTERS.md and searched existing issues.
+          required: true
+        - label: I can test this adapter without sharing provider credentials.
+          required: true
+  - type: input
+    id: provider
+    attributes:
+      label: CLI or provider
+    validations:
+      required: true
+  - type: textarea
+    id: user-outcome
+    attributes:
+      label: User outcome
+      description: What workflow or model access will this adapter enable?
+    validations:
+      required: true
+  - type: textarea
+    id: capabilities-privacy
+    attributes:
+      label: Capabilities and privacy
+      description: Describe tools, context limits, model discovery, local or cloud behavior, and credentials.
+    validations:
+      required: true
+  - type: textarea
+    id: conformance-plan
+    attributes:
+      label: Conformance plan
+      description: Explain how the adapter will satisfy the contract and deterministic conformance suite.
+    validations:
+      required: true

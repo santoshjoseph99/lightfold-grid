@@ -112,6 +112,9 @@ Run `npm run alpha:readiness` to inspect machine-checkable repository gates and 
 external blockers that still prevent a broadly trusted public alpha.
 See [ALPHA_READINESS.md](./ALPHA_READINESS.md) for gate definitions and
 [SOURCE_PROVENANCE.md](./SOURCE_PROVENANCE.md) for the repository publishability record.
+Run `npm run community:readiness` to verify the private-alpha and contribution loop.
+See [PRIVATE_ALPHA.md](./PRIVATE_ALPHA.md), [ROADMAP.md](./ROADMAP.md), and
+[COMMUNITY_READINESS.md](./COMMUNITY_READINESS.md).
 
 Use the Lightfold Grid workspace to:
 
@@ -429,6 +432,7 @@ Development is organized into milestone commits. The roadmap covers:
 16. Workflow cost and cloud-usage budgets
 17. Public reference benchmark and proof format
 18. Automated public-alpha readiness gates
+19. Private-alpha and community launch kit
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -454,12 +458,14 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 16: Workflow cost and cloud-usage budgets
 - [x] Milestone 17: Public reference benchmark and proof format
 - [x] Milestone 18: Automated public-alpha readiness gates
+- [x] Milestone 19: Private-alpha and community launch kit
 
 ## Open Source Status
 
 Lightfold Grid is licensed under Apache-2.0 and has contribution, conduct, governance,
-support, and security policies. Release packaging and broader name clearance still need
-to be completed before the first public release.
+support, security, private-alpha, and outcome-roadmap materials. Release signing,
+independent user validation, and broader name clearance still need to be completed
+before the first public release.
 
 The project was renamed from Starlight to **Lightfold Grid**. Broader trademark and
 brand clearance remains required before treating the name as protected. See

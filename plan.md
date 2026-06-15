@@ -524,6 +524,34 @@ temporary migration period.
 - Release workflow contract tests.
 - Existing deterministic, integration, live Ollama, build, and packaging tests.
 
+## Milestone 19: Private-Alpha And Community Launch Kit
+
+### Tasks
+
+- [x] Define a repeatable private-alpha session protocol with participant, consent,
+      privacy, observation, outcome, and safety guidance.
+- [x] Add a structured private-alpha feedback form that does not request sensitive data.
+- [x] Publish a roadmap organized around measurable user outcomes.
+- [x] Define beginner-friendly, adapter, documentation, feedback, and security labels.
+- [x] Add a structured adapter contribution and conformance proposal form.
+- [x] Add a machine-checkable community-readiness gate to cross-platform CI and
+      release packaging.
+- [x] Keep recruitment, observed sessions, and public-repository launch explicitly
+      external and incomplete.
+
+### Acceptance Criteria
+
+- `npm run community:readiness` passes repository gates and reports external blockers.
+- Private-alpha sessions have a consistent script, evidence record, and stop conditions.
+- Contributors can identify scoped beginner and adapter opportunities.
+- The roadmap explains intended user outcomes and evidence rather than feature count.
+- Repository automation never claims that participants were recruited or observed.
+
+### Tests
+
+- Community-readiness evaluation, regression, and external-blocker tests.
+- Existing readiness, deterministic, integration, live Ollama, build, and packaging tests.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -544,6 +572,7 @@ temporary migration period.
 16. Workflow cost and cloud-usage budgets.
 17. Public reference benchmark and proof format.
 18. Automated public-alpha readiness gates.
+19. Private-alpha and community launch kit.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

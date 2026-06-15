@@ -37,6 +37,7 @@ test('tagged alpha releases package every supported desktop platform', () => {
   assert.match(releaseWorkflow, /ubuntu-latest/);
   assert.match(releaseWorkflow, /native:smoke/);
   assert.match(releaseWorkflow, /alpha:readiness/);
+  assert.match(releaseWorkflow, /community:readiness/);
   assert.match(releaseWorkflow, /test:integration/);
   assert.match(releaseWorkflow, /generate-release-metadata/);
   assert.match(releaseWorkflow, /gh release create/);

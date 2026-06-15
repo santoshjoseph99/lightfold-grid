@@ -167,11 +167,15 @@ Suggested alpha threshold:
 
 - [ ] Recruit 5-10 private alpha testers who did not build the project.
 - [ ] Observe installation and first-workflow sessions.
-- [ ] Label beginner-friendly issues and adapter contribution opportunities.
-- [ ] Publish a roadmap based on user outcomes rather than feature count.
+- [x] Label beginner-friendly issues and adapter contribution opportunities.
+- [x] Publish a roadmap based on user outcomes rather than feature count.
 - [ ] Create the public repository only after license, security policy, and alpha
       installation path are complete.
 - [ ] Announce the project with a working demo, benchmark results, and honest limitations.
+
+The repository now includes a repeatable private-alpha guide, structured feedback
+forms, contribution labels, and an outcome-driven roadmap. Recruiting participants,
+observing sessions, and publishing the project remain external activities.
 
 ## Recommended Order
 
@@ -199,3 +203,5 @@ The repository is ready for a public alpha when:
 
 Run `npm run alpha:readiness` for machine-checkable repository gates and explicit
 external blockers. See [ALPHA_READINESS.md](./ALPHA_READINESS.md).
+Run `npm run community:readiness` for the community-launch preparation gates. See
+[COMMUNITY_READINESS.md](./COMMUNITY_READINESS.md).

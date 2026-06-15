@@ -1,0 +1,61 @@
+name: Private alpha feedback
+description: Record a redacted installation or first-workflow session
+title: "[Alpha]: "
+labels:
+  - private alpha
+  - feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing Lightfold Grid. Do not include credentials, private
+        prompts, proprietary code, recordings, or unreviewed diagnostics.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: This report contains no secrets or private repository content.
+          required: true
+        - label: I have permission to share this session outcome.
+          required: true
+        - label: This is not a vulnerability report.
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+    validations:
+      required: true
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows (experimental)
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      options:
+        - Demo completed without maintainer help
+        - Demo completed with maintainer help
+        - Demo did not complete
+    validations:
+      required: true
+  - type: textarea
+    id: observations
+    attributes:
+      label: Session observations
+      description: Include timing, interventions, confusing moments, and recovery attempts.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted diagnostics or suggestions
+      description: Include only material you have reviewed and safely redacted.
