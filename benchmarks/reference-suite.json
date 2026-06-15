@@ -1,0 +1,88 @@
+{
+  "name": "Lightfold Grid Deterministic Reference Benchmark",
+  "version": 1,
+  "referenceGeneratedAt": "2026-06-15T00:00:00.000Z",
+  "tasks": [
+    { "id": "spec-api", "category": "specification", "description": "Specify a small API change and acceptance criteria.", "validationRequired": true },
+    { "id": "code-feature", "category": "coding", "description": "Implement a scoped feature in an isolated worktree.", "validationRequired": true },
+    { "id": "test-feature", "category": "testing", "description": "Create and execute tests for the feature.", "validationRequired": true },
+    { "id": "review-change", "category": "review", "description": "Review the implementation for correctness and risk.", "validationRequired": true },
+    { "id": "debug-failure", "category": "debugging", "description": "Diagnose and repair a failing test.", "validationRequired": true },
+    { "id": "analyze-repo", "category": "repository-analysis", "description": "Map repository structure and identify relevant modules.", "validationRequired": true }
+  ],
+  "models": [
+    { "id": "cloud-strong", "label": "Cloud Strong", "privacy": "cloud", "inputCostPerMillionTokens": 5, "outputCostPerMillionTokens": 15 },
+    { "id": "local-large", "label": "Local Large", "privacy": "local", "inputCostPerMillionTokens": 0, "outputCostPerMillionTokens": 0 },
+    { "id": "local-small", "label": "Local Small", "privacy": "local", "inputCostPerMillionTokens": 0, "outputCostPerMillionTokens": 0 }
+  ],
+  "configurations": [
+    {
+      "id": "strong-everywhere",
+      "label": "Strong model everywhere",
+      "assignments": {
+        "specification": "cloud-strong",
+        "coding": "cloud-strong",
+        "testing": "cloud-strong",
+        "review": "cloud-strong",
+        "debugging": "cloud-strong",
+        "repository-analysis": "cloud-strong"
+      }
+    },
+    {
+      "id": "mixed-model",
+      "label": "Mixed-model team",
+      "assignments": {
+        "specification": "local-small",
+        "coding": "local-large",
+        "testing": "local-small",
+        "review": "cloud-strong",
+        "debugging": "local-large",
+        "repository-analysis": "local-small"
+      }
+    },
+    {
+      "id": "local-only",
+      "label": "Local-only team",
+      "assignments": {
+        "specification": "local-large",
+        "coding": "local-large",
+        "testing": "local-large",
+        "review": "local-large",
+        "debugging": "local-large",
+        "repository-analysis": "local-large"
+      }
+    }
+  ],
+  "outcomes": [
+    { "taskId": "spec-api", "modelId": "cloud-strong", "completed": true, "validationPassed": true, "latencyMs": 3200, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 5000, "completionTokens": 1800 },
+    { "taskId": "spec-api", "modelId": "local-large", "completed": true, "validationPassed": true, "latencyMs": 5100, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 5200, "completionTokens": 1900 },
+    { "taskId": "spec-api", "modelId": "local-small", "completed": true, "validationPassed": true, "latencyMs": 2400, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 4700, "completionTokens": 1600 },
+
+    { "taskId": "code-feature", "modelId": "cloud-strong", "completed": true, "validationPassed": true, "latencyMs": 8700, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 18000, "completionTokens": 6200 },
+    { "taskId": "code-feature", "modelId": "local-large", "completed": true, "validationPassed": true, "latencyMs": 14200, "retries": 1, "escalations": 0, "humanInterventions": 0, "promptTokens": 21000, "completionTokens": 7100 },
+    { "taskId": "code-feature", "modelId": "local-small", "completed": false, "validationPassed": false, "latencyMs": 18000, "retries": 2, "escalations": 1, "humanInterventions": 1, "promptTokens": 25000, "completionTokens": 8000 },
+
+    { "taskId": "test-feature", "modelId": "cloud-strong", "completed": true, "validationPassed": true, "latencyMs": 4900, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 8000, "completionTokens": 2600 },
+    { "taskId": "test-feature", "modelId": "local-large", "completed": true, "validationPassed": true, "latencyMs": 7200, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 8500, "completionTokens": 2800 },
+    { "taskId": "test-feature", "modelId": "local-small", "completed": true, "validationPassed": true, "latencyMs": 4100, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 7600, "completionTokens": 2400 },
+
+    { "taskId": "review-change", "modelId": "cloud-strong", "completed": true, "validationPassed": true, "latencyMs": 5800, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 12000, "completionTokens": 3200 },
+    { "taskId": "review-change", "modelId": "local-large", "completed": true, "validationPassed": false, "latencyMs": 9400, "retries": 1, "escalations": 0, "humanInterventions": 1, "promptTokens": 13500, "completionTokens": 3600 },
+    { "taskId": "review-change", "modelId": "local-small", "completed": false, "validationPassed": false, "latencyMs": 13000, "retries": 2, "escalations": 1, "humanInterventions": 1, "promptTokens": 15000, "completionTokens": 4000 },
+
+    { "taskId": "debug-failure", "modelId": "cloud-strong", "completed": true, "validationPassed": true, "latencyMs": 7500, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 15000, "completionTokens": 5000 },
+    { "taskId": "debug-failure", "modelId": "local-large", "completed": true, "validationPassed": true, "latencyMs": 12600, "retries": 1, "escalations": 0, "humanInterventions": 0, "promptTokens": 17500, "completionTokens": 5600 },
+    { "taskId": "debug-failure", "modelId": "local-small", "completed": false, "validationPassed": false, "latencyMs": 16000, "retries": 2, "escalations": 1, "humanInterventions": 1, "promptTokens": 20000, "completionTokens": 6500 },
+
+    { "taskId": "analyze-repo", "modelId": "cloud-strong", "completed": true, "validationPassed": true, "latencyMs": 6100, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 22000, "completionTokens": 3000 },
+    { "taskId": "analyze-repo", "modelId": "local-large", "completed": true, "validationPassed": true, "latencyMs": 8900, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 24000, "completionTokens": 3400 },
+    { "taskId": "analyze-repo", "modelId": "local-small", "completed": true, "validationPassed": true, "latencyMs": 5300, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 21000, "completionTokens": 2800 }
+  ],
+  "successThreshold": {
+    "mixedConfigurationId": "mixed-model",
+    "baselineConfigurationId": "strong-everywhere",
+    "minimumValidatedCompletionRate": 0.95,
+    "maximumValidationRateDrop": 0.05,
+    "minimumEstimatedCostReduction": 0.5
+  }
+}

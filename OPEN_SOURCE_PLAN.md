@@ -141,13 +141,18 @@ This workstream turns the project's intended differentiator into a measurable fe
 
 ### 7. Benchmark And Proof
 
-- [ ] Build a public benchmark suite containing specification, coding, testing, review,
+- [x] Build a public benchmark suite containing specification, coding, testing, review,
       debugging, and repository-analysis tasks.
-- [ ] Compare one strong model for every task against mixed-model and local-only teams.
-- [ ] Report completion rate, validation pass rate, cost, latency, retries, escalations,
+- [ ] Run pinned live-model comparisons of one strong model for every task against
+      mixed-model and local-only teams.
+- [x] Report completion rate, validation pass rate, cost, latency, retries, escalations,
       and human interventions.
-- [ ] Publish reproducible benchmark configurations and raw result summaries.
-- [ ] Define the alpha success threshold before launch.
+- [x] Publish reproducible benchmark configurations and raw result summaries.
+- [x] Define the alpha success threshold before launch.
+
+The committed deterministic reference suite proves the format and comparison logic.
+Live-model performance claims remain blocked on repeated runs with pinned models,
+prompts, repositories, pricing, and published raw outcomes.
 
 Suggested alpha threshold:
 

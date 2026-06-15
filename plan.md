@@ -471,6 +471,32 @@ temporary migration period.
 - Schema migration and workflow budget persistence tests.
 - Existing workflow, integration, live Ollama, build, and packaging tests.
 
+## Milestone 17: Public Reference Benchmark And Proof Format
+
+### Tasks
+
+- [x] Define a versioned public benchmark schema for tasks, models, configurations,
+      outcomes, and success thresholds.
+- [x] Cover specification, coding, testing, review, debugging, and repository analysis.
+- [x] Compare strong-model-everywhere, mixed-model, and local-only configurations.
+- [x] Report completion, validation, cost, latency, retries, escalations, human
+      interventions, cloud assignments, and raw per-task outcomes.
+- [x] Add a reproducible CLI that writes JSON and Markdown result summaries.
+- [x] Document the boundary between deterministic reference evidence and live-model claims.
+
+### Acceptance Criteria
+
+- A clean checkout can reproduce the committed raw result summary.
+- Missing assignments or outcomes fail benchmark validation.
+- The alpha threshold is explicit and evaluated automatically.
+- Results do not misrepresent declared fixture outcomes as live-model performance.
+
+### Tests
+
+- Benchmark schema validation and required-category coverage tests.
+- Deterministic scoring, comparison, and threshold tests.
+- Existing workflow, integration, live Ollama, build, and packaging tests.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -489,6 +515,7 @@ temporary migration period.
 14. Constraint-aware model routing.
 15. Historical model recommendations.
 16. Workflow cost and cloud-usage budgets.
+17. Public reference benchmark and proof format.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

@@ -20,6 +20,7 @@ strong-model tokens only where they matter.
 - Escalate through ordered model fallbacks and inspect assignment reasons and savings.
 - See advisory model recommendations learned from matching successful workflow tasks.
 - Enforce durable workflow-level estimated-cost and cloud-usage routing budgets.
+- Run a reproducible reference benchmark comparing strong-model, mixed-model, and local-only teams.
 - Route agent messages through explicit connection graphs.
 - Parse structured `[[STARLIGHT-MSG]]...[[END]]` envelopes from terminal output.
 - Deliver messages to active interactive agent sessions.
@@ -103,6 +104,8 @@ See [MODEL_RECOMMENDATIONS.md](./MODEL_RECOMMENDATIONS.md) for historical matchi
 confidence levels, and recommendation limits.
 See [WORKFLOW_BUDGETS.md](./WORKFLOW_BUDGETS.md) for total-cost, cloud-cost, and
 cloud-assignment routing guardrails.
+See [BENCHMARKS.md](./BENCHMARKS.md) for the public reference suite, reported metrics,
+raw results, and interpretation limits.
 
 Use the Lightfold Grid workspace to:
 
@@ -417,6 +420,7 @@ Development is organized into milestone commits. The roadmap covers:
 14. Constraint-aware model routing
 15. Historical model recommendations
 16. Workflow cost and cloud-usage budgets
+17. Public reference benchmark and proof format
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -440,6 +444,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 14: Constraint-aware model routing
 - [x] Milestone 15: Historical model recommendations
 - [x] Milestone 16: Workflow cost and cloud-usage budgets
+- [x] Milestone 17: Public reference benchmark and proof format
 
 ## Open Source Status
 
