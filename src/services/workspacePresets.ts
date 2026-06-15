@@ -14,6 +14,11 @@ export interface PresetAgentConfig {
   promptContent: string;
   capabilities: string[];
   tools: string[];
+  capabilityTier?: 1 | 2 | 3 | 4 | 5;
+  contextWindow?: number;
+  inputCostPerMillionTokens?: number;
+  outputCostPerMillionTokens?: number;
+  expectedLatencyMs?: number;
   yoloMode: boolean;
 }
 
@@ -154,6 +159,8 @@ export const buildWorkspacePreset = (options: WorkspacePresetOptions): Workspace
           : options.provider === 'copilot'
             ? 'copilot-cli'
             : 'custom';
+    const cloudModel = mixedCloudRole || ['gemini', 'copilot'].includes(options.provider);
+    const capabilityTier: 2 | 4 = cloudModel ? 4 : 2;
 
     return [pane, {
       ...ROLE_PRESETS[role],
@@ -162,6 +169,11 @@ export const buildWorkspacePreset = (options: WorkspacePresetOptions): Workspace
       cliCommand: mixedCloudRole ? PROVIDER_PRESETS.gemini.command : command,
       selectedModel: mixedCloudRole ? PROVIDER_PRESETS.gemini.defaultModel : model,
       promptPath: '',
+      capabilityTier,
+      contextWindow: 32_000,
+      inputCostPerMillionTokens: cloudModel ? 1 : 0,
+      outputCostPerMillionTokens: cloudModel ? 4 : 0,
+      expectedLatencyMs: cloudModel ? 3_000 : 1_000,
       yoloMode: false,
     }];
   }));

@@ -9,11 +9,11 @@ const valueFor = (flag, fallback) => {
 };
 const model = valueFor('--model', process.env.LIGHTFOLD_GRID_OLLAMA_MODEL || 'gemma4-32k:latest');
 const host = valueFor('--host', process.env.OLLAMA_HOST || 'http://127.0.0.1:11434').replace(/\/$/, '');
-const marker = (kind, summary, fields = {}) => `[[STARLIGHT-MSG]]${JSON.stringify({
+const marker = (kind, summary, fields = {}, data) => `[[STARLIGHT-MSG]]${JSON.stringify({
   protocolVersion: 1,
   to: 'broker',
   kind,
-  payload: { summary },
+  payload: { summary, ...(data ? { data } : {}) },
   attempt: 1,
   ...fields,
 })}[[END]]`;
@@ -68,6 +68,12 @@ const submit = (raw) => {
           to: request.from,
           taskId: request.taskId,
           correlationId: request.messageId,
+        }, {
+          usage: {
+            promptTokens: result.prompt_eval_count,
+            completionTokens: result.eval_count,
+            totalTokens: (result.prompt_eval_count || 0) + (result.eval_count || 0),
+          },
         })}\n`);
       }
     } catch (error) {

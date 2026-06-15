@@ -13,6 +13,11 @@ export interface AgentConfig {
   promptContent: string;
   capabilities: string[];
   tools: string[];
+  capabilityTier?: 1 | 2 | 3 | 4 | 5;
+  contextWindow?: number;
+  inputCostPerMillionTokens?: number;
+  outputCostPerMillionTokens?: number;
+  expectedLatencyMs?: number;
   yoloMode: boolean;
 }
 
@@ -466,6 +471,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       }}
                     />
                   </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+                  {([
+                    ['CAPABILITY TIER', 'capabilityTier', currentAgent.capabilityTier || 3],
+                    ['CONTEXT WINDOW', 'contextWindow', currentAgent.contextWindow || 0],
+                    ['EXPECTED LATENCY MS', 'expectedLatencyMs', currentAgent.expectedLatencyMs || 0],
+                    ['INPUT $ / 1M TOKENS', 'inputCostPerMillionTokens', currentAgent.inputCostPerMillionTokens || 0],
+                    ['OUTPUT $ / 1M TOKENS', 'outputCostPerMillionTokens', currentAgent.outputCostPerMillionTokens || 0],
+                  ] as const).map(([label, key, value]) => (
+                    <div key={key}>
+                      <label style={{ display: 'block', fontSize: '9px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                        {label}
+                      </label>
+                      <input
+                        type="number"
+                        min={key === 'capabilityTier' ? 1 : 0}
+                        max={key === 'capabilityTier' ? 5 : undefined}
+                        value={value}
+                        onChange={(event) => setLocalAgentConfigs({
+                          ...localAgentConfigs,
+                          [selectedConfigPaneId]: { ...currentAgent, [key]: Number(event.target.value) }
+                        })}
+                        style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--glass-border)', borderRadius: '6px', padding: '7px', color: '#fff', fontSize: '11px' }}
+                      />
+                    </div>
+                  ))}
                 </div>
 
                 {/* Sourcing files for prompts */}

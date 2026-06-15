@@ -389,6 +389,33 @@ temporary migration period.
 - Bundled Ollama adapter conformance test against a deterministic mock provider.
 - Existing broker, preset, integration, build, and packaging tests.
 
+## Milestone 14: Constraint-Aware Model Routing
+
+### Tasks
+
+- [x] Add per-agent model profiles for capability tier, privacy, context, latency, and cost.
+- [x] Add opt-in task routing constraints while preserving fixed-owner workflows.
+- [x] Select the least expensive eligible model and record every candidate evaluation.
+- [x] Add ordered fallback chains that escalate without retrying failed owners.
+- [x] Persist routing decisions, escalation history, usage, and assignment timing.
+- [x] Track provider-reported prompt and completion tokens when available.
+- [x] Display assignment reasons, estimated model cost, savings, and escalations.
+
+### Acceptance Criteria
+
+- Local-only tasks never route to cloud adapters.
+- Models that violate capabilities, tools, context, tier, or cost constraints are rejected.
+- Routed task failures escalate through configured fallback owners.
+- Every routed assignment has an inspectable reason and durable candidate evaluation.
+- Ops metrics report estimated cost, savings, escalations, and available token usage.
+
+### Tests
+
+- Deterministic least-cost, constraint-rejection, and fallback-order tests.
+- Workflow routing-history and escalation tests.
+- Schema migration and routing-decision persistence tests.
+- Existing broker, PTY integration, adapter, build, and packaging tests.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -404,6 +431,7 @@ temporary migration period.
 11. Repeatable alpha packaging and release automation.
 12. Five-minute onboarding and workspace presets.
 13. CLI and provider adapter compatibility.
+14. Constraint-aware model routing.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

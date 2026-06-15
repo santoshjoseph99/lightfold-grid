@@ -24,6 +24,7 @@ import {
   markAgentStopped,
   markAgentStopping,
   registerAgent,
+  setAgentModelProfiles,
   setBrokerWorkspaceRoot,
   setRoutingConnections,
   subscribeToMessages,
@@ -407,6 +408,24 @@ export default function App() {
         tools: agentConfigs[paneId].tools || [],
         promptVersion: AGENT_PROMPT_VERSION,
       });
+    });
+    setAgentModelProfiles(Object.entries(agentConfigs).map(([paneId, config]) => {
+      const adapter = resolveAdapter(config);
+      return {
+        agentId: paneId,
+        model: config.selectedModel || 'auto',
+        privacy: adapter.privacy,
+        capabilityTier: config.capabilityTier || (adapter.privacy === 'local' ? 2 : adapter.privacy === 'cloud' ? 4 : 3),
+        contextWindow: config.contextWindow || undefined,
+        toolSupport: adapter.toolSupport,
+        inputCostPerMillionTokens: config.inputCostPerMillionTokens || 0,
+        outputCostPerMillionTokens: config.outputCostPerMillionTokens || 0,
+        expectedLatencyMs: config.expectedLatencyMs || undefined,
+        capabilities: config.capabilities?.length ? config.capabilities : DEFAULT_AGENT_CAPABILITIES,
+        tools: config.tools || [],
+      };
+    }));
+    Object.keys(agentConfigs).forEach((paneId) => {
       void createTerminalInstance(paneId, defaultShell, workspaceCwd).then((instance) => {
         if (!instance.isBooted) {
           instance.isBooted = true;

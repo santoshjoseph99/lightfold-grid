@@ -143,6 +143,22 @@ test('persists workflow graphs and task execution state', () => {
           requiredCapabilities: ['specification'],
           requiredTools: ['markdown'],
           promptVersion: 1,
+          routing: { localOnly: true, minCapabilityTier: 2 },
+          routingDecision: {
+            selectedAgentId: 'Spec',
+            selectedModel: 'local',
+            estimatedCostUsd: 0,
+            strongestModelCostUsd: 1,
+            estimatedSavingsUsd: 1,
+            reason: 'least expensive',
+            escalation: 0,
+            evaluatedAt: 90,
+            candidates: [],
+          },
+          routingHistory: [],
+          assignedAt: 110,
+          completedAt: 180,
+          usage: { promptTokens: 100, completionTokens: 20, totalTokens: 120, actualCostUsd: 0 },
         },
         {
           workflowId: 'workflow-1',
@@ -169,6 +185,11 @@ test('persists workflow graphs and task execution state', () => {
     assert.deepEqual(spec.requiredCapabilities, ['specification']);
     assert.deepEqual(spec.requiredTools, ['markdown']);
     assert.equal(spec.promptVersion, 1);
+    assert.equal(spec.routing.localOnly, true);
+    assert.equal(spec.routingDecision.selectedAgentId, 'Spec');
+    assert.equal(spec.assignedAt, 110);
+    assert.equal(spec.completedAt, 180);
+    assert.equal(spec.usage.totalTokens, 120);
     assert.equal(snapshot.events.some((event) => event.eventType === 'workflow.running'), true);
     assert.equal(snapshot.events.some((event) => event.eventType === 'task.completed' && event.entityId === 'workflow-1:spec'), true);
   });

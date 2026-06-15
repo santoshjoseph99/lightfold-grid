@@ -25,6 +25,12 @@ export interface BrokerMetrics {
   retries: number;
   failures: number;
   agentUptimePercent: number;
+  estimatedModelCostUsd: number;
+  estimatedSavingsUsd: number;
+  escalations: number;
+  promptTokens: number;
+  completionTokens: number;
+  reportedModelCostUsd: number;
 }
 
 const average = (values: number[]) =>
@@ -46,6 +52,20 @@ export const calculateBrokerMetrics = (snapshot: BrokerObservabilitySnapshot): B
     failures: snapshot.messages.filter((message) => message.status === 'failed').length +
       snapshot.workflows.filter((workflow) => workflow.status === 'failed').length,
     agentUptimePercent: snapshot.agents.length === 0 ? 0 : Math.round((availableAgents / snapshot.agents.length) * 100),
+    estimatedModelCostUsd: Number(snapshot.workflows.reduce((sum, workflow) =>
+      sum + workflow.tasks.reduce((taskSum, task) =>
+        taskSum + (task.routingHistory || []).reduce((historySum, decision) => historySum + decision.estimatedCostUsd, 0), 0), 0).toFixed(6)),
+    estimatedSavingsUsd: Number(snapshot.workflows.reduce((sum, workflow) =>
+      sum + workflow.tasks.reduce((taskSum, task) =>
+        taskSum + (task.routingHistory || []).reduce((historySum, decision) => historySum + decision.estimatedSavingsUsd, 0), 0), 0).toFixed(6)),
+    escalations: snapshot.workflows.reduce((sum, workflow) =>
+      sum + workflow.tasks.reduce((taskSum, task) => taskSum + Math.max(0, (task.routingHistory || []).length - 1), 0), 0),
+    promptTokens: snapshot.workflows.reduce((sum, workflow) =>
+      sum + workflow.tasks.reduce((taskSum, task) => taskSum + (task.usage?.promptTokens || 0), 0), 0),
+    completionTokens: snapshot.workflows.reduce((sum, workflow) =>
+      sum + workflow.tasks.reduce((taskSum, task) => taskSum + (task.usage?.completionTokens || 0), 0), 0),
+    reportedModelCostUsd: Number(snapshot.workflows.reduce((sum, workflow) =>
+      sum + workflow.tasks.reduce((taskSum, task) => taskSum + (task.usage?.actualCostUsd || 0), 0), 0).toFixed(6)),
   };
 };
 

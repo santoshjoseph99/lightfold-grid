@@ -15,6 +15,9 @@ strong-model tokens only where they matter.
 - Configure each agent's CLI command, model, prompt, and workspace.
 - Select explicit provider adapters with discoverable lifecycle and privacy behavior.
 - Use the bundled stateful Ollama adapter for reliable local lifecycle and task results.
+- Route tasks to the least expensive eligible model with privacy, capability, tool,
+  context-window, and cost constraints.
+- Escalate through ordered model fallbacks and inspect assignment reasons and savings.
 - Route agent messages through explicit connection graphs.
 - Parse structured `[[STARLIGHT-MSG]]...[[END]]` envelopes from terminal output.
 - Deliver messages to active interactive agent sessions.
@@ -92,6 +95,8 @@ See [QUICKSTART.md](./QUICKSTART.md) for the five-minute local workflow, mixed
 local/cloud profile, and readiness troubleshooting.
 See [ADAPTERS.md](./ADAPTERS.md) for provider compatibility, the adapter contract, and
 the community adapter guide.
+See [MODEL_ROUTING.md](./MODEL_ROUTING.md) for model profiles, routed workflow tasks,
+cost estimates, and fallback chains.
 
 Use the Lightfold Grid workspace to:
 
@@ -403,6 +408,7 @@ Development is organized into milestone commits. The roadmap covers:
 11. Repeatable alpha packaging and release automation
 12. Five-minute onboarding and workspace presets
 13. CLI and provider adapter compatibility
+14. Constraint-aware model routing
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -423,6 +429,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
       complete; hosted release-matrix validation pending)
 - [x] Milestone 12: Five-minute onboarding and workspace presets
 - [x] Milestone 13: CLI and provider adapter compatibility
+- [x] Milestone 14: Constraint-aware model routing
 
 ## Open Source Status
 

@@ -64,6 +64,12 @@ export const ObservabilityPanel: React.FC<ObservabilityPanelProps> = ({ workspac
     ['Retries', metrics.retries],
     ['Failures', metrics.failures],
     ['Agent uptime', `${metrics.agentUptimePercent}%`],
+    ['Model cost', `$${metrics.estimatedModelCostUsd.toFixed(4)}`],
+    ['Est. savings', `$${metrics.estimatedSavingsUsd.toFixed(4)}`],
+    ['Escalations', metrics.escalations],
+    ['Prompt tokens', metrics.promptTokens],
+    ['Output tokens', metrics.completionTokens],
+    ['Reported cost', `$${metrics.reportedModelCostUsd.toFixed(4)}`],
   ];
 
   return (

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { WorkflowEngine, WorkflowValidationError } from '../src/services/workflowCore.ts';
 import type { WorkflowDefinition } from '../src/services/workflowCore.ts';
+import type { RoutingDecision } from '../src/services/modelRouting.ts';
 
 const definition = (overrides: Partial<WorkflowDefinition> = {}): WorkflowDefinition => ({
   id: 'workflow-1',
@@ -160,4 +161,70 @@ test('holds coding task results in review until integration completes', () => {
   assert.equal(engine.get('workflow-1')?.tasks[0].promptVersion, 1);
   assert.equal(engine.completeReview('workflow-1', 'code'), true);
   assert.equal(engine.get('workflow-1')?.status, 'completed');
+});
+
+test('records routing decisions and requeues routed tasks for escalation', () => {
+  const engine = new WorkflowEngine();
+  engine.create(definition({
+    tasks: [{
+      id: 'route',
+      owner: 'local-small',
+      goal: 'route work',
+      routing: { fallbackOwners: ['local-small', 'cloud-strong'] },
+    }],
+  }));
+  const decision: RoutingDecision = {
+    selectedAgentId: 'local-small',
+    selectedModel: 'small',
+    estimatedCostUsd: 0,
+    strongestModelCostUsd: 1,
+    estimatedSavingsUsd: 1,
+    reason: 'fallback 1',
+    escalation: 0,
+    evaluatedAt: 10,
+    candidates: [],
+  };
+  engine.setRoutingDecision('workflow-1', 'route', decision);
+  engine.assignTask('workflow-1', 'route', 'message-route');
+  assert.equal(engine.escalateTask('workflow-1', 'route', 'model failed'), true);
+  const task = engine.get('workflow-1')!.tasks[0];
+  assert.equal(task.status, 'ready');
+  assert.equal(task.routingHistory.length, 1);
+  assert.match(task.error || '', /Escalating/);
+});
+
+test('reschedule re-emits ready work after deferred startup dependencies arrive', () => {
+  const dispatched: string[] = [];
+  const engine = new WorkflowEngine({ onDispatch: (task) => dispatched.push(task.id) });
+  engine.create(definition({ tasks: [{ id: 'deferred', owner: 'A', goal: 'work', requiresApproval: true }] }));
+  assert.deepEqual(dispatched, []);
+  engine.approveTask('workflow-1', 'deferred');
+  assert.deepEqual(dispatched, ['deferred']);
+  engine.reschedule();
+  assert.deepEqual(dispatched, ['deferred', 'deferred']);
+});
+
+test('manual retry resets routing history and reassignment pins the requested candidate', () => {
+  const engine = new WorkflowEngine();
+  engine.create(definition({
+    tasks: [{ id: 'route', owner: 'local', goal: 'work', routing: { fallbackOwners: ['local', 'cloud'] } }],
+  }));
+  engine.setRoutingDecision('workflow-1', 'route', {
+    selectedAgentId: 'local',
+    selectedModel: 'small',
+    estimatedCostUsd: 0,
+    strongestModelCostUsd: 1,
+    estimatedSavingsUsd: 1,
+    reason: 'fallback',
+    escalation: 0,
+    evaluatedAt: 1,
+    candidates: [],
+  });
+  engine.failTask('workflow-1', 'route', 'exhausted');
+  assert.equal(engine.retryTask('workflow-1', 'route'), true);
+  assert.equal(engine.get('workflow-1')!.tasks[0].routingHistory.length, 0);
+  engine.failTask('workflow-1', 'route', 'failed again');
+  assert.equal(engine.reassignTask('workflow-1', 'route', 'cloud'), true);
+  assert.deepEqual(engine.get('workflow-1')!.tasks[0].routing?.candidateOwners, ['cloud']);
+  assert.equal(engine.get('workflow-1')!.tasks[0].routing?.fallbackOwners, undefined);
 });

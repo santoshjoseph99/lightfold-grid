@@ -129,15 +129,15 @@ The alpha must prove one narrow workflow:
 
 This workstream turns the project's intended differentiator into a measurable feature.
 
-- [ ] Add per-agent cost, latency, privacy, context-window, and capability metadata.
-- [ ] Add per-task constraints such as `local-only`, maximum cost, required tools, and
+- [x] Add per-agent cost, latency, privacy, context-window, and capability metadata.
+- [x] Add per-task constraints such as `local-only`, maximum cost, required tools, and
       minimum capability tier.
-- [ ] Add ordered fallback chains such as local-small -> local-large -> cloud-strong.
-- [ ] Track prompt tokens, completion tokens, estimated cost, latency, retries, and
+- [x] Add ordered fallback chains such as local-small -> local-large -> cloud-strong.
+- [x] Track prompt tokens, completion tokens, estimated cost, latency, retries, and
       escalations per task and workflow.
 - [ ] Recommend model assignments based on previous successful tasks.
 - [ ] Allow users to set workflow-level cost and cloud-usage budgets.
-- [ ] Show why a task was assigned or escalated to a model.
+- [x] Show why a task was assigned or escalated to a model.
 
 ### 7. Benchmark And Proof
 
@@ -187,5 +187,5 @@ The repository is ready for a public alpha when:
 - [ ] Supported platforms are explicitly documented and tested in cross-platform CI.
 - [ ] Security-sensitive actions require clear approval.
 - [ ] Diagnostic exports and logs have passed secret-leakage testing.
-- [ ] Model usage, cost, and escalation behavior are visible.
+- [x] Model usage, cost, and escalation behavior are visible.
 - [ ] Known limitations and experimental status are prominent.

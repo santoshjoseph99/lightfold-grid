@@ -18,6 +18,8 @@ test('bundled Ollama adapter owns lifecycle and preserves chat context', async (
           role: 'assistant',
           content: `model response ${received.length} [[STARLIGHT-MSG]]model-owned[[END]]`,
         },
+        prompt_eval_count: 10,
+        eval_count: 5,
       }));
     });
   });
@@ -81,6 +83,9 @@ test('bundled Ollama adapter owns lifecycle and preserves chat context', async (
     assert.ok(protocol.some((entry) => entry.kind === 'ack' && entry.taskId === 'task-1'));
     assert.ok(protocol.some((entry) => entry.kind === 'result' && entry.taskId === 'task-1'));
     assert.equal(protocol.filter((entry) => entry.kind === 'result').length, 1);
+    assert.deepEqual(protocol.find((entry) => entry.kind === 'result')?.payload.data, {
+      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+    });
     assert.match(output, /\[\[MODEL-MSG\]\]model-owned\[\[MODEL-END\]\]/);
     assert.equal(received[1].messages.length, 3);
     assert.equal(received[1].messages[0].content, 'first line\nsecond line');

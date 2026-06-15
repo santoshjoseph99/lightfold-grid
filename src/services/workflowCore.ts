@@ -1,3 +1,5 @@
+import type { ModelUsage, RoutingDecision, TaskRoutingConstraints } from './modelRouting';
+
 export type WorkflowStatus = 'planned' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 export type WorkflowTaskStatus =
@@ -47,6 +49,7 @@ export interface WorkflowTaskDefinition {
   requiredCapabilities?: string[];
   requiredTools?: string[];
   promptVersion?: number;
+  routing?: TaskRoutingConstraints;
 }
 
 export interface WorkflowDefinition {
@@ -68,6 +71,11 @@ export interface WorkflowTaskRecord extends WorkflowTaskDefinition {
   summary?: string;
   error?: string;
   worktree?: CodingWorktreeSummary;
+  routingDecision?: RoutingDecision;
+  routingHistory: RoutingDecision[];
+  assignedAt?: number;
+  completedAt?: number;
+  usage?: ModelUsage;
 }
 
 export interface WorkflowRecord extends Omit<WorkflowDefinition, 'tasks'> {
@@ -80,6 +88,7 @@ export interface WorkflowRecord extends Omit<WorkflowDefinition, 'tasks'> {
 export interface WorkflowTaskResult {
   summary?: string;
   artifacts?: string[];
+  usage?: ModelUsage;
 }
 
 export interface WorkflowEngineCallbacks {
@@ -105,6 +114,14 @@ const copyTask = (task: WorkflowTaskRecord): WorkflowTaskRecord => ({
   requiredCapabilities: [...(task.requiredCapabilities || [])],
   requiredTools: [...(task.requiredTools || [])],
   worktree: task.worktree ? { ...task.worktree, changedFiles: [...task.worktree.changedFiles] } : undefined,
+  routing: task.routing ? {
+    ...task.routing,
+    candidateOwners: task.routing.candidateOwners ? [...task.routing.candidateOwners] : undefined,
+    fallbackOwners: task.routing.fallbackOwners ? [...task.routing.fallbackOwners] : undefined,
+  } : undefined,
+  routingDecision: task.routingDecision ? { ...task.routingDecision, candidates: task.routingDecision.candidates.map((candidate) => ({ ...candidate, reasons: [...candidate.reasons] })) } : undefined,
+  routingHistory: (task.routingHistory || []).map((decision) => ({ ...decision, candidates: decision.candidates.map((candidate) => ({ ...candidate, reasons: [...candidate.reasons] })) })),
+  usage: task.usage ? { ...task.usage } : undefined,
 });
 
 const copyWorkflow = (workflow: WorkflowRecord): WorkflowRecord => ({
@@ -154,6 +171,7 @@ export class WorkflowEngine {
         approved: !(task.requiresApproval || task.coding || approvalRiskPattern.test(task.goal)),
         failurePolicy: task.failurePolicy || 'block',
         maxAttempts: task.maxAttempts || 1,
+        routingHistory: [],
       })),
     };
     this.workflows.set(workflow.id, workflow);
@@ -191,6 +209,7 @@ export class WorkflowEngine {
     task.status = 'assigned';
     task.messageId = messageId;
     task.attempts += 1;
+    task.assignedAt = this.now();
     task.error = undefined;
     this.emitTask(task);
     this.updateWorkflow(this.requireWorkflow(workflowId));
@@ -217,6 +236,7 @@ export class WorkflowEngine {
     task.status = 'reviewing';
     task.summary = result.summary;
     task.artifacts = [...(result.artifacts || [])];
+    task.usage = result.usage ? { ...result.usage } : task.usage;
     this.emitTask(task);
     const validationError = this.validateResult(task, result);
     if (validationError) {
@@ -230,6 +250,7 @@ export class WorkflowEngine {
     const task = this.requireTask(workflowId, taskId);
     if (task.status !== 'reviewing') return false;
     task.status = 'completed';
+    task.completedAt = this.now();
     task.error = undefined;
     this.emitTask(task);
     this.schedule(this.requireWorkflow(workflowId));
@@ -250,6 +271,27 @@ export class WorkflowEngine {
     task.promptVersion = promptVersion;
     this.emitTask(task);
     this.updateWorkflow(this.requireWorkflow(workflowId));
+    return true;
+  }
+
+  setRoutingDecision(workflowId: string, taskId: string, decision: RoutingDecision): boolean {
+    const task = this.requireTask(workflowId, taskId);
+    task.owner = decision.selectedAgentId;
+    task.routingDecision = { ...decision, candidates: decision.candidates.map((candidate) => ({ ...candidate, reasons: [...candidate.reasons] })) };
+    task.routingHistory.push(task.routingDecision);
+    this.emitTask(task);
+    this.updateWorkflow(this.requireWorkflow(workflowId));
+    return true;
+  }
+
+  escalateTask(workflowId: string, taskId: string, error: string): boolean {
+    const task = this.requireTask(workflowId, taskId);
+    if (!task.routing || terminalTaskStates.has(task.status)) return false;
+    task.status = 'ready';
+    task.messageId = undefined;
+    task.error = `Escalating after ${error}`;
+    this.emitTask(task);
+    this.schedule(this.requireWorkflow(workflowId));
     return true;
   }
 
@@ -279,6 +321,11 @@ export class WorkflowEngine {
     const task = this.requireTask(workflowId, taskId);
     if (!['failed', 'cancelled'].includes(task.status) || !owner.trim()) return false;
     task.owner = owner.trim();
+    if (task.routing) {
+      task.routing = { ...task.routing, candidateOwners: [task.owner], fallbackOwners: undefined };
+      task.routingDecision = undefined;
+      task.routingHistory = [];
+    }
     task.status = 'ready';
     task.messageId = undefined;
     task.error = undefined;
@@ -293,6 +340,10 @@ export class WorkflowEngine {
     task.status = 'ready';
     task.messageId = undefined;
     task.error = undefined;
+    if (task.routing) {
+      task.routingDecision = undefined;
+      task.routingHistory = [];
+    }
     this.emitTask(task);
     this.schedule(this.requireWorkflow(workflowId));
     return true;
@@ -321,6 +372,10 @@ export class WorkflowEngine {
 
   values(): WorkflowRecord[] {
     return [...this.workflows.values()].map(copyWorkflow);
+  }
+
+  reschedule() {
+    this.workflows.forEach((workflow) => this.schedule(workflow));
   }
 
   private schedule(workflow: WorkflowRecord) {
@@ -422,6 +477,22 @@ export class WorkflowEngine {
           task.requiredTools.some((tool) => typeof tool !== 'string' || !tool.trim()))
       ) {
         throw new WorkflowValidationError(`Task ${task.id} requiredTools must be an array of non-empty strings.`);
+      }
+      if (task.routing?.maxEstimatedCostUsd !== undefined && task.routing.maxEstimatedCostUsd < 0) {
+        throw new WorkflowValidationError(`Task ${task.id} maxEstimatedCostUsd must not be negative.`);
+      }
+      if (task.routing?.minCapabilityTier !== undefined && (![1, 2, 3, 4, 5].includes(task.routing.minCapabilityTier))) {
+        throw new WorkflowValidationError(`Task ${task.id} minCapabilityTier must be between 1 and 5.`);
+      }
+      if (
+        [task.routing?.candidateOwners, task.routing?.fallbackOwners].some((owners) =>
+          owners !== undefined && (
+            !Array.isArray(owners) ||
+            owners.some((owner) => typeof owner !== 'string' || !owner.trim())
+          )
+        )
+      ) {
+        throw new WorkflowValidationError(`Task ${task.id} routing owners must be arrays of non-empty strings.`);
       }
       if (
         task.completionCriteria?.requiredArtifacts !== undefined &&

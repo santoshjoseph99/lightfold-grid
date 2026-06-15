@@ -1,6 +1,6 @@
 import { createRequire } from 'module';
 
-export const BROKER_SCHEMA_VERSION = 4;
+export const BROKER_SCHEMA_VERSION = 5;
 export const BROKER_PROTOCOL_VERSION = 1;
 export const DEFAULT_BROKER_RETENTION_LIMIT = 5_000;
 
@@ -253,8 +253,9 @@ export class BrokerStore {
             workflow_id, task_id, owner, goal, dependencies_json, status, attempts,
             artifacts_json, completion_criteria_json, failure_policy, max_attempts,
             requires_approval, approved, message_id, summary, error, coding_json, worktree_json,
-            required_capabilities_json, required_tools_json, prompt_version, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            required_capabilities_json, required_tools_json, prompt_version, routing_json,
+            routing_decision_json, routing_history_json, assigned_at, completed_at, usage_json, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           ON CONFLICT(workflow_id, task_id) DO UPDATE SET
             owner = excluded.owner,
             goal = excluded.goal,
@@ -275,6 +276,12 @@ export class BrokerStore {
             required_capabilities_json = excluded.required_capabilities_json,
             required_tools_json = excluded.required_tools_json,
             prompt_version = excluded.prompt_version,
+            routing_json = excluded.routing_json,
+            routing_decision_json = excluded.routing_decision_json,
+            routing_history_json = excluded.routing_history_json,
+            assigned_at = excluded.assigned_at,
+            completed_at = excluded.completed_at,
+            usage_json = excluded.usage_json,
             updated_at = excluded.updated_at
         `).run(
           workflow.id,
@@ -298,6 +305,12 @@ export class BrokerStore {
           JSON.stringify(task.requiredCapabilities || []),
           JSON.stringify(task.requiredTools || []),
           task.promptVersion || null,
+          JSON.stringify(task.routing || null),
+          JSON.stringify(task.routingDecision || null),
+          JSON.stringify(task.routingHistory || []),
+          task.assignedAt || null,
+          task.completedAt || null,
+          JSON.stringify(task.usage || null),
           timestamp
         );
         this.insertEvent(
@@ -506,6 +519,12 @@ export class BrokerStore {
         requiredCapabilities: parseJson(task.required_capabilities_json, []),
         requiredTools: parseJson(task.required_tools_json, []),
         promptVersion: task.prompt_version || undefined,
+        routing: parseJson(task.routing_json, undefined),
+        routingDecision: parseJson(task.routing_decision_json, undefined),
+        routingHistory: parseJson(task.routing_history_json, []),
+        assignedAt: task.assigned_at || undefined,
+        completedAt: task.completed_at || undefined,
+        usage: parseJson(task.usage_json, undefined),
       })),
     }));
     const worktrees = this.db.prepare('SELECT * FROM coding_worktrees ORDER BY created_at ASC').all().map((row: any) => ({
@@ -677,6 +696,16 @@ export class BrokerStore {
         ALTER TABLE workflow_tasks ADD COLUMN required_capabilities_json TEXT;
         ALTER TABLE workflow_tasks ADD COLUMN required_tools_json TEXT;
         ALTER TABLE workflow_tasks ADD COLUMN prompt_version INTEGER;
+      `);
+    }
+    if (version < 5) {
+      this.db.exec(`
+        ALTER TABLE workflow_tasks ADD COLUMN routing_json TEXT;
+        ALTER TABLE workflow_tasks ADD COLUMN routing_decision_json TEXT;
+        ALTER TABLE workflow_tasks ADD COLUMN routing_history_json TEXT;
+        ALTER TABLE workflow_tasks ADD COLUMN assigned_at INTEGER;
+        ALTER TABLE workflow_tasks ADD COLUMN completed_at INTEGER;
+        ALTER TABLE workflow_tasks ADD COLUMN usage_json TEXT;
       `);
     }
     this.db.exec(`PRAGMA user_version = ${BROKER_SCHEMA_VERSION};`);

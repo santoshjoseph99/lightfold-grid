@@ -232,6 +232,26 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
                           <span style={{ fontSize: '8px', color: workflowStatusColor(task.status), textTransform: 'uppercase' }}>{task.status}</span>
                         </div>
                         <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>{task.goal}</div>
+                        {task.routingDecision && (
+                          <div style={{ fontSize: '8px', color: 'var(--accent-purple)', marginTop: '3px' }}>
+                            {task.routingDecision.selectedModel} · ${task.routingDecision.estimatedCostUsd.toFixed(4)} estimated
+                            {' · '}{task.routingDecision.reason}
+                            {task.routingDecision.estimatedSavingsUsd > 0 && ` · saves $${task.routingDecision.estimatedSavingsUsd.toFixed(4)}`}
+                            {task.routingDecision.candidates.some((candidate) => !candidate.eligible) && (
+                              <div style={{ color: 'var(--text-muted)', marginTop: '2px' }}>
+                                Rejected: {task.routingDecision.candidates.filter((candidate) => !candidate.eligible).map((candidate) =>
+                                  `${candidate.agentId} (${candidate.reasons.join(', ')})`
+                                ).join('; ')}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {task.usage && (
+                          <div style={{ fontSize: '8px', color: 'var(--accent-cyan)', marginTop: '3px' }}>
+                            Usage: {task.usage.promptTokens || 0} prompt + {task.usage.completionTokens || 0} output tokens
+                            {task.usage.actualCostUsd !== undefined && ` · $${task.usage.actualCostUsd.toFixed(4)} reported cost`}
+                          </div>
+                        )}
                         {task.worktree && (
                           <div style={{ fontSize: '8px', color: 'var(--accent-cyan)', marginTop: '3px', wordBreak: 'break-all' }}>
                             {task.worktree.branch} · {task.worktree.status}

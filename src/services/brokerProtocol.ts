@@ -30,6 +30,7 @@ import {
   normalizeCapabilities,
 } from './promptContract';
 import type { BrokerEvent, BrokerObservabilitySnapshot } from './observability';
+import { routeTaskToModel, type AgentModelProfile } from './modelRouting';
 
 export type BrokerMessageStatus = 'pending' | ReliableRequestStatus;
 
@@ -55,6 +56,7 @@ let brokerRetentionLimit = 5_000;
 let brokerWorkspaceRoot = '';
 const preparingWorkflowTasks = new Set<string>();
 let durableEvents: BrokerEvent[] = [];
+const agentModelProfiles = new Map<string, AgentModelProfile>();
 
 const persist = (operation: Promise<unknown> | undefined) => {
   operation?.catch((error) => console.error('Failed to persist broker state:', error));
@@ -219,7 +221,10 @@ const reliableRequests = new ReliableRequestManager(
       if (record.status === 'acknowledged') {
         workflowEngine.taskRunning(workflowTask.workflowId, workflowTask.id);
       } else if (record.status === 'failed') {
-        workflowEngine.failTask(workflowTask.workflowId, workflowTask.id, record.error || 'Task delivery failed.');
+        const error = record.error || 'Task delivery failed.';
+        if (!workflowEngine.escalateTask(workflowTask.workflowId, workflowTask.id, error)) {
+          workflowEngine.failTask(workflowTask.workflowId, workflowTask.id, error);
+        }
       } else if (record.status === 'cancelled') {
         workflowEngine.failTask(workflowTask.workflowId, workflowTask.id, record.error || 'Task cancelled.');
       }
@@ -274,6 +279,27 @@ const dispatchWorkflowTask = async (task: WorkflowTaskRecord) => {
   const taskKey = `${task.workflowId}:${task.id}`;
   if (preparingWorkflowTasks.has(taskKey)) return;
   preparingWorkflowTasks.add(taskKey);
+  if (task.routing) {
+    if (agentModelProfiles.size === 0) {
+      preparingWorkflowTasks.delete(taskKey);
+      return;
+    }
+    try {
+      const decision = routeTaskToModel({
+        profiles: [...agentModelProfiles.values()],
+        constraints: task.routing,
+        requiredCapabilities: task.requiredCapabilities,
+        requiredTools: task.requiredTools,
+        previousOwners: task.routingHistory.map((decision) => decision.selectedAgentId),
+      });
+      workflowEngine.setRoutingDecision(task.workflowId, task.id, decision);
+      task = workflowEngine.get(task.workflowId)!.tasks.find((candidate) => candidate.id === task.id)!;
+    } catch (error) {
+      workflowEngine.failTask(task.workflowId, task.id, error instanceof Error ? error.message : String(error));
+      preparingWorkflowTasks.delete(taskKey);
+      return;
+    }
+  }
   const owner = agentLifecycle.get(task.owner);
   if (
     !owner ||
@@ -335,6 +361,8 @@ const dispatchWorkflowTask = async (task: WorkflowTaskRecord) => {
         completionCriteria: task.completionCriteria,
         requiredCapabilities: task.requiredCapabilities,
         requiredTools: task.requiredTools,
+        routing: task.routing,
+        routingDecision: task.routingDecision,
         promptVersion: owner.promptVersion || AGENT_PROMPT_VERSION,
         coding: task.coding,
         worktree,
@@ -367,10 +395,10 @@ export const createWorkflow = (definition: WorkflowDefinition) => {
   const agents = agentLifecycle.values();
   const knownAgents = new Map(agents.map((agent) => [agent.agentId, agent]));
   const unknownOwner = knownAgents.size > 0
-    ? definition.tasks.find((task) => !knownAgents.has(task.owner))
+    ? definition.tasks.find((task) => !task.routing && !knownAgents.has(task.owner))
     : undefined;
   if (unknownOwner) throw new WorkflowValidationError(`Workflow task ${unknownOwner.id} targets unknown agent ${unknownOwner.owner}.`);
-  const incapableOwner = findCapabilityMismatch(definition.tasks, agents);
+  const incapableOwner = findCapabilityMismatch(definition.tasks.filter((task) => !task.routing), agents);
   if (incapableOwner) {
     throw new WorkflowValidationError(
       `Workflow task ${incapableOwner.id} requires capabilities or tools unavailable on ${incapableOwner.owner}. ` +
@@ -451,6 +479,18 @@ export const registerAgent = (
   tools: normalizeCapabilities(contract.tools),
   promptVersion: contract.promptVersion || AGENT_PROMPT_VERSION,
 });
+export const registerAgentModelProfile = (profile: AgentModelProfile) => {
+  agentModelProfiles.set(profile.agentId, {
+    ...profile,
+    capabilities: normalizeCapabilities(profile.capabilities),
+    tools: normalizeCapabilities(profile.tools),
+  });
+};
+export const setAgentModelProfiles = (profiles: AgentModelProfile[]) => {
+  agentModelProfiles.clear();
+  profiles.forEach(registerAgentModelProfile);
+  workflowEngine.reschedule();
+};
 export const markAgentStarting = (agentId: string) => agentLifecycle.starting(agentId);
 export const markAgentReady = (agentId: string) => {
   const record = agentLifecycle.ready(agentId);
@@ -594,9 +634,19 @@ const processMessage = (msg: StarlightMessage) => {
     const workflowTask = msg.correlationId ? findWorkflowTaskByMessageId(msg.correlationId) : undefined;
     if (workflowTask && disposition === 'accepted') {
       if (msg.kind === 'result') {
+        const reportedUsage = (msg.payload.data as any)?.usage;
+        const profile = agentModelProfiles.get(workflowTask.owner);
+        const usage = reportedUsage ? {
+          ...reportedUsage,
+          actualCostUsd: profile ? Number((
+            ((reportedUsage.promptTokens || 0) / 1_000_000) * profile.inputCostPerMillionTokens +
+            ((reportedUsage.completionTokens || 0) / 1_000_000) * profile.outputCostPerMillionTokens
+          ).toFixed(6)) : undefined,
+        } : undefined;
         const result = {
           summary: msg.payload.summary,
           artifacts: msg.payload.artifacts,
+          usage,
         };
         if (workflowTask.coding) {
           if (workflowEngine.submitForReview(workflowTask.workflowId, workflowTask.id, result)) {
@@ -620,11 +670,10 @@ const processMessage = (msg: StarlightMessage) => {
           workflowEngine.submitResult(workflowTask.workflowId, workflowTask.id, result);
         }
       } else if (msg.kind === 'error' || msg.kind === 'cancel') {
-        workflowEngine.failTask(
-          workflowTask.workflowId,
-          workflowTask.id,
-          getMessageInstruction(msg) || `Agent reported ${msg.kind}.`
-        );
+        const error = getMessageInstruction(msg) || `Agent reported ${msg.kind}.`;
+        if (!workflowEngine.escalateTask(workflowTask.workflowId, workflowTask.id, error)) {
+          workflowEngine.failTask(workflowTask.workflowId, workflowTask.id, error);
+        }
       }
     }
     if (msg.kind === 'ack') {

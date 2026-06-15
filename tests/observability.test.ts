@@ -71,6 +71,12 @@ test('calculates operational metrics and correlated request chains', () => {
     retries: 1,
     failures: 1,
     agentUptimePercent: 50,
+    estimatedModelCostUsd: 0,
+    estimatedSavingsUsd: 0,
+    escalations: 0,
+    promptTokens: 0,
+    completionTokens: 0,
+    reportedModelCostUsd: 0,
   });
   assert.deepEqual(getCorrelatedMessageChain(snapshot.messages, ack).map((item) => item.messageId), ['request-1', 'ack-1']);
 });
@@ -103,6 +109,45 @@ test('filters a workflow timeline using workflow, task, and message identities',
     { sequence: 3, eventType: 'agent.ready', entityType: 'agent', entityId: 'Other', payload: {}, createdAt: 3 },
   ];
   assert.deepEqual(getWorkflowTimeline(workflow, events).map((event) => event.sequence), [1, 2]);
+});
+
+test('aggregates routed model cost, savings, escalation, and reported usage', () => {
+  const metrics = calculateBrokerMetrics({
+    agents: [],
+    messages: [],
+    events: [],
+    workflows: [{
+      id: 'routed',
+      name: 'routed',
+      goal: 'route cheaply',
+      createdBy: 'Hub',
+      status: 'completed',
+      createdAt: 1,
+      updatedAt: 2,
+      tasks: [{
+        workflowId: 'routed',
+        id: 'task',
+        owner: 'cloud',
+        goal: 'work',
+        dependencies: [],
+        status: 'completed',
+        attempts: 2,
+        artifacts: [],
+        approved: true,
+        routingHistory: [
+          { estimatedCostUsd: 0, estimatedSavingsUsd: 0.05 },
+          { estimatedCostUsd: 0.02, estimatedSavingsUsd: 0.03 },
+        ],
+        usage: { promptTokens: 100, completionTokens: 25, actualCostUsd: 0.001 },
+      }],
+    }],
+  } as any);
+  assert.equal(metrics.estimatedModelCostUsd, 0.02);
+  assert.equal(metrics.estimatedSavingsUsd, 0.08);
+  assert.equal(metrics.escalations, 1);
+  assert.equal(metrics.promptTokens, 100);
+  assert.equal(metrics.completionTokens, 25);
+  assert.equal(metrics.reportedModelCostUsd, 0.001);
 });
 
 test('health checks inspect Git, CLI, and prompt configuration', () => {
