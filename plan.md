@@ -416,6 +416,34 @@ temporary migration period.
 - Schema migration and routing-decision persistence tests.
 - Existing broker, PTY integration, adapter, build, and packaging tests.
 
+## Milestone 15: Historical Model Recommendations
+
+### Tasks
+
+- [x] Derive task-family signatures from coding mode, capabilities, tools, privacy,
+      capability tier, and context requirements.
+- [x] Learn only from completed routed tasks whose selected model still matches the
+      current agent profile.
+- [x] Recommend the lowest-cost eligible model with successful matching history.
+- [x] Report successful-task count, average cost, average duration, confidence, and
+      alternative evidence.
+- [x] Keep recommendations advisory so user constraints and explicit owners remain
+      authoritative.
+- [x] Display advisory recommendations beside workflow tasks.
+
+### Acceptance Criteria
+
+- Failed, ineligible, changed-model, and non-matching historical tasks are excluded.
+- Recommendations never weaken current privacy, capability, tool, context, or cost constraints.
+- Recommendations survive restart because they are derived from durable workflow history.
+- The UI explains the evidence and confidence behind each recommendation.
+
+### Tests
+
+- Deterministic task-family matching and recommendation ranking tests.
+- Eligibility, changed-model, failed-task, and self-evidence exclusion tests.
+- Existing workflow, persistence, integration, build, and packaging tests.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -432,6 +460,7 @@ temporary migration period.
 12. Five-minute onboarding and workspace presets.
 13. CLI and provider adapter compatibility.
 14. Constraint-aware model routing.
+15. Historical model recommendations.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

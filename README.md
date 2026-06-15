@@ -18,6 +18,7 @@ strong-model tokens only where they matter.
 - Route tasks to the least expensive eligible model with privacy, capability, tool,
   context-window, and cost constraints.
 - Escalate through ordered model fallbacks and inspect assignment reasons and savings.
+- See advisory model recommendations learned from matching successful workflow tasks.
 - Route agent messages through explicit connection graphs.
 - Parse structured `[[STARLIGHT-MSG]]...[[END]]` envelopes from terminal output.
 - Deliver messages to active interactive agent sessions.
@@ -97,6 +98,8 @@ See [ADAPTERS.md](./ADAPTERS.md) for provider compatibility, the adapter contrac
 the community adapter guide.
 See [MODEL_ROUTING.md](./MODEL_ROUTING.md) for model profiles, routed workflow tasks,
 cost estimates, and fallback chains.
+See [MODEL_RECOMMENDATIONS.md](./MODEL_RECOMMENDATIONS.md) for historical matching,
+confidence levels, and recommendation limits.
 
 Use the Lightfold Grid workspace to:
 
@@ -409,6 +412,7 @@ Development is organized into milestone commits. The roadmap covers:
 12. Five-minute onboarding and workspace presets
 13. CLI and provider adapter compatibility
 14. Constraint-aware model routing
+15. Historical model recommendations
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -430,6 +434,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 12: Five-minute onboarding and workspace presets
 - [x] Milestone 13: CLI and provider adapter compatibility
 - [x] Milestone 14: Constraint-aware model routing
+- [x] Milestone 15: Historical model recommendations
 
 ## Open Source Status
 

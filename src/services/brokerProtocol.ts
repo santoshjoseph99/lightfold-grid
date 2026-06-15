@@ -31,6 +31,7 @@ import {
 } from './promptContract';
 import type { BrokerEvent, BrokerObservabilitySnapshot } from './observability';
 import { routeTaskToModel, type AgentModelProfile } from './modelRouting';
+import { recommendModelForTask } from './modelRecommendation';
 
 export type BrokerMessageStatus = 'pending' | ReliableRequestStatus;
 
@@ -385,6 +386,19 @@ export const getReliabilitySettings = () => reliableRequests.getOptions();
 export const setReliabilitySettings = (settings: ReliabilityOptions) => reliableRequests.configure(settings);
 export const getAgentLifecycles = () => agentLifecycle.values();
 export const getWorkflows = () => workflowEngine.values();
+export const getModelRecommendations = () => {
+  const workflows = workflowEngine.values();
+  const profiles = [...agentModelProfiles.values()];
+  return new Map(workflows.flatMap((workflow) => workflow.tasks.flatMap((task) => {
+    const recommendation = recommendModelForTask({
+      workflows,
+      profiles,
+      task,
+      exclude: { workflowId: workflow.id, taskId: task.id },
+    });
+    return recommendation ? [[`${workflow.id}:${task.id}`, recommendation] as const] : [];
+  })));
+};
 export const subscribeToWorkflows = (listener: (workflow: WorkflowRecord) => void) => {
   workflowListeners.add(listener);
   return () => {

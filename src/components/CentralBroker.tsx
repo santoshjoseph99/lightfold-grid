@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Network, ChevronRight, ChevronDown, RefreshCw, XOctagon, Shuffle, CheckCircle, GitBranch } from 'lucide-react';
 import type { AgentConfig } from './SettingsModal';
 import { ObservabilityPanel } from './ObservabilityPanel';
-import { getCorrelatedMessageChain } from '../services/observability';
+import { formatDuration, getCorrelatedMessageChain } from '../services/observability';
 import {
   approveWorkflowTask,
   approveAndMergeWorkflowTask,
@@ -12,6 +12,7 @@ import {
   cancelMessage,
   getDeadLetters,
   getMessagesLog,
+  getModelRecommendations,
   getWorkflows,
   reassignMessage,
   reassignWorkflowTask,
@@ -95,6 +96,7 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
     if (status === 'blocked' || status === 'planned') return 'var(--text-muted)';
     return 'var(--accent-orange)';
   };
+  const modelRecommendations = getModelRecommendations();
 
   return (
     <div
@@ -225,7 +227,9 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
                     <div style={{ width: `${(completed / workflow.tasks.length) * 100}%`, height: '100%', background: 'var(--accent-green)', borderRadius: '4px' }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    {workflow.tasks.map((task) => (
+                    {workflow.tasks.map((task) => {
+                      const recommendation = modelRecommendations.get(`${workflow.id}:${task.id}`);
+                      return (
                       <div key={task.id} style={{ padding: '6px', background: 'rgba(255,255,255,0.02)', borderLeft: `2px solid ${workflowStatusColor(task.status)}`, borderRadius: '4px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6px' }}>
                           <span style={{ fontSize: '10px', fontWeight: 600 }}>{task.id} · {task.owner}</span>
@@ -244,6 +248,13 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
                                 ).join('; ')}
                               </div>
                             )}
+                          </div>
+                        )}
+                        {recommendation && (
+                          <div style={{ fontSize: '8px', color: 'var(--accent-green)', marginTop: '3px' }}>
+                            Historical recommendation: {recommendation.model} on {recommendation.agentId}
+                            {' · '}{recommendation.confidence} confidence · {recommendation.reason}
+                            {recommendation.averageDurationMs !== undefined && ` · ${formatDuration(recommendation.averageDurationMs)} average`}
                           </div>
                         )}
                         {task.usage && (
@@ -299,7 +310,7 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
                           )}
                         </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
                 </div>
               );
