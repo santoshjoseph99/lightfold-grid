@@ -497,6 +497,33 @@ temporary migration period.
 - Deterministic scoring, comparison, and threshold tests.
 - Existing workflow, integration, live Ollama, build, and packaging tests.
 
+## Milestone 18: Automated Public-Alpha Readiness Gates
+
+### Tasks
+
+- [x] Separate repository-controlled release gates from external legal, credential, and
+      real-user blockers.
+- [x] Add an Electron-ABI native smoke test for SQLite and real `node-pty` process creation.
+- [x] Run native smoke and readiness checks in cross-platform CI and release packaging.
+- [x] Add machine-checkable evidence for policies, limitations, approval controls,
+      diagnostic redaction, provenance, and benchmark reproducibility.
+- [x] Publish dedicated known-limitations, source-provenance, and readiness documents.
+- [x] Fail automation when any repository-controlled alpha gate regresses.
+
+### Acceptance Criteria
+
+- `npm run alpha:readiness` passes repository gates and reports external blockers.
+- `npm run native:smoke` verifies native modules using the packaged Electron ABI.
+- CI and release workflows run both checks on Windows, macOS, and Linux.
+- External blockers are never represented as completed by repository automation.
+
+### Tests
+
+- Readiness evaluation, failure, and external-blocker tests.
+- Native SQLite and real PTY smoke execution.
+- Release workflow contract tests.
+- Existing deterministic, integration, live Ollama, build, and packaging tests.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -516,6 +543,7 @@ temporary migration period.
 15. Historical model recommendations.
 16. Workflow cost and cloud-usage budgets.
 17. Public reference benchmark and proof format.
+18. Automated public-alpha readiness gates.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

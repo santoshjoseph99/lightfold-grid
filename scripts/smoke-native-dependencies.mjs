@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+if (!process.argv.includes('--electron-runtime')) {
+  const { default: electronPath } = await import('electron');
+  const result = spawnSync(electronPath, [import.meta.filename, '--electron-runtime'], {
+    encoding: 'utf8',
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+  });
+  process.stdout.write(result.stdout || '');
+  process.stderr.write(result.stderr || '');
+  process.exit(result.status ?? 1);
+}
+
+const { default: Database } = await import('better-sqlite3');
+const { default: pty } = await import('node-pty');
+
+const directory = mkdtempSync(join(tmpdir(), 'lightfold-grid-native-smoke-'));
+try {
+  const database = new Database(join(directory, 'smoke.sqlite'));
+  database.exec('CREATE TABLE smoke (value TEXT NOT NULL)');
+  database.prepare('INSERT INTO smoke (value) VALUES (?)').run('sqlite-ok');
+  assert.equal(database.prepare('SELECT value FROM smoke').get().value, 'sqlite-ok');
+  database.close();
+
+  const executable = process.execPath;
+  const args = ['-e', "process.stdout.write('pty-ok')"];
+  const terminal = pty.spawn(executable, args, {
+    cols: 80,
+    rows: 24,
+    cwd: directory,
+    env: Object.fromEntries(Object.entries(process.env).filter((entry) => entry[1] !== undefined)),
+  });
+  const output = await new Promise((resolve, reject) => {
+    let value = '';
+    const timeout = setTimeout(() => {
+      terminal.kill();
+      reject(new Error('node-pty smoke test timed out.'));
+    }, 5_000);
+    terminal.onData((data) => { value += data; });
+    terminal.onExit(({ exitCode }) => {
+      clearTimeout(timeout);
+      exitCode === 0 ? resolve(value) : reject(new Error(`node-pty smoke process exited ${exitCode}.`));
+    });
+  });
+  assert.match(output, /pty-ok/);
+  console.log(`Native dependency smoke passed on ${process.platform}/${process.arch}.`);
+} finally {
+  rmSync(directory, { recursive: true, force: true });
+}

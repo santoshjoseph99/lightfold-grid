@@ -10,6 +10,8 @@ Install dependencies and create packages for the current operating system:
 
 ```bash
 npm ci
+npm run native:smoke
+npm run alpha:readiness
 npm test
 npm run package
 ```
@@ -29,7 +31,8 @@ SQLite modules.
 ## Alpha Release Process
 
 1. Update the version in `package.json` and `package-lock.json`.
-2. Run `npm ci`, `npm test`, `npm run test:integration`, and `npm run package`.
+2. Run `npm ci`, `npm run native:smoke`, `npm run alpha:readiness`, `npm test`,
+   `npm run test:integration`, and `npm run package`.
 3. Commit the release version.
 4. Create and push a matching tag such as `v0.1.0-alpha.2`.
 5. Confirm the **Alpha Release** workflow succeeds on macOS, Linux, and Windows.

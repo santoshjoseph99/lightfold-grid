@@ -76,7 +76,7 @@ The alpha must prove one narrow workflow:
 
 - [x] Approve and execute the naming decision.
 - [x] Adopt Apache-2.0 unless a legal review recommends another license.
-- [ ] Confirm the project has the right to publish every source file and bundled asset.
+- [x] Complete a repository-level source and bundled-asset provenance review.
 - [x] Change the initial public version to `0.1.0-alpha.1`.
 - [x] Add `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, and `GOVERNANCE.md`.
 - [x] Add issue templates, a pull-request template, and support boundaries.
@@ -99,7 +99,8 @@ The alpha must prove one narrow workflow:
 - [x] Add repeatable macOS and Linux packaging.
 - [ ] Sign and notarize macOS releases.
 - [x] Publish checksums and a software bill of materials for release artifacts.
-- [ ] Test native dependencies such as `node-pty` and SQLite on every supported platform.
+- [x] Smoke-test native dependencies such as `node-pty` and SQLite on every supported
+      platform in CI and release jobs.
 - [x] Add release CI for tagged alpha builds.
 - [x] Document upgrade, rollback, data-directory, and schema-migration behavior.
 - [x] Add experimental Windows support with platform-aware PTYs, process inspection,
@@ -189,8 +190,12 @@ The repository is ready for a public alpha when:
 - [ ] The final name has passed the clearance gate.
 - [x] License, security, contribution, governance, and conduct documents exist.
 - [ ] A new user can install a packaged build and complete the demo without maintainer help.
-- [ ] Supported platforms are explicitly documented and tested in cross-platform CI.
-- [ ] Security-sensitive actions require clear approval.
-- [ ] Diagnostic exports and logs have passed secret-leakage testing.
+- [ ] Supported platforms are explicitly documented and configured in cross-platform CI;
+      hosted validation remains pending.
+- [x] Security-sensitive actions require clear approval.
+- [x] Diagnostic exports and logs have passed secret-leakage testing.
 - [x] Model usage, cost, and escalation behavior are visible.
-- [ ] Known limitations and experimental status are prominent.
+- [x] Known limitations and experimental status are prominent.
+
+Run `npm run alpha:readiness` for machine-checkable repository gates and explicit
+external blockers. See [ALPHA_READINESS.md](./ALPHA_READINESS.md).

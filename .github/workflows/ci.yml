@@ -26,6 +26,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run native:smoke
+      - run: npm run alpha:readiness
       - run: npm test
       - run: npm run benchmark:reference
       - run: git diff --exit-code -- benchmark-results

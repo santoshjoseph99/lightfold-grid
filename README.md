@@ -9,6 +9,8 @@ strong-model tokens only where they matter.
 > CLIs and approved coding tasks run with your user permissions and can modify selected
 > repositories. Use trusted CLIs, prompts, repositories, models, and test commands.
 
+Read [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md) before installing or running agents.
+
 ## Features
 
 - Run multiple CLI agents in managed Electron PTYs.
@@ -106,6 +108,10 @@ See [WORKFLOW_BUDGETS.md](./WORKFLOW_BUDGETS.md) for total-cost, cloud-cost, and
 cloud-assignment routing guardrails.
 See [BENCHMARKS.md](./BENCHMARKS.md) for the public reference suite, reported metrics,
 raw results, and interpretation limits.
+Run `npm run alpha:readiness` to inspect machine-checkable repository gates and the
+external blockers that still prevent a broadly trusted public alpha.
+See [ALPHA_READINESS.md](./ALPHA_READINESS.md) for gate definitions and
+[SOURCE_PROVENANCE.md](./SOURCE_PROVENANCE.md) for the repository publishability record.
 
 Use the Lightfold Grid workspace to:
 
@@ -391,6 +397,7 @@ and application-data locations.
 
 ## Current Limitations
 
+- See [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md) for the complete, prominent list.
 - Direct CLI and custom adapters require agents to follow the versioned protocol; the
   bundled Ollama adapter owns lifecycle and correlated terminal messages.
 - Live delivery timers are reconstructed from persisted request state after restart.
@@ -421,6 +428,7 @@ Development is organized into milestone commits. The roadmap covers:
 15. Historical model recommendations
 16. Workflow cost and cloud-usage budgets
 17. Public reference benchmark and proof format
+18. Automated public-alpha readiness gates
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -445,6 +453,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 15: Historical model recommendations
 - [x] Milestone 16: Workflow cost and cloud-usage budgets
 - [x] Milestone 17: Public reference benchmark and proof format
+- [x] Milestone 18: Automated public-alpha readiness gates
 
 ## Open Source Status
 
