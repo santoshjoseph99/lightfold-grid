@@ -23,6 +23,7 @@
     "package:win": "npm run build && electron-builder --win --publish never",
     "release:validate": "node scripts/validate-release-tag.mjs",
     "release:metadata": "node scripts/generate-release-metadata.mjs",
+    "release:signing-readiness": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/check-release-signing.mjs",
     "demo:setup": "node scripts/setup-demo.mjs",
     "benchmark:reference": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/run-benchmark.mjs",
     "benchmark:live:contract": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/validate-live-benchmark.mjs benchmarks/live-example/campaign.json --check-only",
@@ -48,6 +49,7 @@
     "xterm-addon-fit": "^0.8.0"
   },
   "devDependencies": {
+    "@electron/notarize": "^3.1.1",
     "@types/node": "^20.14.2",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
@@ -89,8 +91,13 @@
       }
     ],
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "afterSign": "scripts/notarize.mjs",
     "mac": {
       "category": "public.app-category.developer-tools",
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "target": [
         "dmg",
         "zip"
@@ -98,12 +105,14 @@
     },
     "linux": {
       "category": "Development",
+      "icon": "build/icon.png",
       "target": [
         "AppImage",
         "tar.gz"
       ]
     },
     "win": {
+      "icon": "build/icon.png",
       "target": [
         "nsis",
         "zip"

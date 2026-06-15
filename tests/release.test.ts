@@ -18,6 +18,11 @@ test('packages the renderer, Electron main process, helpers, and native modules'
     'package.json',
   ]);
   assert.deepEqual(packageJson.build.asarUnpack, ['**/*.node']);
+  assert.equal(packageJson.build.mac.icon, 'build/icon.icns');
+  assert.equal(packageJson.build.win.icon, 'build/icon.png');
+  assert.equal(packageJson.build.linux.icon, 'build/icon.png');
+  assert.equal(packageJson.build.mac.hardenedRuntime, true);
+  assert.equal(packageJson.build.afterSign, 'scripts/notarize.mjs');
   assert.deepEqual(packageJson.build.extraResources[0], {
     from: 'bin',
     to: 'bin',
@@ -38,6 +43,9 @@ test('tagged alpha releases package every supported desktop platform', () => {
   assert.match(releaseWorkflow, /native:smoke/);
   assert.match(releaseWorkflow, /alpha:readiness/);
   assert.match(releaseWorkflow, /community:readiness/);
+  assert.match(releaseWorkflow, /release:signing-readiness/);
+  assert.match(releaseWorkflow, /MAC_CSC_LINK/);
+  assert.match(releaseWorkflow, /WIN_CSC_LINK/);
   assert.match(releaseWorkflow, /benchmark:live:contract/);
   assert.match(releaseWorkflow, /test:integration/);
   assert.match(releaseWorkflow, /generate-release-metadata/);

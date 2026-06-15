@@ -15,6 +15,7 @@ const paths = [
   'KNOWN_LIMITATIONS.md',
   'LICENSE',
   'README.md',
+  'RELEASE_SIGNING.md',
   'SECURITY.md',
   'SOURCE_PROVENANCE.md',
   'SUPPORT.md',

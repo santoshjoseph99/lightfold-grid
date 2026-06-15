@@ -44,7 +44,8 @@ in shared workspace files should use portable npm scripts where possible.
 
 ## Known Limitations
 
-- Windows installers and code signing are not included yet.
+- Windows code-signing configuration is ready, but trusted publisher credentials and a
+  successful hosted signed installer remain external release requirements.
 - WSL agent sessions are not automatically discovered or translated.
 - Process readiness observes direct child processes; CLIs that immediately daemonize
   may require manual investigation.

@@ -116,6 +116,8 @@ See [ALPHA_READINESS.md](./ALPHA_READINESS.md) for gate definitions and
 Run `npm run community:readiness` to verify the private-alpha and contribution loop.
 See [PRIVATE_ALPHA.md](./PRIVATE_ALPHA.md), [ROADMAP.md](./ROADMAP.md), and
 [COMMUNITY_READINESS.md](./COMMUNITY_READINESS.md).
+Run `npm run release:signing-readiness` to inspect packaging identity and external
+credential blockers. See [RELEASE_SIGNING.md](./RELEASE_SIGNING.md).
 
 Use the Lightfold Grid workspace to:
 
@@ -395,9 +397,10 @@ Create an installable package for the current platform:
 npm run package
 ```
 
-Packages are unsigned experimental alpha artifacts. See [RELEASES.md](./RELEASES.md)
-for platform commands, checksum verification, release automation, upgrades, rollback,
-and application-data locations.
+Manual and local packages may be unsigned experimental alpha artifacts; tagged
+releases require configured signing credentials. See [RELEASES.md](./RELEASES.md) for
+platform commands, checksum verification, release automation, upgrades, rollback, and
+application-data locations.
 
 ## Current Limitations
 
@@ -408,7 +411,7 @@ and application-data locations.
 - Live-model behavior remains dependent on the selected CLI and model; Ollama coverage
   is intentionally opt-in.
 - Agent CLIs are not sandboxed.
-- Windows support is experimental; installers, code signing, and WSL integration are
+- Windows support is experimental; trusted-publisher evidence and WSL integration are
   not included yet. See [WINDOWS.md](./WINDOWS.md).
 
 ## Roadmap
@@ -435,6 +438,7 @@ Development is organized into milestone commits. The roadmap covers:
 18. Automated public-alpha readiness gates
 19. Private-alpha and community launch kit
 20. Pinned live-model benchmark evidence pipeline
+21. Application identity and credential-ready signing
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -462,13 +466,14 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 18: Automated public-alpha readiness gates
 - [x] Milestone 19: Private-alpha and community launch kit
 - [x] Milestone 20: Pinned live-model benchmark evidence pipeline
+- [x] Milestone 21: Application identity and credential-ready signing
 
 ## Open Source Status
 
 Lightfold Grid is licensed under Apache-2.0 and has contribution, conduct, governance,
 support, security, private-alpha, and outcome-roadmap materials. Release signing,
-independent user validation, and broader name clearance still need to be completed
-before the first public release.
+notarization, independent user validation, and broader name clearance still require
+external evidence before the first public release.
 
 The project was renamed from Starlight to **Lightfold Grid**. Broader trademark and
 brand clearance remains required before treating the name as protected. See

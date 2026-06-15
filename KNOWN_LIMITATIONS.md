@@ -27,8 +27,9 @@ sandbox or a production operations platform.
 
 ## Platforms And Releases
 
-- Alpha packages are unsigned. macOS notarization and trusted Windows publisher
-  certificates are not configured.
+- Manual and local alpha packages may be unsigned. Tagged releases are credential-ready,
+  but notarization and trusted-publisher status remain unproven until real certificates
+  are configured and a hosted tagged release succeeds.
 - Windows support is experimental. WSL discovery and command translation are not included.
 - Native dependency compatibility is smoke-tested in CI, but not every shell, CLI,
   repository, architecture, or operating-system release is covered.

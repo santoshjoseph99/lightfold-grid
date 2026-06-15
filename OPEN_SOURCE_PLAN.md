@@ -106,6 +106,11 @@ The alpha must prove one narrow workflow:
 - [x] Add experimental Windows support with platform-aware PTYs, process inspection,
       coding commands, documentation, and CI coverage.
 
+The repository includes project-authored app icons, hardened-runtime entitlements,
+credential-aware notarization, and a tagged-release signing gate. Actual signing,
+notarization acceptance, and trusted-publisher evidence remain blocked on maintainer
+credentials and a successful hosted release.
+
 ### 4. Five-Minute Onboarding
 
 - [x] Replace the prototype-focused README opening with the product thesis and alpha warning.

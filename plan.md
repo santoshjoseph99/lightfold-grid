@@ -583,6 +583,34 @@ temporary migration period.
 - Existing benchmark, readiness, deterministic, integration, live Ollama, build, and
   packaging tests.
 
+## Milestone 21: Application Identity And Credential-Ready Signing
+
+### Tasks
+
+- [x] Add project-authored SVG, PNG, and ICNS application identity assets.
+- [x] Configure platform packages to use Lightfold Grid icons.
+- [x] Add macOS hardened-runtime entitlements and a credential-aware notarization hook.
+- [x] Allow unsigned local and manual packages while requiring credentials for tagged
+      macOS and Windows releases.
+- [x] Add a signing-readiness audit that separates repository preparation from external
+      certificate blockers.
+- [x] Document required secrets, rotation, unsigned-build boundaries, and verification.
+- [x] Keep actual signature, notarization, and trusted-publisher evidence external.
+
+### Acceptance Criteria
+
+- Packaged apps use project-authored Lightfold Grid identity instead of Electron defaults.
+- `npm run release:signing-readiness` passes repository gates and reports credential blockers.
+- Credential-required mode fails when a tagged platform lacks required secrets.
+- Tagged macOS packaging is hardened and invokes notarization when credentials exist.
+- Manual and local packaging remain available without maintainer credentials.
+
+### Tests
+
+- Signing-readiness repository, credential, and failure tests.
+- Packaging identity and tagged-release workflow contract tests.
+- Existing readiness, deterministic, integration, live Ollama, build, and packaging tests.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -605,6 +633,7 @@ temporary migration period.
 18. Automated public-alpha readiness gates.
 19. Private-alpha and community launch kit.
 20. Pinned live-model benchmark evidence pipeline.
+21. Application identity and credential-ready signing.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

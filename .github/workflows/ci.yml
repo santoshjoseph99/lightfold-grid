@@ -29,6 +29,7 @@ jobs:
       - run: npm run native:smoke
       - run: npm run alpha:readiness
       - run: npm run community:readiness
+      - run: npm run release:signing-readiness
       - run: npm test
       - run: npm run benchmark:reference
       - run: npm run benchmark:live:contract

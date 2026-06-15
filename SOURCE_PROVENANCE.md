@@ -11,6 +11,8 @@ experimental public alpha.
   videos, model weights, or copied proprietary source files.
 - The demo repository, fake agent, prompts, benchmark fixture data, and workspace
   examples are project-authored test and documentation material.
+- The Lightfold Grid SVG, PNG, and ICNS application icons are project-authored assets
+  published under Apache-2.0.
 - Generated release packages are not committed as source.
 
 ## Dependencies

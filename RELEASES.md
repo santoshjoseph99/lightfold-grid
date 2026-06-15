@@ -1,8 +1,9 @@
 # Releases
 
 Lightfold Grid publishes experimental alpha artifacts for macOS, Linux, and Windows.
-Alpha artifacts are currently unsigned. Review the checksum before installing, and
-expect the operating system to display an unverified-developer warning.
+Tagged releases require signing credentials; manual and local packages may remain
+unsigned. Review the checksum before installing, and expect unverified-development
+artifacts to display an operating-system warning.
 
 ## Build Packages Locally
 
@@ -12,6 +13,7 @@ Install dependencies and create packages for the current operating system:
 npm ci
 npm run native:smoke
 npm run alpha:readiness
+npm run release:signing-readiness
 npm test
 npm run package
 ```
@@ -31,8 +33,9 @@ SQLite modules.
 ## Alpha Release Process
 
 1. Update the version in `package.json` and `package-lock.json`.
-2. Run `npm ci`, `npm run native:smoke`, `npm run alpha:readiness`, `npm test`,
-   `npm run test:integration`, and `npm run package`.
+2. Run `npm ci`, `npm run native:smoke`, `npm run alpha:readiness`,
+   `npm run release:signing-readiness`, `npm test`, `npm run test:integration`, and
+   `npm run package`.
 3. Commit the release version.
 4. Create and push a matching tag such as `v0.1.0-alpha.2`.
 5. Confirm the **Alpha Release** workflow succeeds on macOS, Linux, and Windows.
@@ -42,8 +45,10 @@ the platform packages, `SHA256SUMS.txt`, and an SPDX software bill of materials 
 prerelease GitHub release. A manual workflow run builds downloadable CI artifacts but
 does not create a GitHub release.
 
-Signing, macOS notarization, and trusted Windows publisher certificates are not
-configured yet. Do not describe unsigned alpha artifacts as production-ready.
+Tagged releases require configured signing credentials and macOS notarization
+credentials before packaging. Manual and local packages may remain unsigned. See
+[RELEASE_SIGNING.md](./RELEASE_SIGNING.md) for required secrets, behavior, and rotation.
+Do not describe unsigned alpha artifacts as trusted or production-ready.
 
 ## Verify A Download
 

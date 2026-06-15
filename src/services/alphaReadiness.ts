@@ -24,6 +24,7 @@ export const evaluateAlphaReadiness = ({ packageJson, files }: AlphaReadinessInp
   const limitations = read('KNOWN_LIMITATIONS.md');
   const benchmarks = read('BENCHMARKS.md');
   const liveBenchmarkExample = read('benchmarks/live-example/campaign.json');
+  const signing = read('RELEASE_SIGNING.md');
   const tests = Object.entries(files)
     .filter(([path]) => path.startsWith('tests/'))
     .map(([, value]) => value)
@@ -110,6 +111,18 @@ export const evaluateAlphaReadiness = ({ packageJson, files }: AlphaReadinessInp
         : 'block',
       external: false,
       detail: 'CI validates the pinned provenance, repetition, raw-evidence, and comparison contract.',
+    },
+    {
+      id: 'credential-ready-signing',
+      label: 'Credential-ready release signing',
+      status: /release:signing-readiness/.test(ci) &&
+        /release:signing-readiness/.test(release) &&
+        /MAC_CSC_LINK/.test(signing) &&
+        /WIN_CSC_LINK/.test(signing)
+        ? 'pass'
+        : 'block',
+      external: false,
+      detail: 'Repository configuration and automation are ready to require signing credentials.',
     },
   ];
   const externalBlockers: AlphaReadinessCheck[] = [
