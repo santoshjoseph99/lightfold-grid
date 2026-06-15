@@ -31,6 +31,7 @@ jobs:
       - run: npm run community:readiness
       - run: npm test
       - run: npm run benchmark:reference
+      - run: npm run benchmark:live:contract
       - run: git diff --exit-code -- benchmark-results
       - run: npm run test:integration
       - run: npm run build

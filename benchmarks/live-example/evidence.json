@@ -1,0 +1,17 @@
+{
+  "notice": "Fixture-only evidence used to validate the live benchmark evidence pipeline.",
+  "records": [
+    "strong:spec:1",
+    "strong:spec:2",
+    "strong:spec:3",
+    "strong:code:1",
+    "strong:code:2",
+    "strong:code:3",
+    "mixed:spec:1",
+    "mixed:spec:2",
+    "mixed:spec:3",
+    "mixed:code:1",
+    "mixed:code:2",
+    "mixed:code:3"
+  ]
+}

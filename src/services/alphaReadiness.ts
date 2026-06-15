@@ -22,6 +22,8 @@ export const evaluateAlphaReadiness = ({ packageJson, files }: AlphaReadinessInp
   const readme = read('README.md');
   const security = read('SECURITY.md');
   const limitations = read('KNOWN_LIMITATIONS.md');
+  const benchmarks = read('BENCHMARKS.md');
+  const liveBenchmarkExample = read('benchmarks/live-example/campaign.json');
   const tests = Object.entries(files)
     .filter(([path]) => path.startsWith('tests/'))
     .map(([, value]) => value)
@@ -97,6 +99,17 @@ export const evaluateAlphaReadiness = ({ packageJson, files }: AlphaReadinessInp
       status: /benchmark:reference/.test(ci) && Boolean(read('benchmark-results/latest.json')) ? 'pass' : 'block',
       external: false,
       detail: 'CI verifies committed benchmark summaries against the reference suite.',
+    },
+    {
+      id: 'live-proof-contract',
+      label: 'Pinned live-model evidence contract',
+      status: /benchmark:live:contract/.test(ci) &&
+        /benchmark:live:validate/.test(benchmarks) &&
+        Boolean(liveBenchmarkExample)
+        ? 'pass'
+        : 'block',
+      external: false,
+      detail: 'CI validates the pinned provenance, repetition, raw-evidence, and comparison contract.',
     },
   ];
   const externalBlockers: AlphaReadinessCheck[] = [

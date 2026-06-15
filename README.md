@@ -23,6 +23,7 @@ Read [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md) before installing or running
 - See advisory model recommendations learned from matching successful workflow tasks.
 - Enforce durable workflow-level estimated-cost and cloud-usage routing budgets.
 - Run a reproducible reference benchmark comparing strong-model, mixed-model, and local-only teams.
+- Validate pinned, repeated live-model campaigns and their raw evidence before publication.
 - Route agent messages through explicit connection graphs.
 - Parse structured `[[STARLIGHT-MSG]]...[[END]]` envelopes from terminal output.
 - Deliver messages to active interactive agent sessions.
@@ -433,6 +434,7 @@ Development is organized into milestone commits. The roadmap covers:
 17. Public reference benchmark and proof format
 18. Automated public-alpha readiness gates
 19. Private-alpha and community launch kit
+20. Pinned live-model benchmark evidence pipeline
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -459,6 +461,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 17: Public reference benchmark and proof format
 - [x] Milestone 18: Automated public-alpha readiness gates
 - [x] Milestone 19: Private-alpha and community launch kit
+- [x] Milestone 20: Pinned live-model benchmark evidence pipeline
 
 ## Open Source Status
 

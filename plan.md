@@ -552,6 +552,37 @@ temporary migration period.
 - Community-readiness evaluation, regression, and external-blocker tests.
 - Existing readiness, deterministic, integration, live Ollama, build, and packaging tests.
 
+## Milestone 20: Pinned Live-Model Benchmark Evidence Pipeline
+
+### Tasks
+
+- [x] Define a versioned campaign contract for pinned repositories, prompt artifacts,
+      models, pricing, configurations, repetitions, and raw evidence.
+- [x] Require at least three complete repetitions of every configuration/task pair.
+- [x] Validate configuration assignments, timestamps, metrics, safe evidence paths,
+      unique evidence records, and SHA-256 bundle integrity.
+- [x] Aggregate repeated outcomes into completion, validation, cost, latency, retry,
+      escalation, intervention, and cloud-assignment comparisons.
+- [x] Keep fixture campaigns visibly distinct from publishable live evidence.
+- [x] Add a publishable-live validation CLI and a fixture contract check to CI and
+      release packaging.
+- [x] Preserve actual repeated live-model comparisons as external evidence.
+
+### Acceptance Criteria
+
+- `npm run benchmark:live:contract` validates the committed fixture without making
+  model-performance claims.
+- `npm run benchmark:live:validate -- path/to/campaign.json` rejects fixture provenance
+  and incomplete, unpinned, mismatched, unsafe, or tampered evidence.
+- Every summarized live result is traceable to a unique raw evidence record.
+- Repository readiness passes while the actual live-comparison external blocker remains.
+
+### Tests
+
+- Campaign completeness, provenance, assignment, raw-evidence, and aggregation tests.
+- Existing benchmark, readiness, deterministic, integration, live Ollama, build, and
+  packaging tests.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -573,6 +604,7 @@ temporary migration period.
 17. Public reference benchmark and proof format.
 18. Automated public-alpha readiness gates.
 19. Private-alpha and community launch kit.
+20. Pinned live-model benchmark evidence pipeline.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

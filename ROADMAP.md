@@ -33,6 +33,8 @@ measure whether mixed-model teams preserve validated outcomes at lower estimated
 Evidence:
 
 - Pinned live-model comparisons publish configurations and raw outcomes.
+- Every published comparison passes the pinned live-evidence provenance and integrity
+  validator.
 - Users can inspect cost, cloud usage, retries, and escalations per workflow.
 - Routing recommendations remain advisory and respect user constraints.
 

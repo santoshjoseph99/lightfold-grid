@@ -36,6 +36,7 @@ jobs:
       - run: npm run alpha:readiness
       - run: npm run community:readiness
       - run: npm test
+      - run: npm run benchmark:live:contract
       - run: npm run test:integration
       - run: npm run ${{ matrix.command }}
         env:

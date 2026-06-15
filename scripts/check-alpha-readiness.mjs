@@ -18,6 +18,7 @@ const paths = [
   'SECURITY.md',
   'SOURCE_PROVENANCE.md',
   'SUPPORT.md',
+  'benchmarks/live-example/campaign.json',
   'benchmark-results/latest.json',
   'tests/observability.test.ts',
   'tests/security-policy.test.ts',

@@ -25,6 +25,8 @@
     "release:metadata": "node scripts/generate-release-metadata.mjs",
     "demo:setup": "node scripts/setup-demo.mjs",
     "benchmark:reference": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/run-benchmark.mjs",
+    "benchmark:live:contract": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/validate-live-benchmark.mjs benchmarks/live-example/campaign.json --check-only",
+    "benchmark:live:validate": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/validate-live-benchmark.mjs --require-live",
     "native:smoke": "node scripts/smoke-native-dependencies.mjs",
     "alpha:readiness": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/check-alpha-readiness.mjs",
     "community:readiness": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/check-community-launch.mjs",

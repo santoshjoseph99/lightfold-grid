@@ -154,6 +154,9 @@ This workstream turns the project's intended differentiator into a measurable fe
 The committed deterministic reference suite proves the format and comparison logic.
 Live-model performance claims remain blocked on repeated runs with pinned models,
 prompts, repositories, pricing, and published raw outcomes.
+The repository now validates a fixture-only example of that evidence contract with
+`npm run benchmark:live:contract`. Publishable campaigns must pass
+`npm run benchmark:live:validate`.
 
 Suggested alpha threshold:
 

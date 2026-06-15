@@ -19,6 +19,9 @@ limitations, cross-platform CI, native smoke coverage, security approvals, diagn
 redaction evidence, source provenance, and reproducible benchmark summaries. A missing
 repository-controlled gate exits unsuccessfully.
 
+The repository gate also validates the pinned live-model evidence contract and fixture
+campaign. Actual live-model outcomes remain external evidence.
+
 External blockers are reported but do not make the repository audit exit unsuccessfully:
 
 - successful hosted Windows, macOS, and Linux CI runs on the public branch;

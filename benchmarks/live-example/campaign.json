@@ -1,0 +1,100 @@
+{
+  "kind": "lightfold-live-benchmark",
+  "schemaVersion": 1,
+  "provenance": "fixture",
+  "id": "live-contract-example",
+  "label": "Lightfold Grid Live Benchmark Contract Example",
+  "collectedAt": "2026-06-15T00:00:00.000Z",
+  "repetitions": 3,
+  "repositories": [
+    {
+      "id": "demo",
+      "url": "https://example.invalid/lightfold-grid-demo.git",
+      "commit": "0123456789abcdef0123456789abcdef01234567"
+    }
+  ],
+  "promptSets": [
+    {
+      "id": "roles-v1",
+      "version": "1.0.0",
+      "path": "prompts.md",
+      "sha256": "00a1328008a7d8c1edb4466e9886237d07c14285d3a80c2a9b1cdf7db88c9d5e"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "spec",
+      "category": "specification",
+      "description": "Produce acceptance criteria.",
+      "repositoryId": "demo",
+      "promptId": "roles-v1",
+      "validationRequired": true
+    },
+    {
+      "id": "code",
+      "category": "coding",
+      "description": "Implement a scoped change.",
+      "repositoryId": "demo",
+      "promptId": "roles-v1",
+      "validationRequired": true
+    }
+  ],
+  "models": [
+    {
+      "id": "cloud-pinned",
+      "label": "Pinned cloud model",
+      "provider": "example-cloud",
+      "modelVersion": "cloud-model-2026-06-01",
+      "privacy": "cloud",
+      "inputCostPerMillionTokens": 5,
+      "outputCostPerMillionTokens": 15,
+      "pricingRetrievedAt": "2026-06-15T00:00:00.000Z"
+    },
+    {
+      "id": "local-pinned",
+      "label": "Pinned local model",
+      "provider": "example-local",
+      "modelVersion": "local-model-q4-sha256-example",
+      "privacy": "local",
+      "inputCostPerMillionTokens": 0,
+      "outputCostPerMillionTokens": 0,
+      "pricingRetrievedAt": "2026-06-15T00:00:00.000Z"
+    }
+  ],
+  "configurations": [
+    {
+      "id": "strong",
+      "label": "Strong model everywhere",
+      "assignments": {
+        "specification": "cloud-pinned",
+        "coding": "cloud-pinned"
+      }
+    },
+    {
+      "id": "mixed",
+      "label": "Mixed-model team",
+      "assignments": {
+        "specification": "local-pinned",
+        "coding": "cloud-pinned"
+      }
+    }
+  ],
+  "runs": [
+    { "id": "strong-spec-1", "configurationId": "strong", "repetition": 1, "taskId": "spec", "modelId": "cloud-pinned", "startedAt": "2026-06-15T00:00:00.000Z", "finishedAt": "2026-06-15T00:00:01.000Z", "completed": true, "validationPassed": true, "latencyMs": 1000, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 1000, "completionTokens": 500, "evidencePath": "evidence.json", "evidenceRecordId": "strong:spec:1", "evidenceSha256": "1cbdbb792ef5e1cefda91248d2639e8629090cf455bff712e68fcedb5d433aa4" },
+    { "id": "strong-spec-2", "configurationId": "strong", "repetition": 2, "taskId": "spec", "modelId": "cloud-pinned", "startedAt": "2026-06-15T00:01:00.000Z", "finishedAt": "2026-06-15T00:01:01.100Z", "completed": true, "validationPassed": true, "latencyMs": 1100, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 1000, "completionTokens": 500, "evidencePath": "evidence.json", "evidenceRecordId": "strong:spec:2", "evidenceSha256": "1cbdbb792ef5e1cefda91248d2639e8629090cf455bff712e68fcedb5d433aa4" },
+    { "id": "strong-spec-3", "configurationId": "strong", "repetition": 3, "taskId": "spec", "modelId": "cloud-pinned", "startedAt": "2026-06-15T00:02:00.000Z", "finishedAt": "2026-06-15T00:02:01.200Z", "completed": true, "validationPassed": true, "latencyMs": 1200, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 1000, "completionTokens": 500, "evidencePath": "evidence.json", "evidenceRecordId": "strong:spec:3", "evidenceSha256": "1cbdbb792ef5e1cefda91248d2639e8629090cf455bff712e68fcedb5d433aa4" },
+    { "id": "strong-code-1", "configurationId": "strong", "repetition": 1, "taskId": "code", "modelId": "cloud-pinned", "startedAt": "2026-06-15T00:03:00.000Z", "finishedAt": "2026-06-15T00:03:03.000Z", "completed": true, "validationPassed": true, "latencyMs": 3000, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 3000, "completionTokens": 1000, "evidencePath": "evidence.json", "evidenceRecordId": "strong:code:1", "evidenceSha256": "1cbdbb792ef5e1cefda91248d2639e8629090cf455bff712e68fcedb5d433aa4" },
+    { "id": "strong-code-2", "configurationId": "strong", "repetition": 2, "taskId": "code", "modelId": "cloud-pinned", "startedAt": "2026-06-15T00:04:00.000Z", "finishedAt": "2026-06-15T00:04:03.100Z", "completed": true, "validationPassed": true, "latencyMs": 3100, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 3000, "completionTokens": 1000, "evidencePath": "evidence.json", "evidenceRecordId": "strong:code:2", "evidenceSha256": "1cbdbb792ef5e1cefda91248d2639e8629090cf455bff712e68fcedb5d433aa4" },
+    { "id": "strong-code-3", "configurationId": "strong", "repetition": 3, "taskId": "code", "modelId": "cloud-pinned", "startedAt": "2026-06-15T00:05:00.000Z", "finishedAt": "2026-06-15T00:05:03.200Z", "completed": true, "validationPassed": true, "latencyMs": 3200, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 3000, "completionTokens": 1000, "evidencePath": "evidence.json", "evidenceRecordId": "strong:code:3", "evidenceSha256": "1cbdbb792ef5e1cefda91248d2639e8629090cf455bff712e68fcedb5d433aa4" },
+    { "id": "mixed-spec-1", "configurationId": "mixed", "repetition": 1, "taskId": "spec", "modelId": "local-pinned", "startedAt": "2026-06-15T00:06:00.000Z", "finishedAt": "2026-06-15T00:06:02.000Z", "completed": true, "validationPassed": true, "latencyMs": 2000, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 1200, "completionTokens": 600, "evidencePath": "evidence.json", "evidenceRecordId": "mixed:spec:1", "evidenceSha256": "1cbdbb792ef5e1cefda91248d2639e8629090cf455bff712e68fcedb5d433aa4" },
+    { "id": "mixed-spec-2", "configurationId": "mixed", "repetition": 2, "taskId": "spec", "modelId": "local-pinned", "startedAt": "2026-06-15T00:07:00.000Z", "finishedAt": "2026-06-15T00:07:02.100Z", "completed": true, "validationPassed": true, "latencyMs": 2100, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 1200, "completionTokens": 600, "evidencePath": "evidence.json", "evidenceRecordId": "mixed:spec:2", "evidenceSha256": "1cbdbb792ef5e1cefda91248d2639e8629090cf455bff712e68fcedb5d433aa4" },
+    { "id": "mixed-spec-3", "configurationId": "mixed", "repetition": 3, "taskId": "spec", "modelId": "local-pinned", "startedAt": "2026-06-15T00:08:00.000Z", "finishedAt": "2026-06-15T00:08:02.200Z", "completed": true, "validationPassed": true, "latencyMs": 2200, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 1200, "completionTokens": 600, "evidencePath": "evidence.json", "evidenceRecordId": "mixed:spec:3", "evidenceSha256": "1cbdbb792ef5e1cefda91248d2639e8629090cf455bff712e68fcedb5d433aa4" },
+    { "id": "mixed-code-1", "configurationId": "mixed", "repetition": 1, "taskId": "code", "modelId": "cloud-pinned", "startedAt": "2026-06-15T00:09:00.000Z", "finishedAt": "2026-06-15T00:09:03.000Z", "completed": true, "validationPassed": true, "latencyMs": 3000, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 3000, "completionTokens": 1000, "evidencePath": "evidence.json", "evidenceRecordId": "mixed:code:1", "evidenceSha256": "1cbdbb792ef5e1cefda91248d2639e8629090cf455bff712e68fcedb5d433aa4" },
+    { "id": "mixed-code-2", "configurationId": "mixed", "repetition": 2, "taskId": "code", "modelId": "cloud-pinned", "startedAt": "2026-06-15T00:10:00.000Z", "finishedAt": "2026-06-15T00:10:03.100Z", "completed": true, "validationPassed": true, "latencyMs": 3100, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 3000, "completionTokens": 1000, "evidencePath": "evidence.json", "evidenceRecordId": "mixed:code:2", "evidenceSha256": "1cbdbb792ef5e1cefda91248d2639e8629090cf455bff712e68fcedb5d433aa4" },
+    { "id": "mixed-code-3", "configurationId": "mixed", "repetition": 3, "taskId": "code", "modelId": "cloud-pinned", "startedAt": "2026-06-15T00:11:00.000Z", "finishedAt": "2026-06-15T00:11:03.200Z", "completed": true, "validationPassed": true, "latencyMs": 3200, "retries": 0, "escalations": 0, "humanInterventions": 0, "promptTokens": 3000, "completionTokens": 1000, "evidencePath": "evidence.json", "evidenceRecordId": "mixed:code:3", "evidenceSha256": "1cbdbb792ef5e1cefda91248d2639e8629090cf455bff712e68fcedb5d433aa4" }
+  ],
+  "comparison": {
+    "mixedConfigurationId": "mixed",
+    "baselineConfigurationId": "strong"
+  }
+}
