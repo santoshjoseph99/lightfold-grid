@@ -118,6 +118,8 @@ See [PRIVATE_ALPHA.md](./PRIVATE_ALPHA.md), [ROADMAP.md](./ROADMAP.md), and
 [COMMUNITY_READINESS.md](./COMMUNITY_READINESS.md).
 Run `npm run release:signing-readiness` to inspect packaging identity and external
 credential blockers. See [RELEASE_SIGNING.md](./RELEASE_SIGNING.md).
+Run `npm run github:readiness` before the first push. See
+[GITHUB_SETUP.md](./GITHUB_SETUP.md).
 
 Use the Lightfold Grid workspace to:
 
@@ -439,6 +441,7 @@ Development is organized into milestone commits. The roadmap covers:
 19. Private-alpha and community launch kit
 20. Pinned live-model benchmark evidence pipeline
 21. Application identity and credential-ready signing
+22. GitHub repository bootstrap
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -467,6 +470,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 19: Private-alpha and community launch kit
 - [x] Milestone 20: Pinned live-model benchmark evidence pipeline
 - [x] Milestone 21: Application identity and credential-ready signing
+- [x] Milestone 22: GitHub repository bootstrap
 
 ## Open Source Status
 

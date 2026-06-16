@@ -81,6 +81,7 @@ The alpha must prove one narrow workflow:
 - [x] Add `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, and `GOVERNANCE.md`.
 - [x] Add issue templates, a pull-request template, and support boundaries.
 - [x] Document maintainer roles, decision-making, and release authority.
+- [x] Add a GitHub repository bootstrap guide and readiness audit.
 
 ### 2. Security And Trust Boundaries
 
@@ -213,3 +214,5 @@ Run `npm run alpha:readiness` for machine-checkable repository gates and explici
 external blockers. See [ALPHA_READINESS.md](./ALPHA_READINESS.md).
 Run `npm run community:readiness` for the community-launch preparation gates. See
 [COMMUNITY_READINESS.md](./COMMUNITY_READINESS.md).
+Run `npm run github:readiness` before the first push and hosted validation. See
+[GITHUB_SETUP.md](./GITHUB_SETUP.md).

@@ -611,6 +611,33 @@ temporary migration period.
 - Packaging identity and tagged-release workflow contract tests.
 - Existing readiness, deterministic, integration, live Ollama, build, and packaging tests.
 
+## Milestone 22: GitHub Repository Bootstrap
+
+### Tasks
+
+- [x] Document the first GitHub repository creation and push path.
+- [x] Inventory existing GitHub Actions, issue forms, labels, PR template, and Dependabot setup.
+- [x] Document recommended repository settings, branch protection, vulnerability reporting,
+      labels, and hosted workflow checks.
+- [x] Document release signing secrets without requiring placeholder credentials.
+- [x] Add a GitHub bootstrap readiness audit that separates repository files from external
+      GitHub setup.
+- [x] Keep remote creation, first push, hosted workflow validation, and public launch as
+      external actions.
+
+### Acceptance Criteria
+
+- `npm run github:readiness` passes repository gates and reports missing GitHub setup.
+- The repository has CI, release, security, dependency, and secret-scanning workflows.
+- First-push, branch-protection, Actions, labels, vulnerability reporting, and signing
+  secret setup are documented.
+- Automation does not claim that the repository has been pushed or hosted CI has run.
+
+### Tests
+
+- GitHub bootstrap readiness, origin detection, and regression tests.
+- Existing readiness, deterministic, integration, live Ollama, build, and packaging tests.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -634,6 +661,7 @@ temporary migration period.
 19. Private-alpha and community launch kit.
 20. Pinned live-model benchmark evidence pipeline.
 21. Application identity and credential-ready signing.
+22. GitHub repository bootstrap.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 
