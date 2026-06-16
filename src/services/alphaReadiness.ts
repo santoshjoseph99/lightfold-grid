@@ -25,6 +25,8 @@ export const evaluateAlphaReadiness = ({ packageJson, files }: AlphaReadinessInp
   const benchmarks = read('BENCHMARKS.md');
   const liveBenchmarkExample = read('benchmarks/live-example/campaign.json');
   const signing = read('RELEASE_SIGNING.md');
+  const hostedValidation = read('HOSTED_VALIDATION.md');
+  const hostedValidationExample = read('hosted-validation/example.json');
   const tests = Object.entries(files)
     .filter(([path]) => path.startsWith('tests/'))
     .map(([, value]) => value)
@@ -123,6 +125,17 @@ export const evaluateAlphaReadiness = ({ packageJson, files }: AlphaReadinessInp
         : 'block',
       external: false,
       detail: 'Repository configuration and automation are ready to require signing credentials.',
+    },
+    {
+      id: 'hosted-validation-contract',
+      label: 'Hosted validation evidence contract',
+      status: /hosted:validation/.test(ci) &&
+        /hosted:collect/.test(hostedValidation) &&
+        Boolean(hostedValidationExample)
+        ? 'pass'
+        : 'block',
+      external: false,
+      detail: 'CI validates the hosted GitHub Actions evidence schema and collection workflow.',
     },
   ];
   const externalBlockers: AlphaReadinessCheck[] = [

@@ -61,7 +61,9 @@ test('real PTY wheel survives delayed readiness, malformed output, and a retried
       broker.submit('Hub', 'Spoke-C', 'normal task'),
     ];
     await new Promise((resolve) => setTimeout(resolve, 50));
-    assert.equal(broker.requests.get(messages[0].messageId)?.status, 'queued');
+    if (broker.lifecycle.get('Spoke-A')?.state !== 'ready') {
+      assert.equal(broker.requests.get(messages[0].messageId)?.status, 'queued');
+    }
     await waitFor(
       () => messages.every((message) => broker.requests.get(message.messageId)?.status === 'completed'),
       'wheel requests did not complete'

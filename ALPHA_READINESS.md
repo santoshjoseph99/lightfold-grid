@@ -26,6 +26,9 @@ It also runs the release-signing preparation audit. Project identity, hardened-r
 configuration, notarization hooks, and tagged-release gates are repository evidence;
 real certificates and successful signed hosted releases remain external.
 
+The hosted-validation contract is repository evidence. Actual hosted GitHub run URLs
+remain external evidence until collected for the exact pushed commit.
+
 External blockers are reported but do not make the repository audit exit unsuccessfully:
 
 - successful hosted Windows, macOS, and Linux CI runs on the public branch;

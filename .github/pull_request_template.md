@@ -10,6 +10,7 @@
 - [ ] `npm run community:readiness`
 - [ ] `npm run release:signing-readiness`
 - [ ] `npm run github:readiness`
+- [ ] `npm run hosted:validation`
 - [ ] `npm run benchmark:live:contract`
 - [ ] `npm run test:integration`
 - [ ] `npm run build`

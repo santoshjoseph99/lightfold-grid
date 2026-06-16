@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "repository": "example/lightfold-grid",
+  "branch": "main",
+  "commit": "0123456789abcdef0123456789abcdef01234567",
+  "collectedAt": "2026-06-16T00:00:00.000Z",
+  "source": "github-actions",
+  "runs": [
+    {
+      "workflowName": "CI",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "0123456789abcdef0123456789abcdef01234567",
+      "databaseId": 1001,
+      "url": "https://github.com/example/lightfold-grid/actions/runs/1001",
+      "status": "completed",
+      "conclusion": "success",
+      "createdAt": "2026-06-16T00:00:00.000Z",
+      "updatedAt": "2026-06-16T00:10:00.000Z",
+      "jobs": [
+        {
+          "name": "Test (ubuntu-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "runnerOs": "Linux",
+          "url": "https://github.com/example/lightfold-grid/actions/runs/1001/job/1"
+        },
+        {
+          "name": "Test (macos-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "runnerOs": "macOS",
+          "url": "https://github.com/example/lightfold-grid/actions/runs/1001/job/2"
+        },
+        {
+          "name": "Test (windows-latest)",
+          "status": "completed",
+          "conclusion": "success",
+          "runnerOs": "Windows",
+          "url": "https://github.com/example/lightfold-grid/actions/runs/1001/job/3"
+        }
+      ]
+    },
+    {
+      "workflowName": "CodeQL",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "0123456789abcdef0123456789abcdef01234567",
+      "databaseId": 1002,
+      "url": "https://github.com/example/lightfold-grid/actions/runs/1002",
+      "status": "completed",
+      "conclusion": "success",
+      "createdAt": "2026-06-16T00:00:00.000Z",
+      "updatedAt": "2026-06-16T00:05:00.000Z",
+      "jobs": [
+        {
+          "name": "analyze",
+          "status": "completed",
+          "conclusion": "success",
+          "runnerOs": "Linux",
+          "url": "https://github.com/example/lightfold-grid/actions/runs/1002/job/1"
+        }
+      ]
+    },
+    {
+      "workflowName": "Secret Scan",
+      "event": "push",
+      "headBranch": "main",
+      "headSha": "0123456789abcdef0123456789abcdef01234567",
+      "databaseId": 1003,
+      "url": "https://github.com/example/lightfold-grid/actions/runs/1003",
+      "status": "completed",
+      "conclusion": "success",
+      "createdAt": "2026-06-16T00:00:00.000Z",
+      "updatedAt": "2026-06-16T00:03:00.000Z",
+      "jobs": [
+        {
+          "name": "gitleaks",
+          "status": "completed",
+          "conclusion": "success",
+          "runnerOs": "Linux",
+          "url": "https://github.com/example/lightfold-grid/actions/runs/1003/job/1"
+        }
+      ]
+    }
+  ]
+}

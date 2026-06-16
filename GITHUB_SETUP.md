@@ -89,5 +89,12 @@ After the first push:
    artifacts, without creating a GitHub release.
 5. Record hosted run links and outcomes in the next external evidence record.
 
+Use `HOSTED_VALIDATION.md` for the evidence format and commands:
+
+```bash
+npm run hosted:collect -- --repo OWNER/lightfold-grid --branch main --commit "$(git rev-parse HEAD)" --output hosted-validation/latest.json
+npm run hosted:validation -- hosted-validation/latest.json
+```
+
 Do not mark hosted CI, public repository launch, signing, notarization, or user
 validation complete until those events have actually happened.

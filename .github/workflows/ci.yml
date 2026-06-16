@@ -31,6 +31,7 @@ jobs:
       - run: npm run community:readiness
       - run: npm run release:signing-readiness
       - run: npm run github:readiness
+      - run: npm run hosted:validation
       - run: npm test
       - run: npm run benchmark:reference
       - run: npm run benchmark:live:contract

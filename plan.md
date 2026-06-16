@@ -638,6 +638,31 @@ temporary migration period.
 - GitHub bootstrap readiness, origin detection, and regression tests.
 - Existing readiness, deterministic, integration, live Ollama, build, and packaging tests.
 
+## Milestone 23: Hosted GitHub Validation Evidence
+
+### Tasks
+
+- [x] Define a hosted GitHub Actions evidence schema for workflow runs and jobs.
+- [x] Validate exact repository, branch, commit, workflow status, and job conclusions.
+- [x] Require successful hosted CI jobs for Ubuntu, macOS, and Windows.
+- [x] Require successful CodeQL and secret-scan runs for the same commit.
+- [x] Add a GitHub CLI collector for real hosted run evidence.
+- [x] Add a deterministic fixture contract to CI while keeping real hosted run URLs external.
+- [x] Document how and when hosted validation may be marked complete.
+
+### Acceptance Criteria
+
+- `npm run hosted:validation` validates the committed fixture evidence contract.
+- `npm run hosted:validation -- hosted-validation/latest.json` can validate real collected evidence.
+- Pending, failed, incomplete, wrong-commit, or missing-platform evidence is rejected.
+- Public-alpha readiness still treats actual hosted validation as external until real
+  run URLs are collected for the pushed commit.
+
+### Tests
+
+- Hosted validation success, missing-platform, pending-run, and wrong-commit tests.
+- Existing readiness, deterministic, integration, live Ollama, build, and packaging tests.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -662,6 +687,7 @@ temporary migration period.
 20. Pinned live-model benchmark evidence pipeline.
 21. Application identity and credential-ready signing.
 22. GitHub repository bootstrap.
+23. Hosted GitHub validation evidence.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

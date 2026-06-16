@@ -216,3 +216,5 @@ Run `npm run community:readiness` for the community-launch preparation gates. Se
 [COMMUNITY_READINESS.md](./COMMUNITY_READINESS.md).
 Run `npm run github:readiness` before the first push and hosted validation. See
 [GITHUB_SETUP.md](./GITHUB_SETUP.md).
+Run `npm run hosted:validation` for the hosted evidence contract. See
+[HOSTED_VALIDATION.md](./HOSTED_VALIDATION.md).

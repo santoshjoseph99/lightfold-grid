@@ -9,7 +9,7 @@ import {
 const readyInput = {
   packageJson: { version: '0.1.0-alpha.1', license: 'Apache-2.0' },
   files: {
-    '.github/workflows/ci.yml': 'ubuntu-latest macos-latest windows-latest npm test test:integration npm run build native:smoke benchmark:reference benchmark:live:contract release:signing-readiness',
+    '.github/workflows/ci.yml': 'ubuntu-latest macos-latest windows-latest npm test test:integration npm run build native:smoke benchmark:reference benchmark:live:contract release:signing-readiness hosted:validation',
     '.github/workflows/release.yml': 'native:smoke release:signing-readiness',
     'LICENSE': 'license',
     'CONTRIBUTING.md': 'contributing',
@@ -21,9 +21,11 @@ const readyInput = {
     'SOURCE_PROVENANCE.md': 'provenance',
     'README.md': 'experimental developer alpha KNOWN_LIMITATIONS.md',
     'RELEASE_SIGNING.md': 'MAC_CSC_LINK WIN_CSC_LINK',
+    'HOSTED_VALIDATION.md': 'hosted:collect',
     'BENCHMARKS.md': 'benchmark:live:validate',
     'benchmarks/live-example/campaign.json': '{}',
     'benchmark-results/latest.json': '{}',
+    'hosted-validation/example.json': '{}',
     'tests/security-policy.test.ts': 'requiresApproval yoloMode',
     'tests/worktree.test.ts': 'approveReview',
     'tests/observability.test.ts': 'diagnostic exports recursively redact secrets realistic provider and registry credentials',

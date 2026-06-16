@@ -120,6 +120,8 @@ Run `npm run release:signing-readiness` to inspect packaging identity and extern
 credential blockers. See [RELEASE_SIGNING.md](./RELEASE_SIGNING.md).
 Run `npm run github:readiness` before the first push. See
 [GITHUB_SETUP.md](./GITHUB_SETUP.md).
+Run `npm run hosted:validation` to validate the hosted evidence contract. See
+[HOSTED_VALIDATION.md](./HOSTED_VALIDATION.md).
 
 Use the Lightfold Grid workspace to:
 
@@ -442,6 +444,7 @@ Development is organized into milestone commits. The roadmap covers:
 20. Pinned live-model benchmark evidence pipeline
 21. Application identity and credential-ready signing
 22. GitHub repository bootstrap
+23. Hosted GitHub validation evidence
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -471,6 +474,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 20: Pinned live-model benchmark evidence pipeline
 - [x] Milestone 21: Application identity and credential-ready signing
 - [x] Milestone 22: GitHub repository bootstrap
+- [x] Milestone 23: Hosted GitHub validation evidence
 
 ## Open Source Status
 
