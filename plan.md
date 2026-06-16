@@ -663,6 +663,32 @@ temporary migration period.
 - Hosted validation success, missing-platform, pending-run, and wrong-commit tests.
 - Existing readiness, deterministic, integration, live Ollama, build, and packaging tests.
 
+## Milestone 24: Hosted CI Hardening
+
+### Tasks
+
+- [x] Investigate the first pushed GitHub-hosted CI failure.
+- [x] Fix native dependency smoke validation on hosted Windows runners.
+- [x] Preserve the Electron-runtime smoke path while spawning the original Node executable
+      through `node-pty`.
+- [x] Update GitHub checkout and setup-node actions to Node 24-ready major versions.
+- [x] Keep hosted validation strict so failed Windows evidence remains blocked until rerun.
+
+### Acceptance Criteria
+
+- `npm run native:smoke` passes locally and on hosted Windows.
+- GitHub-hosted CI no longer fails before repository readiness, deterministic tests,
+  integration tests, build, and audit can run on Windows.
+- Hosted Actions no longer warn that checkout/setup-node run on the deprecated Node 20
+  action runtime.
+- Real hosted evidence can be recollected for the pushed commit after the rerun completes.
+
+### Tests
+
+- Native dependency smoke.
+- Platform, readiness, deterministic, integration, build, and audit checks.
+- GitHub-hosted CI rerun on Windows, macOS, and Linux.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -688,6 +714,7 @@ temporary migration period.
 21. Application identity and credential-ready signing.
 22. GitHub repository bootstrap.
 23. Hosted GitHub validation evidence.
+24. Hosted CI hardening.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

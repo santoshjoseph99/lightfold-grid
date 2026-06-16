@@ -16,6 +16,9 @@ The repository already includes:
 - `.github/dependabot.yml` for npm and GitHub Actions updates.
 - Issue forms, pull-request template, and label inventory.
 
+The workflow checkout and Node setup steps use the current Node 24-ready major actions
+so hosted validation does not depend on the deprecated Node 20 action runtime.
+
 Run the local bootstrap audit:
 
 ```bash
@@ -82,7 +85,8 @@ available; the tagged release workflow will block signed platforms that lack the
 
 After the first push:
 
-1. Confirm the `main` branch CI workflow runs on Windows, macOS, and Linux.
+1. Confirm the `main` branch CI workflow runs on Windows, macOS, and Linux without
+   Node 20 action-runtime deprecation warnings.
 2. Confirm CodeQL completes successfully.
 3. Open a test pull request to confirm dependency review and PR checks.
 4. Run the **Alpha Release** workflow manually to verify downloadable unsigned CI

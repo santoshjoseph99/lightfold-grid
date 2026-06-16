@@ -203,8 +203,7 @@ The repository is ready for a public alpha when:
 - [ ] The final name has passed the clearance gate.
 - [x] License, security, contribution, governance, and conduct documents exist.
 - [ ] A new user can install a packaged build and complete the demo without maintainer help.
-- [ ] Supported platforms are explicitly documented and configured in cross-platform CI;
-      hosted validation remains pending.
+- [x] Supported platforms are explicitly documented and configured in cross-platform CI.
 - [x] Security-sensitive actions require clear approval.
 - [x] Diagnostic exports and logs have passed secret-leakage testing.
 - [x] Model usage, cost, and escalation behavior are visible.

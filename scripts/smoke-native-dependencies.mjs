@@ -10,7 +10,7 @@ if (!process.argv.includes('--electron-runtime')) {
   const { default: electronPath } = await import('electron');
   const result = spawnSync(electronPath, [import.meta.filename, '--electron-runtime'], {
     encoding: 'utf8',
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', LIGHTFOLD_SMOKE_NODE: process.execPath },
   });
   process.stdout.write(result.stdout || '');
   process.stderr.write(result.stderr || '');
@@ -28,8 +28,8 @@ try {
   assert.equal(database.prepare('SELECT value FROM smoke').get().value, 'sqlite-ok');
   database.close();
 
-  const executable = process.execPath;
-  const args = ['-e', "process.stdout.write('pty-ok')"];
+  const executable = process.env.LIGHTFOLD_SMOKE_NODE || process.execPath;
+  const args = ['-e', "process.stdout.write('pty-ok'); setTimeout(() => process.exit(0), 50)"];
   const terminal = pty.spawn(executable, args, {
     cols: 80,
     rows: 24,

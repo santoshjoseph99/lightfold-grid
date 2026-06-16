@@ -445,6 +445,7 @@ Development is organized into milestone commits. The roadmap covers:
 21. Application identity and credential-ready signing
 22. GitHub repository bootstrap
 23. Hosted GitHub validation evidence
+24. Hosted CI hardening
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -475,6 +476,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 21: Application identity and credential-ready signing
 - [x] Milestone 22: GitHub repository bootstrap
 - [x] Milestone 23: Hosted GitHub validation evidence
+- [x] Milestone 24: Hosted CI hardening
 
 ## Open Source Status
 
@@ -482,6 +484,11 @@ Lightfold Grid is licensed under Apache-2.0 and has contribution, conduct, gover
 support, security, private-alpha, and outcome-roadmap materials. Release signing,
 notarization, independent user validation, and broader name clearance still require
 external evidence before the first public release.
+
+Hosted CI now runs the repository checks on GitHub-hosted Linux, macOS, and Windows
+runners with Node 24-ready checkout/setup actions. The native dependency smoke test
+uses the original Node executable inside the Electron runtime so Windows PTY output is
+validated against the same command path used by local development.
 
 The project was renamed from Starlight to **Lightfold Grid**. Broader trademark and
 brand clearance remains required before treating the name as protected. See
