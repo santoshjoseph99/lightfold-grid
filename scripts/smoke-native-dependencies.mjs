@@ -26,6 +26,22 @@ const { default: Database } = await import('better-sqlite3');
 const { default: pty } = await import('node-pty');
 
 const directory = mkdtempSync(join(tmpdir(), 'lightfold-grid-native-smoke-'));
+const removeTemporaryDirectory = async () => {
+  const attempts = process.platform === 'win32' ? 8 : 2;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      rmSync(directory, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+      return;
+    } catch (error) {
+      if (attempt === attempts) {
+        console.warn(`Could not remove native smoke temp directory ${directory}: ${error.message}`);
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150 * attempt));
+    }
+  }
+};
+
 try {
   const database = new Database(join(directory, 'smoke.sqlite'));
   database.exec('CREATE TABLE smoke (value TEXT NOT NULL)');
@@ -76,5 +92,5 @@ try {
   assert.match(output, /pty-ok/);
   console.log(`Native dependency smoke passed on ${process.platform}/${process.arch}.`);
 } finally {
-  rmSync(directory, { recursive: true, force: true });
+  await removeTemporaryDirectory();
 }
