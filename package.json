@@ -35,7 +35,7 @@
     "hosted:validation": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/check-hosted-validation.mjs",
     "hosted:collect": "node scripts/collect-github-validation.mjs",
     "adapter:conformance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/adapter-conformance.test.ts",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/*.test.ts",
+    "test": "node scripts/run-tests.mjs",
     "test:integration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/full-pty.integration.test.ts",
     "test:ollama": "LIGHTFOLD_GRID_OLLAMA_TEST=1 node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/ollama-wheel.integration.test.ts",
     "postinstall": "electron-builder install-app-deps"

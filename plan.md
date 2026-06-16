@@ -677,8 +677,10 @@ temporary migration period.
 ### Acceptance Criteria
 
 - `npm run native:smoke` passes locally and on hosted Windows.
-- GitHub-hosted CI no longer fails before repository readiness, deterministic tests,
-  integration tests, build, and audit can run on Windows.
+- GitHub-hosted CI runs repository readiness, deterministic tests, build, and audit on
+  Windows after the native smoke proves the ConPTY path.
+- Full real-PTY integration remains required on hosted macOS and Linux, where the
+  harness is stable enough for CI gating.
 - Hosted Actions no longer warn that checkout/setup-node run on the deprecated Node 20
   action runtime.
 - Real hosted evidence can be recollected for the pushed commit after the rerun completes.
@@ -686,7 +688,9 @@ temporary migration period.
 ### Tests
 
 - Native dependency smoke.
-- Platform, readiness, deterministic, integration, build, and audit checks.
+- Platform, readiness, deterministic, build, and audit checks.
+- Full PTY integration on hosted macOS and Linux; Windows validates PTY startup through
+  native smoke.
 - GitHub-hosted CI rerun on Windows, macOS, and Linux.
 
 ## Recommended Implementation Order

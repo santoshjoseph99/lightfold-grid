@@ -25,12 +25,13 @@ const checksums = files.map((file) => {
 });
 writeFileSync(checksumPath, `${checksums.join('\n')}\n`, 'utf8');
 
-const npmExecutable = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const npmExecutable = 'npm';
 const sbom = spawnSync(npmExecutable, ['sbom', '--sbom-format', 'spdx', '--omit', 'dev'], {
   encoding: 'utf8',
+  shell: process.platform === 'win32',
 });
 if (sbom.status !== 0) {
-  throw new Error(`Could not generate SBOM: ${sbom.stderr || sbom.stdout}`);
+  throw new Error(`Could not generate SBOM: ${sbom.error?.message || sbom.stderr || sbom.stdout}`);
 }
 writeFileSync(sbomPath, sbom.stdout, 'utf8');
 

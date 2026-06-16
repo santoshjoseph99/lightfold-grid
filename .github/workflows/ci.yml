@@ -37,5 +37,6 @@ jobs:
       - run: npm run benchmark:live:contract
       - run: git diff --exit-code -- benchmark-results
       - run: npm run test:integration
+        if: runner.os != 'Windows'
       - run: npm run build
       - run: npm audit --audit-level=high

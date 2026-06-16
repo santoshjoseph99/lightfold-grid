@@ -8,6 +8,8 @@ import { WorktreeError, WorktreeManager } from '../electron/worktreeManager.ts';
 
 const git = (cwd: string, args: string[]) =>
   execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+const quoteCommandPath = (value: string) => /[\s"]/u.test(value) ? `"${value.replace(/"/g, '\\"')}"` : value;
+const nodeCommand = quoteCommandPath(process.execPath);
 
 const repository = () => {
   const root = mkdtempSync(join(tmpdir(), 'lightfold-grid-worktree-'));
@@ -16,6 +18,9 @@ const repository = () => {
   git(root, ['config', 'user.name', 'Lightfold Grid Test']);
   git(root, ['config', 'core.autocrlf', 'false']);
   writeFileSync(join(root, 'shared.txt'), 'base\n');
+  writeFileSync(join(root, 'pass.mjs'), '');
+  writeFileSync(join(root, 'fail.mjs'), 'process.exit(7);\n');
+  writeFileSync(join(root, 'feature-exists.mjs'), "import { accessSync } from 'node:fs';\naccessSync('feature.txt');\n");
   git(root, ['add', '.']);
   git(root, ['commit', '-m', 'initial']);
   return root;
@@ -27,9 +32,9 @@ const commitFile = (worktree: string, filename: string, content: string) => {
   git(worktree, ['commit', '-m', `update ${filename}`]);
 };
 
-const pass = 'node -e ""';
-const fail = 'node -e "process.exit(7)"';
-const featureExists = 'node -e "require(\'fs\').accessSync(\'feature.txt\')"';
+const pass = `${nodeCommand} pass.mjs`;
+const fail = `${nodeCommand} fail.mjs`;
+const featureExists = `${nodeCommand} feature-exists.mjs`;
 
 test('creates isolated branches and cleans merged worktrees explicitly', () => {
   const root = repository();
