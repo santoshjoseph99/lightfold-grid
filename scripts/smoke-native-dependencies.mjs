@@ -11,9 +11,14 @@ if (!process.argv.includes('--electron-runtime')) {
   const result = spawnSync(electronPath, [import.meta.filename, '--electron-runtime'], {
     encoding: 'utf8',
     env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', LIGHTFOLD_SMOKE_NODE: process.execPath },
+    timeout: 30_000,
   });
   process.stdout.write(result.stdout || '');
   process.stderr.write(result.stderr || '');
+  if (result.error) {
+    process.stderr.write(`${result.error.message}\n`);
+    process.exit(1);
+  }
   process.exit(result.status ?? 1);
 }
 
@@ -38,14 +43,34 @@ try {
   });
   const output = await new Promise((resolve, reject) => {
     let value = '';
-    const timeout = setTimeout(() => {
-      terminal.kill();
-      reject(new Error('node-pty smoke test timed out.'));
-    }, 5_000);
-    terminal.onData((data) => { value += data; });
-    terminal.onExit(({ exitCode }) => {
+    let settled = false;
+    const finish = (callback) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timeout);
-      exitCode === 0 ? resolve(value) : reject(new Error(`node-pty smoke process exited ${exitCode}.`));
+      callback();
+    };
+    const timeout = setTimeout(() => {
+      finish(() => {
+        terminal.kill();
+        reject(new Error('node-pty smoke test timed out.'));
+      });
+    }, 5_000);
+    terminal.onData((data) => {
+      value += data;
+      if (/pty-ok/.test(value)) {
+        finish(() => {
+          terminal.kill();
+          resolve(value);
+        });
+      }
+    });
+    terminal.onExit(({ exitCode }) => {
+      finish(() => {
+        exitCode === 0 && /pty-ok/.test(value)
+          ? resolve(value)
+          : reject(new Error(`node-pty smoke process exited ${exitCode} with output: ${value}`));
+      });
     });
   });
   assert.match(output, /pty-ok/);
