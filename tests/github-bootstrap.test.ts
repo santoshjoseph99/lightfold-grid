@@ -34,7 +34,22 @@ test('GitHub origin remote is recognized without completing hosted evidence', ()
     git: { currentBranch: 'main', remotes: ['origin\tgit@github.com:owner/lightfold-grid.git (fetch)'] },
   });
   assert.equal(checks.find((check) => check.id === 'origin-remote')?.status, 'pass');
+  assert.equal(checks.find((check) => check.id === 'main-pushed')?.status, 'block');
   assert.equal(repositoryGitHubBootstrapPassed(checks), true);
+});
+
+test('main branch push is recognized when origin/main is the clean upstream', () => {
+  const checks = evaluateGitHubBootstrap({
+    ...readyInput,
+    git: {
+      currentBranch: 'main',
+      upstreamBranch: 'origin/main',
+      aheadCount: 0,
+      remotes: ['origin\tgit@github.com:owner/lightfold-grid.git (fetch)'],
+    },
+  });
+  assert.equal(checks.find((check) => check.id === 'origin-remote')?.status, 'pass');
+  assert.equal(checks.find((check) => check.id === 'main-pushed')?.status, 'pass');
 });
 
 test('missing workflow evidence blocks repository GitHub bootstrap readiness', () => {

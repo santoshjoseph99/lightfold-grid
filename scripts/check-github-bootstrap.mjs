@@ -24,10 +24,23 @@ const paths = [
 const files = Object.fromEntries(paths.map((path) => [path, readFileSync(resolve(root, path), 'utf8')]));
 const branch = spawnSync('git', ['branch', '--show-current'], { cwd: root, encoding: 'utf8' });
 const remotes = spawnSync('git', ['remote', '-v'], { cwd: root, encoding: 'utf8' });
+const upstream = spawnSync('git', ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'], {
+  cwd: root,
+  encoding: 'utf8',
+});
+const aheadBehind = spawnSync('git', ['rev-list', '--left-right', '--count', 'HEAD...@{u}'], {
+  cwd: root,
+  encoding: 'utf8',
+});
+const [aheadCount] = aheadBehind.status === 0
+  ? aheadBehind.stdout.trim().split(/\s+/).map((value) => Number(value))
+  : [undefined];
 const checks = evaluateGitHubBootstrap({
   files,
   git: {
     currentBranch: branch.stdout.trim(),
+    upstreamBranch: upstream.status === 0 ? upstream.stdout.trim() : undefined,
+    aheadCount,
     remotes: remotes.stdout.split('\n').filter(Boolean),
   },
 });

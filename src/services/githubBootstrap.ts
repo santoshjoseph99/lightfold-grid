@@ -12,6 +12,8 @@ export interface GitHubBootstrapInput {
   files: Record<string, string>;
   git?: {
     currentBranch?: string;
+    upstreamBranch?: string;
+    aheadCount?: number;
     remotes?: string[];
   };
 }
@@ -97,9 +99,13 @@ export const evaluateGitHubBootstrap = ({ files, git = {} }: GitHubBootstrapInpu
     {
       id: 'main-pushed',
       label: 'Main branch pushed to GitHub',
-      status: 'block',
+      status: git.currentBranch === 'main' &&
+        git.upstreamBranch === 'origin/main' &&
+        git.aheadCount === 0
+        ? 'pass'
+        : 'block',
       external: true,
-      detail: 'Push the main branch and confirm the hosted repository exists.',
+      detail: 'Push main to origin and ensure the local branch is not ahead of origin/main.',
     },
     {
       id: 'hosted-actions',
