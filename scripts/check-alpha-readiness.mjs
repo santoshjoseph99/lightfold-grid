@@ -15,6 +15,7 @@ const paths = [
   'HOSTED_VALIDATION.md',
   'KNOWN_LIMITATIONS.md',
   'LICENSE',
+  'PUBLIC_ALPHA_CHECKLIST.md',
   'README.md',
   'RELEASE_SIGNING.md',
   'SECURITY.md',

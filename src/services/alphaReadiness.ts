@@ -27,6 +27,7 @@ export const evaluateAlphaReadiness = ({ packageJson, files }: AlphaReadinessInp
   const signing = read('RELEASE_SIGNING.md');
   const hostedValidation = read('HOSTED_VALIDATION.md');
   const hostedValidationExample = read('hosted-validation/example.json');
+  const publicAlphaChecklist = read('PUBLIC_ALPHA_CHECKLIST.md');
   const tests = Object.entries(files)
     .filter(([path]) => path.startsWith('tests/'))
     .map(([, value]) => value)
@@ -136,6 +137,21 @@ export const evaluateAlphaReadiness = ({ packageJson, files }: AlphaReadinessInp
         : 'block',
       external: false,
       detail: 'CI validates the hosted GitHub Actions evidence schema and collection workflow.',
+    },
+    {
+      id: 'public-alpha-checklist',
+      label: 'Public alpha launch checklist',
+      status: includesAll(publicAlphaChecklist, [
+        /Repository Gates/,
+        /Hosted Evidence/,
+        /Maintainer Smoke Test/,
+        /External Blockers/,
+        /Alpha User Success Criteria/,
+      ]) && /PUBLIC_ALPHA_CHECKLIST\.md/.test(readme)
+        ? 'pass'
+        : 'block',
+      external: false,
+      detail: 'Maintainer smoke testing, hosted evidence, and launch blockers are documented.',
     },
   ];
   const externalBlockers: AlphaReadinessCheck[] = [

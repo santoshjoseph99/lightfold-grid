@@ -106,6 +106,8 @@ The alpha must prove one narrow workflow:
 - [x] Document upgrade, rollback, data-directory, and schema-migration behavior.
 - [x] Add experimental Windows support with platform-aware PTYs, process inspection,
       coding commands, documentation, and CI coverage.
+- [x] Add a public-alpha checklist with the maintainer smoke test and hosted evidence
+      policy.
 
 The repository includes project-authored app icons, hardened-runtime entitlements,
 credential-aware notarization, and a tagged-release signing gate. Actual signing,
@@ -122,6 +124,7 @@ credentials and a successful hosted release.
 - [x] Ship a demo repository and one-click example workspace configuration.
 - [ ] Record a short demo showing task routing, worktrees, tests, review, metrics, and cost.
 - [x] Add troubleshooting for readiness handshakes and protocol compliance.
+- [x] Define the maintainer first-run smoke test before inviting external testers.
 
 ### 5. CLI And Provider Compatibility
 
@@ -217,3 +220,5 @@ Run `npm run github:readiness` before the first push and hosted validation. See
 [GITHUB_SETUP.md](./GITHUB_SETUP.md).
 Run `npm run hosted:validation` for the hosted evidence contract. See
 [HOSTED_VALIDATION.md](./HOSTED_VALIDATION.md).
+Follow [PUBLIC_ALPHA_CHECKLIST.md](./PUBLIC_ALPHA_CHECKLIST.md) before sharing an alpha
+artifact with testers.

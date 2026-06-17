@@ -446,6 +446,7 @@ Development is organized into milestone commits. The roadmap covers:
 22. GitHub repository bootstrap
 23. Hosted GitHub validation evidence
 24. Hosted CI hardening
+25. Public alpha release readiness
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 
@@ -460,10 +461,8 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 7: Prompt contract hardening
 - [x] Milestone 8: Full end-to-end integration testing
 - [x] Milestone 9: Observability and operational controls
-- [ ] Milestone 10: Experimental Windows platform support (implementation complete;
-      hosted Windows CI validation pending)
-- [ ] Milestone 11: Repeatable alpha packaging and release automation (implementation
-      complete; hosted release-matrix validation pending)
+- [x] Milestone 10: Experimental Windows platform support
+- [x] Milestone 11: Repeatable alpha packaging and release automation
 - [x] Milestone 12: Five-minute onboarding and workspace presets
 - [x] Milestone 13: CLI and provider adapter compatibility
 - [x] Milestone 14: Constraint-aware model routing
@@ -477,18 +476,24 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 22: GitHub repository bootstrap
 - [x] Milestone 23: Hosted GitHub validation evidence
 - [x] Milestone 24: Hosted CI hardening
+- [x] Milestone 25: Public alpha release readiness
 
 ## Open Source Status
 
 Lightfold Grid is licensed under Apache-2.0 and has contribution, conduct, governance,
-support, security, private-alpha, and outcome-roadmap materials. Release signing,
-notarization, independent user validation, and broader name clearance still require
-external evidence before the first public release.
+support, security, private-alpha, outcome-roadmap, hosted-validation, and public-alpha
+checklist materials. Release signing, notarization, independent user validation, live
+model benchmark evidence, and broader name clearance still require external evidence
+before the first public release.
 
 Hosted CI now runs the repository checks on GitHub-hosted Linux, macOS, and Windows
 runners with Node 24-ready checkout/setup actions. The native dependency smoke test
 uses the original Node executable inside the Electron runtime so Windows PTY output is
 validated against the same command path used by local development.
+
+Use [PUBLIC_ALPHA_CHECKLIST.md](./PUBLIC_ALPHA_CHECKLIST.md) before inviting testers.
+It defines the maintainer smoke test, the evidence to collect, and the external blockers
+that must stay explicit.
 
 The project was renamed from Starlight to **Lightfold Grid**. Broader trademark and
 brand clearance remains required before treating the name as protected. See

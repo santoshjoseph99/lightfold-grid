@@ -19,7 +19,8 @@ const readyInput = {
     'SUPPORT.md': 'support',
     'KNOWN_LIMITATIONS.md': 'limitations',
     'SOURCE_PROVENANCE.md': 'provenance',
-    'README.md': 'experimental developer alpha KNOWN_LIMITATIONS.md',
+    'README.md': 'experimental developer alpha KNOWN_LIMITATIONS.md PUBLIC_ALPHA_CHECKLIST.md',
+    'PUBLIC_ALPHA_CHECKLIST.md': 'Repository Gates Hosted Evidence Maintainer Smoke Test External Blockers Alpha User Success Criteria',
     'RELEASE_SIGNING.md': 'MAC_CSC_LINK WIN_CSC_LINK',
     'HOSTED_VALIDATION.md': 'hosted:collect',
     'BENCHMARKS.md': 'benchmark:live:validate',
@@ -37,6 +38,7 @@ test('repository readiness passes while external blockers remain explicit', () =
   assert.equal(repositoryReadinessPassed(checks), true);
   assert.equal(checks.filter((check) => check.external && check.status === 'block').length, 5);
   assert.match(formatAlphaReadinessMarkdown(checks), /Repository readiness: PASS/);
+  assert.equal(checks.find((check) => check.id === 'public-alpha-checklist')?.status, 'pass');
 });
 
 test('missing repository evidence blocks alpha readiness', () => {

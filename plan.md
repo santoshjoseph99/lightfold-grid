@@ -693,6 +693,36 @@ temporary migration period.
   native smoke.
 - GitHub-hosted CI rerun on Windows, macOS, and Linux.
 
+## Milestone 25: Public Alpha Release Readiness
+
+### Tasks
+
+- [x] Add a public-alpha checklist that separates repository-controlled gates from
+      maintainer-owned launch evidence.
+- [x] Define the exact maintainer smoke test to run before inviting external testers.
+- [x] Document when to keep hosted validation evidence external instead of committing
+      a moving `latest.json` file.
+- [x] Update README milestone status so Windows, packaging, hosted CI, and release
+      automation no longer contradict the current repository state.
+- [x] Clarify the next external blockers: name clearance, signing credentials,
+      demo recording, live-model benchmark evidence, and private-alpha user sessions.
+
+### Acceptance Criteria
+
+- A maintainer can follow one checklist from clean checkout to packaged-app smoke test.
+- The checklist identifies the point where the maintainer should personally test the app.
+- Public-alpha readiness does not claim legal clearance, signed releases, or live-user
+  validation before those external actions happen.
+- README roadmap and open-source status reflect hosted CI success on Windows, macOS,
+  and Linux.
+
+### Tests
+
+- Repository readiness checks.
+- Community and GitHub readiness checks.
+- Hosted validation fixture check plus external real-evidence guidance.
+- Local maintainer smoke test before inviting private-alpha users.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -719,6 +749,7 @@ temporary migration period.
 22. GitHub repository bootstrap.
 23. Hosted GitHub validation evidence.
 24. Hosted CI hardening.
+25. Public alpha release readiness.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 
