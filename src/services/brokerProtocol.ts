@@ -707,6 +707,19 @@ const processMessage = (msg: StarlightMessage) => {
       updateMessage(msg.messageId, { status: 'completed', error: 'Duplicate response ignored.' });
       return;
     }
+    // Accepted response messages (result, error, cancel, progress) have been
+    // processed by the workflow engine above — mark them completed and return
+    // so they do not fall through to PTY delivery, which would try to route
+    // them to the broker pane that does not exist.
+    if (disposition === 'accepted') {
+      updateMessage(msg.messageId, { status: 'completed' });
+      return;
+    }
+    // Unmatched non-ack responses have no corresponding request to correlate.
+    if (disposition === 'unmatched') {
+      updateMessage(msg.messageId, { status: 'failed', error: 'No matching request for response.' });
+      return;
+    }
   }
   
   // Check Blocklists
