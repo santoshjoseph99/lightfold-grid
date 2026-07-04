@@ -79,7 +79,7 @@ See [plan.md](./plan.md) for the milestone roadmap.
 - npm
 - Windows 10+, macOS, or Linux
 - Optional: [Ollama](https://ollama.com/) and a local model for live integration tests
-- Optional: Gemini CLI, GitHub Copilot CLI, or another interactive agent CLI
+- Optional: Anti-Gravity CLI (`agy`), GitHub Copilot CLI, or another interactive agent CLI
 
 ## Getting Started
 

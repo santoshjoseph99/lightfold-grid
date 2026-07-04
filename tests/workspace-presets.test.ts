@@ -29,7 +29,7 @@ test('role presets include the requested onboarding roles and embedded instructi
     ),
   );
   assert.deepEqual([...roles].sort(), ['builder', 'orchestrator', 'planner', 'release', 'reviewer', 'tester']);
-  const preset = buildWorkspacePreset({ provider: 'gemini', model: 'auto', topology: 'pipeline' });
+  const preset = buildWorkspacePreset({ provider: 'ag', model: 'auto', topology: 'pipeline' });
   assert.equal(Object.values(preset.agentConfigs).every((agent) => agent.promptContent.length > 20), true);
 });
 
@@ -67,8 +67,8 @@ test('mixed preset keeps coordination and testing local while escalating build a
     topology: 'wheel',
   });
   assert.equal(preset.agentConfigs['Pane-A'].cliCommand, 'ollama run');
-  assert.equal(preset.agentConfigs['Pane-B'].cliCommand, 'gemini');
+  assert.equal(preset.agentConfigs['Pane-B'].cliCommand, 'agy');
   assert.equal(preset.agentConfigs['Pane-C'].cliCommand, 'ollama run');
-  assert.equal(preset.agentConfigs['Pane-D'].cliCommand, 'gemini');
+  assert.equal(preset.agentConfigs['Pane-D'].cliCommand, 'agy');
   assert.equal(preset.agentConfigs['Pane-B'].selectedModel, 'auto');
 });

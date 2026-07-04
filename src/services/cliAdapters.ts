@@ -1,4 +1,4 @@
-export type AdapterId = 'ollama-api' | 'ollama-cli' | 'gemini-cli' | 'copilot-cli' | 'custom';
+export type AdapterId = 'ollama-api' | 'ollama-cli' | 'ag-cli' | 'copilot-cli' | 'custom';
 export type PromptDeliveryMode = 'stdin' | 'system-flag';
 export type LifecycleMode = 'adapter' | 'model';
 export type PrivacyMode = 'local' | 'cloud' | 'user-defined';
@@ -43,7 +43,7 @@ export const CLI_ADAPTERS: Record<AdapterId, CliAdapterDefinition> = {
     promptDelivery: 'stdin',
     lifecycle: 'adapter',
     privacy: 'local',
-    toolSupport: false,
+    toolSupport: true,
     bundled: true,
     notes: 'Uses the local Ollama HTTP API and emits readiness and heartbeat messages itself.',
   },
@@ -57,18 +57,18 @@ export const CLI_ADAPTERS: Record<AdapterId, CliAdapterDefinition> = {
     toolSupport: false,
     notes: 'Launches ollama run; the model must follow the injected Lightfold Grid contract.',
   },
-  'gemini-cli': {
-    id: 'gemini-cli',
-    label: 'Gemini CLI',
-    executable: 'gemini',
+  'ag-cli': {
+    id: 'ag-cli',
+    label: 'Anti-Gravity CLI',
+    executable: 'agy',
     promptDelivery: 'stdin',
     lifecycle: 'model',
     privacy: 'cloud',
     toolSupport: true,
-    modelFlag: '-m',
-    modelFlagAliases: ['--model'],
-    unsafeFlag: '--yolo',
-    unsafeFlagAliases: ['-y'],
+    modelFlag: '--model',
+    modelFlagAliases: [],
+    unsafeFlag: '--dangerously-skip-permissions',
+    unsafeFlagAliases: [],
     notes: 'Supports model selection; Lightfold injects the generated contract through the interactive session.',
   },
   'copilot-cli': {
@@ -106,7 +106,7 @@ export const inferAdapterId = (command = ''): AdapterId => {
   const normalized = command.toLowerCase();
   if (normalized.includes('lightfold-ollama-adapter')) return 'ollama-api';
   if (normalized.includes('ollama')) return 'ollama-cli';
-  if (normalized.includes('gemini')) return 'gemini-cli';
+  if (normalized.includes('agy')) return 'ag-cli';
   if (normalized.includes('copilot')) return 'copilot-cli';
   return 'custom';
 };

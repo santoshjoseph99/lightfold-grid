@@ -14,11 +14,11 @@ export const AddAgentModal: React.FC<AddAgentModalProps> = ({
   onAddAgent,
   onClose,
 }) => {
-  const [selectedPreset, setSelectedPreset] = useState<'gemini' | 'copilot' | 'ollama' | 'custom'>('gemini');
-  const [adapterId, setAdapterId] = useState<AdapterId>('gemini-cli');
-  const [agentName, setAgentName] = useState('Gemini-Agent');
-  const [cliCommand, setCliCommand] = useState('gemini');
-  const [selectedModel, setSelectedModel] = useState('gemini-1.5-pro');
+  const [selectedPreset, setSelectedPreset] = useState<'ag' | 'copilot' | 'ollama' | 'custom'>('ag');
+  const [adapterId, setAdapterId] = useState<AdapterId>('ag-cli');
+  const [agentName, setAgentName] = useState('AG-Agent');
+  const [cliCommand, setCliCommand] = useState('agy');
+  const [selectedModel, setSelectedModel] = useState('auto');
   const [promptPath, setPromptPath] = useState('');
   const [promptContent, setPromptContent] = useState('');
   const [capabilities, setCapabilities] = useState('general');
@@ -28,12 +28,12 @@ export const AddAgentModal: React.FC<AddAgentModalProps> = ({
   // Target pane selection. If 'new', will spawn split pane
   const [targetPane, setTargetPane] = useState<string>(paneIds[0] || 'new');
 
-  const handlePresetChange = (preset: 'gemini' | 'copilot' | 'ollama' | 'custom') => {
+  const handlePresetChange = (preset: 'ag' | 'copilot' | 'ollama' | 'custom') => {
     setSelectedPreset(preset);
-    if (preset === 'gemini') {
-      setAdapterId('gemini-cli');
-      setAgentName('Gemini-Agent');
-      setCliCommand('gemini');
+    if (preset === 'ag') {
+      setAdapterId('ag-cli');
+      setAgentName('AG-Agent');
+      setCliCommand('agy');
       setSelectedModel('auto');
     } else if (preset === 'copilot') {
       setAdapterId('copilot-cli');
@@ -125,7 +125,7 @@ export const AddAgentModal: React.FC<AddAgentModalProps> = ({
             AGENT CLI PRESETS
           </label>
           <div style={{ display: 'flex', gap: '8px' }}>
-            {['gemini', 'copilot', 'ollama', 'custom'].map((preset) => (
+            {['ag', 'copilot', 'ollama', 'custom'].map((preset) => (
               <button
                 key={preset}
                 onClick={() => handlePresetChange(preset as any)}

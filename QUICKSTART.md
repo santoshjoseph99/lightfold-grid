@@ -30,9 +30,9 @@ Source contributors can also create the repository with `npm run demo:setup`.
 ## Mixed Local And Cloud
 
 To demonstrate model right-sizing, choose **Start With Preset**, then select **Mixed
-Ollama + Gemini** and **Wheel**. It keeps orchestration and testing local in Ollama
-while assigning implementation and review to Gemini CLI. Configure and authenticate
-Gemini CLI first. The same setup is available in
+Ollama + Anti-Gravity** and **Wheel**. It keeps orchestration and testing local in Ollama
+while assigning implementation and review to the Anti-Gravity CLI (`agy`). Configure and authenticate
+Anti-Gravity CLI first. The same setup is available in
 `examples/workspaces/mixed-local-cloud-wheel.json`; replace either cloud agent with
 your preferred CLI or model in **Configure Grid**.
 

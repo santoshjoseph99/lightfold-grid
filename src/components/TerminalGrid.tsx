@@ -131,7 +131,7 @@ export const TerminalGrid: React.FC<TerminalGridProps> = ({
         {paneIds.map((id) => {
           const isActive = id === activePaneId;
           const config = agentConfigs[id];
-          const isGemini = config?.cliCommand?.toLowerCase().includes('gemini');
+          const isAG = config?.cliCommand?.toLowerCase().includes('agy');
           const lifecycle = lifecycles[id] || { agentId: id, state: 'stopped' as const };
           const canRestart = ['failed', 'unresponsive', 'stopped'].includes(lifecycle.state);
           const heartbeat = lifecycle.lastHeartbeatAt
@@ -180,7 +180,7 @@ export const TerminalGrid: React.FC<TerminalGridProps> = ({
                 }
               }}
             >
-              {isGemini ? (
+              {isAG ? (
                 <Cpu size={12} style={{ color: isActive ? 'var(--accent-cyan)' : 'var(--text-muted)' }} />
               ) : (
                 <Terminal size={12} style={{ color: isActive ? 'var(--accent-purple)' : 'var(--text-muted)' }} />

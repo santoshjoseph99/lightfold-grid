@@ -11,7 +11,7 @@ compatibility explicit.
 | --- | --- | --- | --- | --- |
 | Bundled Ollama API | Starts `lightfold-ollama-adapter.mjs` and selects the configured model | Stateful Ollama `/api/chat` session over stdin | Adapter | Local |
 | Ollama CLI | Starts the configured `ollama run` command and appends the model | Injected through stdin | Model | Local |
-| Gemini CLI | Adds `-m` when configured | Injected through stdin | Model | Cloud |
+| Anti-Gravity CLI | Adds `--model` when configured | Injected through stdin | Model | Cloud |
 | GitHub Copilot CLI | Adds `--model` when configured | Injected through stdin | Model | Cloud |
 | Custom interactive CLI | Starts the command exactly as configured | Injected through stdin | Model | User-defined |
 
@@ -71,6 +71,7 @@ receive a request, and emit correlated acknowledgement and terminal-result envel
 - Tool support is declarative; Lightfold Grid does not independently sandbox or verify
   provider tools.
 - The bundled Ollama adapter coordinates text tasks through the local API. Ollama
-  models do not gain shell or filesystem tools from the adapter.
+  models do not gain shell or filesystem tools from the adapter unless the model supports
+  native tool calling (e.g. qwen3-coder).
 - Provider CLI flags can change between releases; compatibility updates should include
   launch-template tests.

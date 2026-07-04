@@ -428,7 +428,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </label>
                     <input
                       type="text"
-                      placeholder="gemini-1.5-pro"
+                      placeholder="auto"
                       value={currentAgent.selectedModel}
                       onChange={(e) => setLocalAgentConfigs({
                         ...localAgentConfigs,
@@ -453,7 +453,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </label>
                     <input
                       type="text"
-                      placeholder="gemini-cli run"
+                      placeholder="agy"
                       value={currentAgent.cliCommand}
                       onChange={(e) => setLocalAgentConfigs({
                         ...localAgentConfigs,

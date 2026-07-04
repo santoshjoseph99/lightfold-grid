@@ -26,6 +26,7 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
   const [pid, setPid] = useState<number | null>(null);
 
   useLayoutEffect(() => {
+    if (!shellPath) return;
     let active = true;
     let observer: ResizeObserver | null = null;
     let termInstance: any = null;

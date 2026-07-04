@@ -13,3 +13,5 @@ logs/
 !.env.example
 
 starlight-workspace.json
+lightfold-grid-workspace.json
+*.bak.*

@@ -65,7 +65,12 @@ export class PtyService {
       }
     });
     process.onExit((exit) => {
-      this.processes.delete(options.id);
+      // Only delete if this is still the active process for this ID.
+      // A killed PTY's onExit can fire after a new PTY with the same ID
+      // has already been spawned, which would wrongly evict the new one.
+      if (this.processes.get(options.id) === process) {
+        this.processes.delete(options.id);
+      }
       this.options.onExit?.(options.id, exit);
       if (options.logFilePath) {
         fs.appendFile(

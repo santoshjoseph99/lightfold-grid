@@ -2,7 +2,7 @@ import type { AdapterId } from './cliAdapters';
 
 export type RolePresetId = 'orchestrator' | 'planner' | 'builder' | 'tester' | 'reviewer' | 'release';
 export type TopologyPresetId = 'solo' | 'wheel' | 'pipeline' | 'review-loop';
-export type ProviderPresetId = 'ollama' | 'mixed' | 'gemini' | 'copilot' | 'custom';
+export type ProviderPresetId = 'ollama' | 'mixed' | 'ag' | 'copilot' | 'custom';
 
 export interface PresetAgentConfig {
   paneId: string;
@@ -38,8 +38,8 @@ export interface WorkspacePresetOptions {
 
 export const PROVIDER_PRESETS: Record<ProviderPresetId, { label: string; command: string; defaultModel: string }> = {
   ollama: { label: 'Local Ollama', command: 'ollama run', defaultModel: 'gemma4-32k:latest' },
-  mixed: { label: 'Mixed Ollama + Gemini', command: 'ollama run', defaultModel: 'gemma4-32k:latest' },
-  gemini: { label: 'Gemini CLI', command: 'gemini', defaultModel: 'auto' },
+  mixed: { label: 'Mixed Ollama + Anti-Gravity', command: 'ollama run', defaultModel: 'gemma4-32k:latest' },
+  ag: { label: 'Anti-Gravity CLI', command: 'agy', defaultModel: 'auto' },
   copilot: { label: 'GitHub Copilot CLI', command: 'copilot', defaultModel: 'gpt-4o' },
   custom: { label: 'Custom CLI', command: '', defaultModel: 'auto' },
 };
@@ -151,23 +151,23 @@ export const buildWorkspacePreset = (options: WorkspacePresetOptions): Workspace
     const pane = panes[index];
     const mixedCloudRole = options.provider === 'mixed' && (role === 'builder' || role === 'reviewer');
     const adapterId: AdapterId = mixedCloudRole
-      ? 'gemini-cli'
+      ? 'ag-cli'
       : options.provider === 'ollama' || options.provider === 'mixed'
         ? 'ollama-api'
-        : options.provider === 'gemini'
-          ? 'gemini-cli'
+        : options.provider === 'ag'
+          ? 'ag-cli'
           : options.provider === 'copilot'
             ? 'copilot-cli'
             : 'custom';
-    const cloudModel = mixedCloudRole || ['gemini', 'copilot'].includes(options.provider);
+    const cloudModel = mixedCloudRole || ['ag', 'copilot'].includes(options.provider);
     const capabilityTier: 2 | 4 = cloudModel ? 4 : 2;
 
     return [pane, {
       ...ROLE_PRESETS[role],
       paneId: pane,
       adapterId,
-      cliCommand: mixedCloudRole ? PROVIDER_PRESETS.gemini.command : command,
-      selectedModel: mixedCloudRole ? PROVIDER_PRESETS.gemini.defaultModel : model,
+      cliCommand: mixedCloudRole ? PROVIDER_PRESETS.ag.command : command,
+      selectedModel: mixedCloudRole ? PROVIDER_PRESETS.ag.defaultModel : model,
       promptPath: '',
       capabilityTier,
       contextWindow: 32_000,

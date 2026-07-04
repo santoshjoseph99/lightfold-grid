@@ -84,7 +84,7 @@ export const WorkspacePresetModal: React.FC<WorkspacePresetModalProps> = ({ onAp
         )}
 
         <div style={{ color: 'var(--text-muted)', fontSize: '11px', lineHeight: 1.5, background: 'rgba(0,240,255,0.04)', border: '1px solid rgba(0,240,255,0.1)', borderRadius: '8px', padding: '10px' }}>
-          Creates {TOPOLOGY_PRESETS[topology].roles.length} agents. Mixed mode keeps planning and testing local while using Gemini for building and review. YOLO mode stays off. Select a project root before assigning repository work.
+          Creates {TOPOLOGY_PRESETS[topology].roles.length} agents. Mixed mode keeps planning and testing local while using Anti-Gravity for building and review. YOLO mode stays off. Select a project root before assigning repository work.
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid var(--panel-border)', paddingTop: '12px' }}>

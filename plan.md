@@ -342,7 +342,7 @@ temporary migration period.
 
 - [x] Add role presets for orchestrator, planner, builder, tester, reviewer, and release.
 - [x] Add explicit solo, wheel, pipeline, and review-loop topology presets.
-- [x] Add one-click in-app local Ollama, mixed local/cloud, Gemini, Copilot, and custom CLI grids.
+- [x] Add one-click in-app local Ollama, mixed local/cloud, Anti-Gravity, Copilot, and custom CLI grids.
 - [x] Keep preset prompts embedded, routes explicit, and YOLO mode disabled.
 - [x] Add a deterministic demo Git repository generator and safe starter task.
 - [x] Add loadable local-only and mixed local/cloud workspace profiles.
@@ -368,7 +368,7 @@ temporary migration period.
 ### Tasks
 
 - [x] Define a provider adapter registry separately from agent prompt instructions.
-- [x] Centralize tested launch templates for Ollama, Gemini, Copilot, and custom CLIs.
+- [x] Centralize tested launch templates for Ollama, Anti-Gravity, Copilot, and custom CLIs.
 - [x] Add an explicit adapter selector while preserving legacy command inference.
 - [x] Add a bundled stateful Ollama API adapter that owns lifecycle and correlated results.
 - [x] Expose adapter capability, lifecycle, prompt-delivery, and privacy metadata.

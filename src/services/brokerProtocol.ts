@@ -635,7 +635,11 @@ const processMessage = (msg: StarlightMessage) => {
     return;
   }
 
-  const isConnected = isRouteAllowed(routingConnections, sourcePane, targetPane);
+  // Response messages (ack/result/progress/error/cancel) to the broker bypass
+  // the routing graph — the broker is the central dispatcher that all agents
+  // must be able to reply to, even when the topology only defines agent-to-agent routes.
+  const isBrokerResponse = targetPane === 'broker' && msg.kind !== 'request';
+  const isConnected = isBrokerResponse || isRouteAllowed(routingConnections, sourcePane, targetPane);
   
   if (!isConnected) {
     updateMessage(msg.messageId, {
