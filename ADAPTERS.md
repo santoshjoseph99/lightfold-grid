@@ -70,8 +70,13 @@ receive a request, and emit correlated acknowledgement and terminal-result envel
 - Context-window discovery is currently undefined unless an adapter can provide it.
 - Tool support is declarative; Lightfold Grid does not independently sandbox or verify
   provider tools.
-- The bundled Ollama adapter coordinates text tasks through the local API. Ollama
-  models do not gain shell or filesystem tools from the adapter unless the model supports
-  native tool calling (e.g. qwen3-coder).
+- The bundled Ollama adapter provides `read_file`, `write_file`, `list_dir`, and
+  `run_command` tools. Models that support native Ollama tool calling (e.g.
+  `qwen3-coder:30b`, `qwen3:30b`) use the `tool_calls` API field for reliable
+  tool execution. Models without native tool calling (e.g. `qwen2.5-coder:7b`,
+  `gemma4-32k`) fall back to text-based parsing, which is less reliable and may
+  loop. Choose a model with native tool calling for coding tasks that require
+  file edits or command execution. Run `ollama show <model>` and look for
+  `tool_call` template support to verify compatibility.
 - Provider CLI flags can change between releases; compatibility updates should include
   launch-template tests.

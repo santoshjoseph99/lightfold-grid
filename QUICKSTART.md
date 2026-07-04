@@ -6,20 +6,27 @@ Grid review controls.
 
 ## Local Ollama Wheel
 
-Requirements: Git, Node.js 22.12+, Ollama, and `gemma4-32k:latest`.
+Requirements: Git, Node.js 22.12+, Ollama, and a local model.
 
-Install and open Lightfold Grid, then make sure `gemma4-32k:latest` is available:
+For coding tasks that require file edits or command execution, use a model with
+native Ollama tool calling support (e.g. `qwen3-coder:30b`). Models without
+native tool calling (e.g. `gemma4-32k`, `qwen2.5-coder:7b`) can still
+participate in routing and text generation but cannot use the adapter's
+`read_file`, `write_file`, or `run_command` tools reliably. Verify with
+`ollama show <model>` and look for `tool_call` template support.
+
+Install and open Lightfold Grid, then pull a model:
 
 ```bash
-ollama pull gemma4-32k:latest
+ollama pull qwen3-coder:30b
 ```
 
 In Lightfold Grid:
 
 1. Choose **Create Demo Project** and select a parent folder.
 2. In the preset picker that opens, select **Local Ollama** and **Wheel**.
-3. Keep `gemma4-32k:latest`, apply the preset, and wait for all four tabs to report ready.
-4. Give the Orchestrator the suggested safe task from the demo repository README.
+3. Set the model to `qwen3-coder:30b` (or your preferred tool-calling model), apply the preset, and wait for all four tabs to report ready.
+4. Type a task into the **New Task** input in the broker panel (Workflows tab), or give the Orchestrator the suggested safe task from the demo repository README.
 5. Watch requests, acknowledgements, retries, results, and health in the broker panel.
 6. Inspect changes and run `npm test` before approving any coding-task merge.
 

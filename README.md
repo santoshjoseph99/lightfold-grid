@@ -78,7 +78,7 @@ See [plan.md](./plan.md) for the milestone roadmap.
 - Node.js 22.12 or newer
 - npm
 - Windows 10+, macOS, or Linux
-- Optional: [Ollama](https://ollama.com/) and a local model for live integration tests
+- Optional: [Ollama](https://ollama.com/) and a local model for live integration tests. Use a model with native tool calling (e.g. `qwen3-coder:30b`) for coding tasks that require file edits or command execution.
 - Optional: Anti-Gravity CLI (`agy`), GitHub Copilot CLI, or another interactive agent CLI
 
 ## Getting Started

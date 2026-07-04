@@ -4,6 +4,25 @@ Lightfold Grid is an experimental developer alpha. It is useful for controlled
 experimentation with trusted repositories, prompts, CLIs, and models, but it is not a
 sandbox or a production operations platform.
 
+## Tool Calling Model Compatibility
+
+The bundled Ollama adapter provides `read_file`, `write_file`, `list_dir`, and
+`run_command` tools. Not all Ollama models support native tool calling:
+
+- **Native tool calling** (recommended): Models like `qwen3-coder:30b` and `qwen3:30b`
+  use the Ollama `tool_calls` API field for reliable tool execution. These models can
+  read files, edit code, and run commands through the adapter.
+- **Text-based fallback**: Models without native tool calling (e.g. `gemma4-32k`,
+  `qwen2.5-coder:7b`) may output tool-call JSON as text. The adapter attempts to parse
+  this, but it is less reliable and may cause repeated tool calls or loops.
+- **Verification**: Run `ollama show <model>` and look for `tool_call` template support
+  to confirm a model supports native tool calling before assigning coding tasks.
+
+Choose a model with native tool calling for workflows that require real file edits or
+command execution. Non-tool-calling models can still participate in orchestration,
+planning, and text-only routing.
+
+
 ## Security And Isolation
 
 - Agent CLIs, approved commands, repository scripts, and tests run with the current
