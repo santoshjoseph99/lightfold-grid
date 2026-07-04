@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Network, ChevronRight, ChevronDown, RefreshCw, XOctagon, Shuffle, CheckCircle, GitBranch } from 'lucide-react';
+import { Network, ChevronRight, ChevronDown, RefreshCw, XOctagon, Shuffle, CheckCircle, GitBranch, Plus } from 'lucide-react';
 import type { AgentConfig } from './SettingsModal';
 import { ObservabilityPanel } from './ObservabilityPanel';
 import { formatDuration, getCorrelatedMessageChain } from '../services/observability';
@@ -22,8 +22,9 @@ import {
   subscribeToMessages,
   subscribeToWorkflows,
   testWorkflowWorktree,
+  createWorkflow,
 } from '../services/brokerProtocol';
-import type { WorkflowRecord, WorkflowTaskRecord } from '../services/workflowCore';
+import type { WorkflowDefinition, WorkflowRecord, WorkflowTaskRecord } from '../services/workflowCore';
 import { calculateWorkflowBudgetUsage } from '../services/workflowBudget';
 
 interface CentralBrokerProps {
@@ -37,6 +38,7 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
   const [messages, setMessages] = useState<StarlightMessage[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowRecord[]>([]);
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
+  const [taskInput, setTaskInput] = useState('');
 
   useEffect(() => {
     // Set initial log
@@ -98,6 +100,61 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
     return 'var(--accent-orange)';
   };
   const modelRecommendations = getModelRecommendations();
+
+  const handleSubmitTask = () => {
+    const goal = taskInput.trim();
+    if (!goal) return;
+    const configs = Object.entries(agentConfigs);
+    const findByCapability = (cap: string) => configs.find(([, c]) => c.capabilities?.includes(cap));
+    const builder = findByCapability('coding');
+    const tester = findByCapability('testing');
+    const reviewer = findByCapability('review');
+    const tasks: WorkflowDefinition['tasks'] = [];
+    let deps: string[] = [];
+    if (builder) {
+      tasks.push({
+        id: 'build', owner: builder[0], goal,
+        dependencies: [],
+        requiredCapabilities: ['coding'],
+        requiredTools: builder[1].tools?.length ? builder[1].tools : undefined,
+      });
+      deps = ['build'];
+    }
+    if (tester) {
+      tasks.push({
+        id: 'test', owner: tester[0],
+        goal: `Verify: ${goal}. Run tests and report pass or fail with evidence.`,
+        dependencies: deps,
+        requiredCapabilities: ['testing'],
+        requiredTools: tester[1].tools?.length ? tester[1].tools : undefined,
+      });
+      deps = [...deps, 'test'];
+    }
+    if (reviewer) {
+      tasks.push({
+        id: 'review', owner: reviewer[0],
+        goal: `Review the changes for: ${goal}. Check correctness, regressions, and missing tests.`,
+        dependencies: deps,
+        requiredCapabilities: ['review'],
+      });
+    }
+    if (tasks.length === 0) {
+      window.alert('No configured agents with coding, testing, or review capabilities found.');
+      return;
+    }
+    try {
+      createWorkflow({
+        id: `task-${Date.now()}`,
+        name: goal.slice(0, 60),
+        goal,
+        createdBy: paneIds[0] || 'broker',
+        tasks,
+      });
+      setTaskInput('');
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : String(error));
+    }
+  };
 
   return (
     <div
@@ -200,6 +257,42 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
         {activeTab === 'workflows' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <input
+                type="text"
+                value={taskInput}
+                onChange={(e) => setTaskInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSubmitTask(); }}
+                placeholder="Describe a task for the team..."
+                style={{
+                  flex: 1,
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--panel-border)',
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  color: 'var(--text-main)',
+                  fontSize: '11px',
+                  outline: 'none',
+                }}
+              />
+              <button
+                onClick={handleSubmitTask}
+                title="Submit task to the team"
+                style={{
+                  padding: '6px 8px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'rgba(0, 240, 255, 0.1)',
+                  color: 'var(--accent-cyan)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Plus size={14} />
+              </button>
+            </div>
             {workflows.length === 0 ? (
               <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-dark)', fontSize: '12px' }}>
                 No workflows submitted.
