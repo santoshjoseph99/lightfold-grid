@@ -17,6 +17,7 @@ Read [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md) before installing or running
 - Configure each agent's CLI command, model, prompt, and workspace.
 - Select explicit provider adapters with discoverable lifecycle and privacy behavior.
 - Use the bundled stateful Ollama adapter for reliable local lifecycle and task results.
+- Execute real file edits and commands through Ollama tool calling (`read_file`, `write_file`, `list_dir`, `run_command`) with models that support native tool calls.
 - Route tasks to the least expensive eligible model with privacy, capability, tool,
   context-window, and cost constraints.
 - Escalate through ordered model fallbacks and inspect assignment reasons and savings.
@@ -35,6 +36,7 @@ Read [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md) before installing or running
 - Persist broker messages, tasks, attempts, agents, settings, and audit events in SQLite.
 - Recover interrupted requests after an application restart.
 - Execute durable dependency-graph workflows with validated completion criteria.
+- Submit tasks directly from the broker panel's New Task input without dropping to a shell.
 - Gate destructive or release-related workflow tasks for human approval.
 - Isolate coding tasks in per-task Git worktrees and branches.
 - Gate coding-task merges on file ownership, tests, and explicit review.
@@ -92,10 +94,15 @@ For a known-good first workflow, choose **Create Demo Project** in the app and a
 built-in local Ollama wheel preset. Source contributors can do the same from a checkout:
 
 ```bash
-ollama pull gemma4-32k:latest
+ollama pull qwen3-coder:30b   # or any model with native tool calling support
 npm run demo:setup
 npm run dev
 ```
+
+For text-only routing and orchestration, `gemma4-32k:latest` works. For coding tasks
+that require file edits or command execution, use a model with native tool calling
+like `qwen3-coder:30b`. See [ADAPTERS.md](./ADAPTERS.md) for tool-calling model
+compatibility.
 
 See [QUICKSTART.md](./QUICKSTART.md) for the five-minute local workflow, mixed
 local/cloud profile, and readiness troubleshooting.
@@ -129,7 +136,7 @@ Use the Lightfold Grid workspace to:
 2. Apply a built-in role and topology preset, or configure agent panes manually.
 3. Review the preset's explicit routing connections.
 4. Boot the agents.
-5. Send tasks through Lightfold Grid message envelopes.
+5. Send tasks through the broker panel's **New Task** input, or through Lightfold Grid message envelopes.
 
 ## Security Model
 
