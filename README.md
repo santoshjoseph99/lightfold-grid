@@ -11,6 +11,14 @@ strong-model tokens only where they matter.
 
 Read [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md) before installing or running agents.
 
+## Why Lightfold Grid?
+
+Single-agent CLIs are powerful but isolated. Multi-agent frameworks are libraries, not
+applications. Cloud agent platforms host your code and lock you to one provider. Lightfold
+Grid is a local desktop control plane that orchestrates multiple CLI agents as a coordinated
+team — with visual observability, cost-aware model routing, and Git worktree isolation.
+See [POSITIONING.md](./POSITIONING.md) for the full comparison and design rationale.
+
 ## Features
 
 - Run multiple CLI agents in managed Electron PTYs.
