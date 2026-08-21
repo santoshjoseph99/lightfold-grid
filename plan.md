@@ -723,6 +723,44 @@ temporary migration period.
 - Hosted validation fixture check plus external real-evidence guidance.
 - Local maintainer smoke test before inviting private-alpha users.
 
+## Milestone 26: Team Visibility Workspace
+
+### Tasks
+
+- [ ] Add a pure team-activity projection service derived from broker observability
+      snapshots, workflow records, lifecycle records, messages, routing decisions, and
+      durable events.
+- [ ] Create a Team Room surface with agent cards, message flow, workflow board,
+      team timeline, and model/cost strip.
+- [ ] Show who is ready, busy, blocked, failed, reviewing, or completed without requiring
+      users to inspect raw terminal logs.
+- [ ] Add drilldowns from agent, task, message, and model-escalation summaries to raw
+      broker evidence.
+- [ ] Keep default views free of full prompts, private terminal logs, credentials, and
+      diagnostic secrets.
+- [ ] Update maintainer smoke testing and demo guidance to include a Team Room walkthrough.
+
+### Acceptance Criteria
+
+- A user can identify what every configured agent is doing from one Team Room view.
+- A user can follow work from request to acknowledgement to progress/result to review
+  and merge.
+- Blocked, failed, retried, escalated, and approval-waiting work is visibly distinct.
+- Model choice, local/cloud status, estimated cost, savings, budget impact, and
+  escalation history are visible for routed tasks.
+- Team Room state survives refresh and restart because it is reconstructed from durable
+  broker evidence.
+
+### Tests
+
+- Team-activity projection tests for active, blocked, failed, reviewing, completed, and
+  stale states.
+- Message-flow correlation tests for requests, acknowledgements, progress, results,
+  errors, retries, and dead letters.
+- Workflow-board and cost-strip tests for dependencies, approvals, budgets, local/cloud
+  routing, savings, and escalations.
+- UI/component coverage for empty, active, failed, and completed Team Room states.
+
 ## Recommended Implementation Order
 
 1. Reliable message protocol.
@@ -750,6 +788,7 @@ temporary migration period.
 23. Hosted GitHub validation evidence.
 24. Hosted CI hardening.
 25. Public alpha release readiness.
+26. Team visibility workspace.
 
 ## Definition of Production-Ready for Complex Coding Tasks
 

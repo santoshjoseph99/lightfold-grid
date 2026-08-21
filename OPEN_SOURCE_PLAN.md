@@ -149,6 +149,19 @@ This workstream turns the project's intended differentiator into a measurable fe
 - [x] Allow users to set workflow-level cost and cloud-usage budgets.
 - [x] Show why a task was assigned or escalated to a model.
 
+### 6a. Team Visibility
+
+This workstream makes the mixed-model team legible during real work.
+
+- [ ] Add a Team Room view that shows agent status, active assignments, message flow,
+      workflow state, and model/cost decisions.
+- [ ] Derive the view from durable broker evidence instead of terminal-log inference.
+- [ ] Add drilldowns from friendly summaries to raw broker records for debugging.
+- [ ] Update demos and private-alpha sessions to test whether users can explain what
+      each agent did and why each model was selected.
+
+See [TEAM_VISIBILITY_PLAN.md](./TEAM_VISIBILITY_PLAN.md).
+
 ### 7. Benchmark And Proof
 
 - [x] Build a public benchmark suite containing specification, coding, testing, review,

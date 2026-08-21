@@ -462,8 +462,11 @@ Development is organized into milestone commits. The roadmap covers:
 23. Hosted GitHub validation evidence
 24. Hosted CI hardening
 25. Public alpha release readiness
+26. Team visibility workspace
 
 See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
+See [TEAM_VISIBILITY_PLAN.md](./TEAM_VISIBILITY_PLAN.md) for the plan to make agent
+work, routing, blockers, and model choices visible without reading terminal logs.
 
 ### Milestone Status
 
@@ -492,6 +495,7 @@ See [plan.md](./plan.md) for detailed tasks and acceptance criteria.
 - [x] Milestone 23: Hosted GitHub validation evidence
 - [x] Milestone 24: Hosted CI hardening
 - [x] Milestone 25: Public alpha release readiness
+- [ ] Milestone 26: Team visibility workspace
 
 ## Open Source Status
 
