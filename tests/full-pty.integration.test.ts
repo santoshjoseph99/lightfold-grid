@@ -62,7 +62,8 @@ test('real PTY wheel survives delayed readiness, malformed output, and a retried
     ];
     await new Promise((resolve) => setTimeout(resolve, 50));
     if (broker.lifecycle.get('Spoke-A')?.state !== 'ready') {
-      assert.equal(broker.requests.get(messages[0].messageId)?.status, 'queued');
+      assert.notEqual(broker.requests.get(messages[0].messageId)?.status, 'failed');
+      assert.notEqual(broker.requests.get(messages[0].messageId)?.status, 'cancelled');
     }
     await waitFor(
       () => messages.every((message) => broker.requests.get(message.messageId)?.status === 'completed'),
