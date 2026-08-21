@@ -1,8 +1,9 @@
 # Lightfold Grid
 
-Lightfold Grid is an open-source desktop control plane for mixed-model coding teams.
-Assign specialized local or cloud agents to tasks, see how they collaborate, and use
-strong-model tokens only where they matter.
+Lightfold Grid routes coding work to the cheapest local or cloud model strong enough
+to finish it, then shows the proof from request to tests to review.
+Bring CLI agents or direct model adapters, assign them specialized roles, and see the
+team work without wasting strong-model tokens.
 
 > [!WARNING]
 > Lightfold Grid is an experimental developer alpha, not a sandbox. Configured agent
@@ -15,8 +16,9 @@ Read [KNOWN_LIMITATIONS.md](./KNOWN_LIMITATIONS.md) before installing or running
 
 Single-agent CLIs are powerful but isolated. Multi-agent frameworks are libraries, not
 applications. Cloud agent platforms host your code and lock you to one provider. Lightfold
-Grid is a local desktop control plane that orchestrates multiple CLI agents as a coordinated
-team — with visual observability, cost-aware model routing, and Git worktree isolation.
+Grid is a local desktop control plane that orchestrates CLI agents and direct model
+adapters as a coordinated team — with visual observability, cost-aware model routing,
+and Git worktree isolation.
 See [POSITIONING.md](./POSITIONING.md) for the full comparison and design rationale.
 
 ## Features
