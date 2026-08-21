@@ -27,7 +27,7 @@ In Lightfold Grid:
 2. In the preset picker that opens, select **Local Ollama** and **Wheel**.
 3. Set the model to `qwen3-coder:30b` (or your preferred tool-calling model), apply the preset, and wait for all four tabs to report ready.
 4. Type a task into the **New Task** input in the broker panel (Workflows tab), or give the Orchestrator the suggested safe task from the demo repository README.
-5. Watch requests, acknowledgements, retries, results, and health in the broker panel.
+5. Open **Central Broker -> Team Room** to watch agent cards, the workflow board, message stream or graph, model costs, retries, results, and health.
 6. Inspect changes and run `npm test` before approving any coding-task merge.
 
 The same workspace can be loaded from
@@ -48,7 +48,7 @@ your preferred CLI or model in **Configure Grid**.
 An agent is ready only after its CLI process starts and it emits the injected readiness
 message. If a tab stays in `starting` or becomes `failed`:
 
-1. Open **Broker -> Ops** and run workspace health checks.
+1. Open **Central Broker -> Team Room** and run workspace health checks.
 2. Confirm the CLI executable and selected model exist.
 3. Confirm the CLI accepts interactive input through a PTY.
 4. Inspect the terminal for login, trust, model-download, or authentication prompts.

@@ -730,15 +730,15 @@ temporary migration period.
 - [x] Add a pure team-activity projection service derived from broker observability
       snapshots, workflow records, lifecycle records, messages, routing decisions, and
       durable events.
-- [ ] Create a Team Room surface with agent cards, message flow, workflow board,
+- [x] Create a Team Room surface with agent cards, message flow, workflow board,
       team timeline, and model/cost strip.
-- [ ] Show who is ready, busy, blocked, failed, reviewing, or completed without requiring
+- [x] Show who is ready, busy, blocked, failed, reviewing, or completed without requiring
       users to inspect raw terminal logs.
-- [ ] Add drilldowns from agent, task, message, and model-escalation summaries to raw
+- [x] Add drilldowns from agent, task, message, and model-escalation summaries to raw
       broker evidence.
-- [ ] Keep default views free of full prompts, private terminal logs, credentials, and
+- [x] Keep default views free of full prompts, private terminal logs, credentials, and
       diagnostic secrets.
-- [ ] Update maintainer smoke testing and demo guidance to include a Team Room walkthrough.
+- [x] Update maintainer smoke testing and demo guidance to include a Team Room walkthrough.
 
 ### Acceptance Criteria
 

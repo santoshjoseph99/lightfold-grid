@@ -145,6 +145,9 @@ export const evaluateAlphaReadiness = ({ packageJson, files }: AlphaReadinessInp
         /Repository Gates/,
         /Hosted Evidence/,
         /Maintainer Smoke Test/,
+        /Team Room/,
+        /Message stream/,
+        /Message graph/,
         /External Blockers/,
         /Alpha User Success Criteria/,
       ]) && /PUBLIC_ALPHA_CHECKLIST\.md/.test(readme)

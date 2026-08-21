@@ -20,7 +20,7 @@ const readyInput = {
     'KNOWN_LIMITATIONS.md': 'limitations',
     'SOURCE_PROVENANCE.md': 'provenance',
     'README.md': 'experimental developer alpha KNOWN_LIMITATIONS.md PUBLIC_ALPHA_CHECKLIST.md',
-    'PUBLIC_ALPHA_CHECKLIST.md': 'Repository Gates Hosted Evidence Maintainer Smoke Test External Blockers Alpha User Success Criteria',
+    'PUBLIC_ALPHA_CHECKLIST.md': 'Repository Gates Hosted Evidence Maintainer Smoke Test Team Room Message stream Message graph External Blockers Alpha User Success Criteria',
     'RELEASE_SIGNING.md': 'MAC_CSC_LINK WIN_CSC_LINK',
     'HOSTED_VALIDATION.md': 'hosted:collect',
     'BENCHMARKS.md': 'benchmark:live:validate',

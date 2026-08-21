@@ -75,14 +75,23 @@ Use the platform you expect to hand to the first testers.
 6. Use `gemma4-32k:latest` or deliberately record the replacement local model.
 7. Wait for all four agents to report ready.
 8. Send the safe starter task from the demo repository README to the orchestrator.
-9. Watch the broker panel for request, acknowledgement, progress, result, and health
-   events.
-10. Confirm the coding task uses an isolated worktree and branch.
-11. Let the configured test command run.
-12. Review the changed files before approving the merge.
-13. Export a diagnostic bundle and verify it contains no secrets or surprising local
+9. Open **Central Broker -> Team Room** and confirm every configured agent has a card.
+10. Switch between **Message stream** and **Message graph**, then confirm request,
+    acknowledgement, progress, result, blocker/failure, and health evidence is visible
+    without opening raw terminal logs.
+11. Filter to the active workflow and verify the board clearly shows ready, busy,
+    blocked, reviewing, completed, failed, or cancelled work as applicable.
+12. Click an agent, task, message, timeline event, and model-cost row to inspect broker
+    evidence behind each summary.
+13. Confirm the model-cost strip shows selected model, local/cloud status where
+    available, estimated cost, savings, budget impact, and escalation count.
+14. Confirm the coding task uses an isolated worktree and branch.
+15. Let the configured test command run.
+16. Review the changed files before approving the merge.
+17. Export a diagnostic bundle and verify it contains no secrets or surprising local
    paths before sharing.
-14. Quit and relaunch the app, then confirm the workspace and broker state reload.
+18. Quit and relaunch the app, then confirm Team Room reconstructs the workspace and
+    broker state from durable evidence.
 
 Pass condition: the demo workflow completes without maintainer intervention beyond
 documented approvals, and the user can explain what each agent did, what model it used,

@@ -353,19 +353,26 @@ then requires **Approve & Merge** before serially merging the branch into the cl
 integration workspace. Failed and conflicted worktrees are preserved until explicit
 forced cleanup.
 
-### Operations And Diagnostics
+### Team Room And Diagnostics
 
-The Central Broker **Ops** tab derives live operational metrics from the durable broker
-snapshot. It shows queue depth, average delivery latency, task duration, retry and
-failure counts, and the percentage of agents currently ready or busy.
+The Central Broker opens to **Team Room**, a workflow-backed view of what every agent
+is doing. It shows agent cards, ready/busy/blocked/reviewing/completed states, a
+workflow board, a user-selectable message stream or graph, team timeline, and
+model-cost strip without requiring users to inspect raw terminal logs.
+
+Team Room is the default human-facing status surface. Its controls let users filter by
+workflow, switch between stream and graph message flow, refresh workspace health, and
+export diagnostics. Click an agent, task, message, timeline event, or model-cost row to
+see the broker evidence behind the summary. Terminal-reported summaries are labeled as
+reported evidence rather than proof until backed by workflow, worktree, test, or broker
+events.
 
 Workspace health checks verify the selected Git repository, configured agent CLI
-executables, prompt files, Ollama availability, and configured local models. Workflow
-dependency graphs and durable event timelines make blocked or failed work visible
-without reading raw terminal logs. Expanded JSON messages include the complete
-correlated request, acknowledgement, progress, and terminal-result chain.
+executables, prompt files, Ollama availability, and configured local models. The raw
+**Sequence Flow** and **JSON Log** tabs remain available for protocol debugging and
+correlated request, acknowledgement, progress, and terminal-result chains.
 
-Use **Export** in the Ops tab to save a JSON diagnostic bundle containing the durable
+Use **Export** in Team Room to save a JSON diagnostic bundle containing the durable
 snapshot, health results, and workspace configuration. Keys and values that look like
 tokens, passwords, credentials, authorization headers, or API secrets are redacted.
 
@@ -497,7 +504,7 @@ work, routing, blockers, and model choices visible without reading terminal logs
 - [x] Milestone 23: Hosted GitHub validation evidence
 - [x] Milestone 24: Hosted CI hardening
 - [x] Milestone 25: Public alpha release readiness
-- [ ] Milestone 26: Team visibility workspace
+- [x] Milestone 26: Team visibility workspace
 
 ## Open Source Status
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Network, ChevronRight, ChevronDown, RefreshCw, XOctagon, Shuffle, CheckCircle, GitBranch, Plus } from 'lucide-react';
 import type { AgentConfig } from './SettingsModal';
-import { ObservabilityPanel } from './ObservabilityPanel';
+import { TeamRoomPanel } from './ObservabilityPanel';
 import { formatDuration, getCorrelatedMessageChain } from '../services/observability';
 import {
   approveWorkflowTask,
@@ -34,7 +34,7 @@ interface CentralBrokerProps {
 }
 
 export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspaceRoot, agentConfigs }) => {
-  const [activeTab, setActiveTab] = useState<'workflows' | 'ops' | 'flow' | 'json'>('workflows');
+  const [activeTab, setActiveTab] = useState<'team' | 'workflows' | 'flow' | 'json'>('team');
   const [messages, setMessages] = useState<StarlightMessage[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowRecord[]>([]);
   const [expandedMessageId, setExpandedMessageId] = useState<string | null>(null);
@@ -191,6 +191,21 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
         {/* Toggle Tab buttons */}
         <div style={{ display: 'flex', gap: '4px', background: 'rgba(255, 255, 255, 0.04)', padding: '2px', borderRadius: '6px' }}>
           <button
+            onClick={() => setActiveTab('team')}
+            style={{
+              padding: '4px 8px',
+              borderRadius: '4px',
+              border: 'none',
+              background: activeTab === 'team' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+              color: activeTab === 'team' ? 'var(--text-main)' : 'var(--text-muted)',
+              fontSize: '10px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            TEAM ROOM
+          </button>
+          <button
             onClick={() => setActiveTab('workflows')}
             style={{
               padding: '4px 8px',
@@ -204,21 +219,6 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
             }}
           >
             WORKFLOWS
-          </button>
-          <button
-            onClick={() => setActiveTab('ops')}
-            style={{
-              padding: '4px 8px',
-              borderRadius: '4px',
-              border: 'none',
-              background: activeTab === 'ops' ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
-              color: activeTab === 'ops' ? 'var(--text-main)' : 'var(--text-muted)',
-              fontSize: '10px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            OPS
           </button>
           <button
             onClick={() => setActiveTab('flow')}
@@ -255,7 +255,9 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
 
       {/* Pane Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-        {activeTab === 'workflows' ? (
+        {activeTab === 'team' ? (
+          <TeamRoomPanel workspaceRoot={workspaceRoot} agentConfigs={agentConfigs} />
+        ) : activeTab === 'workflows' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               <input
@@ -422,8 +424,6 @@ export const CentralBroker: React.FC<CentralBrokerProps> = ({ paneIds, workspace
               );
             })}
           </div>
-        ) : activeTab === 'ops' ? (
-          <ObservabilityPanel workspaceRoot={workspaceRoot} agentConfigs={agentConfigs} />
         ) : activeTab === 'flow' ? (
           /* Real-time SVG Flow diagram */
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '350px' }}>
