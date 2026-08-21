@@ -727,7 +727,7 @@ temporary migration period.
 
 ### Tasks
 
-- [ ] Add a pure team-activity projection service derived from broker observability
+- [x] Add a pure team-activity projection service derived from broker observability
       snapshots, workflow records, lifecycle records, messages, routing decisions, and
       durable events.
 - [ ] Create a Team Room surface with agent cards, message flow, workflow board,

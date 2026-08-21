@@ -21,9 +21,34 @@ Show a live mixed-model team at work:
 This is not a theatrical office simulation. The UI can be friendly, but every visible
 state should answer: "What happened, what is happening, and what should I do next?"
 
+## Product Decisions
+
+- Team Room replaces the current Ops panel instead of sitting beside it.
+- Team Room includes one shared control area for filters, mode switching, health,
+  diagnostics, and workflow actions.
+- Message flow supports both stream and graph modes; the user chooses the mode.
+- Terminal-output summaries may be shown in the Team Room. They still must be labeled
+  as terminal-derived and never treated as completion proof.
+- Agent cards support user-authored colors and icons for recognition, demos, and
+  private-alpha walkthroughs.
+- The first implementation covers workflow-backed work only. Ad hoc direct messages can
+  appear in raw broker logs until a later milestone.
+
 ## Primary Surface: Team Room
 
-Add a first-class **Team Room** view beside the terminal grid and broker panels.
+Replace the current Ops panel with a first-class **Team Room** view. Team Room owns the
+human-facing status surface while preserving drilldowns into raw broker evidence.
+
+### Control Area
+
+Team Room has one control area for:
+
+- workflow selection;
+- agent, task, severity, and active-only filters;
+- message-flow mode (`stream` or `graph`);
+- health refresh and diagnostic export;
+- color/icon customization for agent cards;
+- links to raw broker, workflow, and terminal evidence.
 
 ### Agent Cards
 
@@ -42,13 +67,13 @@ workflow graph, and terminal focus to that agent.
 
 ### Message Flow
 
-Show recent routed messages as an activity stream and optional graph overlay:
+Show recent routed messages as either an activity stream or graph view:
 
 - `request`, `ack`, `progress`, `result`, `error`, `cancel`, `ready`, and `heartbeat`;
 - source and target agents;
 - task ID and correlation chain;
 - delivery status, attempts, retries, and timeout risk;
-- small summaries from payloads, never full private prompts by default.
+- small summaries from payloads and terminal output when available.
 
 Retries and errors should be visually distinct from normal progress. The user should
 be able to jump from a message to its raw broker record when debugging.
@@ -110,8 +135,9 @@ why Lightfold Grid used a cheaper local model or escalated to a stronger cloud m
 - Derive all state from broker snapshots, workflow records, message records, lifecycle
   records, model-routing decisions, worktree records, and durable events.
 - Do not infer task completion from terminal text alone.
-- Do not display hidden prompts, full terminal logs, credentials, or diagnostic secrets
-  in the default team view.
+- Terminal-output summaries can be displayed, but must be marked as reported text and
+  kept separate from broker-verified completion, test, review, and merge state.
+- Do not display credentials or diagnostic secrets in the default team view.
 - If state is stale or missing, show "unknown" or "not reported" instead of pretending.
 - Every friendly label should have a path to the raw broker evidence.
 
@@ -128,9 +154,10 @@ why Lightfold Grid used a cheaper local model or escalated to a stronger cloud m
 
 ### Phase 2: Team Room UI
 
-- Add a Team Room tab or panel in the right-side workspace.
+- Replace the current Ops panel with Team Room in the right-side workspace.
 - Render agent cards, workflow board, activity stream, and model/cost strip.
-- Add filters for workflow, agent, task, severity, and active-only state.
+- Add one control area for workflow selection, stream/graph mode, filters, health,
+  diagnostics, and agent color/icon customization.
 - Use existing subscriptions from `brokerProtocol` and `ObservabilityPanel`.
 - Keep terminal panes as the detailed execution view, not the primary status view.
 
@@ -158,7 +185,11 @@ why Lightfold Grid used a cheaper local model or escalated to a stronger cloud m
 - A user can see blocked work and the reason it is blocked.
 - A user can see model choice, cost estimate, budget impact, and escalation history.
 - Visual state matches durable broker evidence after refresh and app restart.
-- No default view exposes secrets, full prompts, or raw private terminal output.
+- Team Room replaces Ops as the primary human-facing status panel.
+- The user can switch message flow between stream and graph modes.
+- Agent cards can use recognizable colors and icons.
+- Workflow-backed work is visible first; ad hoc direct-message visibility is deferred.
+- No default view exposes credentials or diagnostic secrets.
 
 ## Tests
 
@@ -171,9 +202,7 @@ why Lightfold Grid used a cheaper local model or escalated to a stronger cloud m
 
 ## Open Questions
 
-- Should Team Room replace the current Ops panel, or sit beside it as a more
-  human-oriented view?
-- Should message flow be a graph, a stream, or both?
-- How much terminal output summary can be shown without creating privacy risk?
-- Should agent cards support user-authored labels, colors, or icons for demos?
-- Should the first implementation cover only workflows, or also ad hoc direct messages?
+- How should Team Room persist user-authored agent colors and icons: workspace config,
+  broker settings, or both?
+- Which graph layout should be used for message flow in the first UI implementation?
+- What is the smallest workflow-backed demo that best exercises the Team Room?
